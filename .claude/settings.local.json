@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(perl -0pi -e 's{<div class=\"code\" aria-label=\"\\([^\"]+\\)\">}{<pre class=\"code\" aria-label=\"$1\">}g' deutsch-spec.html)",
+      "Bash(awk 'NR==478||NR==582||NR==692||NR==752||NR==872{f=1} f&&/<\\\\/div>$/{print NR\": \"$0; f=0}' deutsch-spec.html)",
+      "Bash(perl -pi -e 's{</div>$}{</pre>} if $. == 486 || $. == 588 || $. == 704 || $. == 762 || $. == 887' deutsch-spec.html)",
+      "Bash(awk 'NR==486||NR==588||NR==704||NR==762||NR==887{print NR\": \"substr\\($0,length\\($0\\)-30\\)}' deutsch-spec.html)",
+      "Skill(claude-api)",
+      "Skill(claude-api:*)",
+      "Bash(npm -v)",
+      "Bash(git --version)"
+    ]
+  }
+}

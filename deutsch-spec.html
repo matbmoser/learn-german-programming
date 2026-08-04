@@ -1,0 +1,1877 @@
+<!--
+  SPDX-License-Identifier: GPL-3.0-or-later
+  Copyright (C) 2026 Mathias Brunkow Moser
+
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+  This file was generated with AI assistance (Claude Code, Anthropic).
+-->
+<title>Deutsch — Sprachspezifikation</title>
+
+<script>
+/* standalone file: ensure a viewport meta exists (published wrappers already supply one) */
+if(!document.querySelector('meta[name="viewport"]')){
+  var vm = document.createElement("meta");
+  vm.name = "viewport"; vm.content = "width=device-width, initial-scale=1";
+  document.head.appendChild(vm);
+}
+</script>
+
+<style>
+/* ============ TOKENS ============ */
+:root{
+  --paper:#E8EAE7;
+  --surface:#F4F6F2;
+  --raised:#FCFDFA;
+  --ink:#151816;
+  --ink-2:#4C534E;
+  --ink-3:#7E857F;
+  --rule:#CBD0C8;
+  --rule-2:#DCE0D9;
+
+  --nom:#1F6FB2;
+  --akk:#B8531B;
+  --dat:#7A3E9E;
+  --gen:#16776A;
+
+  --nom-bg:#1F6FB214;
+  --akk-bg:#B8531B14;
+  --dat-bg:#7A3E9E14;
+  --gen-bg:#16776A14;
+
+  --ok:#1C7346;
+  --ok-bg:#1C734614;
+  --no:#AE2B2B;
+  --no-bg:#AE2B2B12;
+
+  --shadow:0 1px 0 #ffffff80 inset, 0 1px 2px #15181610;
+
+  --f-display:"Futura","Futura PT","Avenir Next","Century Gothic","Trebuchet MS",sans-serif;
+  --f-body:"Charter","Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+  --f-mono:"SF Mono","SFMono-Regular",Menlo,Consolas,"Liberation Mono",monospace;
+
+  --s1:.35rem; --s2:.6rem; --s3:1rem; --s4:1.5rem; --s5:2.25rem; --s6:3.5rem; --s7:5.5rem;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --paper:#131614; --surface:#1A1E1B; --raised:#232823;
+    --ink:#E9EDE7; --ink-2:#A6AFA7; --ink-3:#727A73;
+    --rule:#333A34; --rule-2:#282E29;
+    --nom:#6FB3E8; --akk:#F09A5C; --dat:#C49BEE; --gen:#52C3AE;
+    --nom-bg:#6FB3E81C; --akk-bg:#F09A5C1C; --dat-bg:#C49BEE1C; --gen-bg:#52C3AE1C;
+    --ok:#5CC78D; --ok-bg:#5CC78D1C; --no:#F0736B; --no-bg:#F0736B18;
+    --shadow:0 1px 0 #ffffff08 inset, 0 1px 2px #00000040;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#131614; --surface:#1A1E1B; --raised:#232823;
+  --ink:#E9EDE7; --ink-2:#A6AFA7; --ink-3:#727A73;
+  --rule:#333A34; --rule-2:#282E29;
+  --nom:#6FB3E8; --akk:#F09A5C; --dat:#C49BEE; --gen:#52C3AE;
+  --nom-bg:#6FB3E81C; --akk-bg:#F09A5C1C; --dat-bg:#C49BEE1C; --gen-bg:#52C3AE1C;
+  --ok:#5CC78D; --ok-bg:#5CC78D1C; --no:#F0736B; --no-bg:#F0736B18;
+  --shadow:0 1px 0 #ffffff08 inset, 0 1px 2px #00000040;
+}
+:root[data-theme="light"]{
+  --paper:#E8EAE7; --surface:#F4F6F2; --raised:#FCFDFA;
+  --ink:#151816; --ink-2:#4C534E; --ink-3:#7E857F;
+  --rule:#CBD0C8; --rule-2:#DCE0D9;
+  --nom:#1F6FB2; --akk:#B8531B; --dat:#7A3E9E; --gen:#16776A;
+  --nom-bg:#1F6FB214; --akk-bg:#B8531B14; --dat-bg:#7A3E9E14; --gen-bg:#16776A14;
+  --ok:#1C7346; --ok-bg:#1C734614; --no:#AE2B2B; --no-bg:#AE2B2B12;
+  --shadow:0 1px 0 #ffffff80 inset, 0 1px 2px #15181610;
+}
+
+/* ============ BASE ============ */
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--paper); color:var(--ink);
+  font-family:var(--f-body); font-size:17px; line-height:1.62;
+  -webkit-font-smoothing:antialiased;
+}
+p{margin:0}
+h1,h2,h3,h4{margin:0; font-family:var(--f-display); font-weight:500; text-wrap:balance; line-height:1.08}
+a{color:inherit}
+button{font:inherit; color:inherit; cursor:pointer; background:none; border:none}
+:focus-visible{outline:2px solid var(--nom); outline-offset:2px; border-radius:2px}
+table{border-collapse:collapse; width:100%}
+
+.eyebrow{
+  font-family:var(--f-display); font-size:.68rem; letter-spacing:.16em;
+  text-transform:uppercase; color:var(--ink-3); font-weight:600;
+}
+.mono{font-family:var(--f-mono)}
+
+/* ============ SHELL ============ */
+.shell{max-width:1220px; margin:0 auto; padding:0 var(--s4)}
+.layout{display:grid; grid-template-columns:1fr; gap:var(--s5)}
+.layout > *{min-width:0}
+@media(min-width:1040px){
+  .layout{grid-template-columns:186px minmax(0,1fr); gap:var(--s6)}
+}
+
+/* ---- index rail ---- */
+.rail{
+  position:sticky; top:0; z-index:40; background:var(--paper);
+  border-bottom:1px solid var(--rule); margin:0 calc(var(--s4) * -1);
+  padding:var(--s2) var(--s4);
+}
+.rail-list{display:flex; gap:var(--s1); overflow-x:auto; list-style:none; margin:0; padding:0; scrollbar-width:none}
+.rail-list::-webkit-scrollbar{display:none}
+.rail-link{
+  display:flex; align-items:baseline; gap:.45em; white-space:nowrap;
+  font-family:var(--f-display); font-size:.8rem; letter-spacing:.02em;
+  color:var(--ink-2); text-decoration:none; padding:.4em .6em; border-radius:3px;
+}
+.rail-link:hover{color:var(--ink); background:var(--rule-2)}
+.rail-link .num{font-family:var(--f-mono); font-size:.7rem; color:var(--ink-3)}
+.rail-link[aria-current="true"]{color:var(--ink); background:var(--rule-2)}
+.rail-link[aria-current="true"] .num{color:var(--nom)}
+.rail-meter{display:none}
+
+@media(min-width:1040px){
+  .rail{
+    position:sticky; top:0; height:100vh; align-self:start;
+    border-bottom:none; border-right:1px solid var(--rule);
+    margin:0; padding:var(--s6) var(--s4) var(--s4) 0;
+    display:flex; flex-direction:column; gap:var(--s4);
+  }
+  .rail-list{flex-direction:column; overflow:visible; gap:0}
+  .rail-link{
+    padding:.42em 0; border-radius:0; border-left:2px solid transparent; padding-left:.7em;
+    white-space:normal;
+  }
+  .rail-link:hover{background:none; border-left-color:var(--rule)}
+  .rail-link[aria-current="true"]{background:none; border-left-color:var(--nom)}
+  .rail-meter{
+    display:block; margin-top:auto; padding-left:.7em;
+    border-top:1px solid var(--rule); padding-top:var(--s3);
+  }
+  .rail-meter .big{font-family:var(--f-display); font-size:2rem; line-height:1; font-variant-numeric:tabular-nums}
+}
+
+.theme-toggle{
+  font-family:var(--f-display); font-size:.68rem; letter-spacing:.14em; text-transform:uppercase;
+  color:var(--ink-3); border:1px solid var(--rule); border-radius:2px; padding:.4em .7em;
+  align-self:flex-start;
+}
+.theme-toggle:hover{color:var(--ink); border-color:var(--ink-3)}
+
+/* ============ HERO ============ */
+.hero{padding:var(--s6) 0 var(--s5)}
+.hero h1{
+  font-size:clamp(2.5rem,7.5vw,5rem); letter-spacing:-.025em; margin:var(--s3) 0 var(--s3);
+  max-width:15ch;
+}
+.hero h1 em{font-style:normal; color:var(--nom)}
+.hero-lede{max-width:60ch; color:var(--ink-2); font-size:1.09rem}
+.hero-lede strong{color:var(--ink); font-weight:600}
+
+/* ---- Satzklammer diagram ---- */
+.klammer-card{
+  margin-top:var(--s5); background:var(--surface); border:1px solid var(--rule);
+  border-radius:4px; padding:var(--s4) var(--s4) var(--s3);
+}
+.klammer-head{display:flex; flex-wrap:wrap; gap:var(--s2) var(--s3); align-items:baseline; justify-content:space-between; margin-bottom:var(--s4)}
+.klammer-wrap{overflow-x:auto; padding-bottom:var(--s2)}
+.klammer{
+  display:grid; grid-auto-flow:column; grid-auto-columns:max-content;
+  gap:0 .7em; align-items:end; min-width:max-content;
+  font-family:var(--f-display); font-size:clamp(1.05rem,2.6vw,1.6rem);
+}
+.k-word{grid-row:1; padding:.1em .12em; white-space:nowrap}
+.k-word .k-tag{
+  display:block; font-family:var(--f-mono); font-size:.55em; letter-spacing:.08em;
+  color:var(--ink-3); text-transform:uppercase; margin-bottom:.35em; white-space:nowrap;
+}
+.k-verb{color:var(--nom); font-weight:600}
+.k-verb .k-tag{color:var(--nom)}
+.k-bracket{
+  grid-row:2; height:1.5em; margin-top:.35em; position:relative;
+  border:2px solid var(--dat); border-top:none; border-radius:0 0 3px 3px;
+  transform-origin:center; animation:draw .7s cubic-bezier(.2,.8,.25,1) both;
+}
+.k-bracket span{
+  position:absolute; top:100%; left:50%; transform:translate(-50%,-.55em);
+  background:var(--surface); padding:0 .5em;
+  font-family:var(--f-mono); font-size:.55rem; letter-spacing:.14em; text-transform:uppercase; color:var(--dat);
+  white-space:nowrap;
+}
+@keyframes draw{from{transform:scaleX(.02); opacity:0} to{transform:scaleX(1); opacity:1}}
+@media(prefers-reduced-motion:reduce){.k-bracket{animation:none}}
+.klammer-note{margin-top:var(--s5); color:var(--ink-2); font-size:.94rem; max-width:64ch}
+
+.seg{display:inline-flex; border:1px solid var(--rule); border-radius:3px; overflow:hidden}
+.seg button{
+  font-family:var(--f-display); font-size:.75rem; letter-spacing:.08em; text-transform:uppercase;
+  padding:.5em .9em; color:var(--ink-2); border-right:1px solid var(--rule);
+}
+.seg button:last-child{border-right:none}
+.seg button[aria-pressed="true"]{background:var(--ink); color:var(--paper)}
+.seg button:hover:not([aria-pressed="true"]){background:var(--rule-2)}
+
+/* ============ SECTIONS ============ */
+.sec{padding:var(--s6) 0; border-top:1px solid var(--rule)}
+.sec-head{display:flex; gap:var(--s3); align-items:baseline; margin-bottom:var(--s4)}
+.sec-num{
+  font-family:var(--f-mono); font-size:.85rem; color:var(--nom); flex:none;
+  padding-top:.35em; font-variant-numeric:tabular-nums;
+}
+.sec h2{font-size:clamp(1.7rem,3.6vw,2.5rem); letter-spacing:-.018em}
+.sec-sub{color:var(--ink-2); max-width:64ch; margin-top:var(--s2)}
+.body-copy{max-width:64ch; margin-top:var(--s4); color:var(--ink-2)}
+.body-copy + .body-copy{margin-top:var(--s3)}
+.body-copy strong{color:var(--ink); font-weight:600}
+
+/* ---- code / rule blocks ---- */
+.code{
+  font-family:var(--f-mono); font-size:.83rem; line-height:1.75;
+  white-space:pre; tab-size:2;
+  background:var(--raised); border:1px solid var(--rule); border-radius:4px;
+  padding:var(--s3) var(--s4); overflow-x:auto; margin:var(--s4) 0 0;
+  box-shadow:var(--shadow);
+}
+.code .cm{color:var(--ink-3)}
+.code .kw{color:var(--dat)}
+.code b{font-weight:600}
+
+.c-nom{color:var(--nom)} .c-akk{color:var(--akk)} .c-dat{color:var(--dat)} .c-gen{color:var(--gen)}
+.pill{
+  display:inline-block; font-family:var(--f-mono); font-size:.68em; letter-spacing:.06em;
+  padding:.15em .45em; border-radius:2px; vertical-align:.12em; font-weight:600;
+}
+.p-nom{color:var(--nom); background:var(--nom-bg)}
+.p-akk{color:var(--akk); background:var(--akk-bg)}
+.p-dat{color:var(--dat); background:var(--dat-bg)}
+.p-gen{color:var(--gen); background:var(--gen-bg)}
+
+/* ---- case role cards ---- */
+.roles{display:grid; gap:var(--s2); margin-top:var(--s4); grid-template-columns:1fr}
+@media(min-width:680px){.roles{grid-template-columns:repeat(2,1fr)}}
+@media(min-width:1240px){.roles{grid-template-columns:repeat(4,1fr)}}
+.role{
+  border:1px solid var(--rule); border-radius:4px; padding:var(--s3);
+  background:var(--surface); border-top-width:3px;
+}
+.role.r-nom{border-top-color:var(--nom)}
+.role.r-akk{border-top-color:var(--akk)}
+.role.r-dat{border-top-color:var(--dat)}
+.role.r-gen{border-top-color:var(--gen)}
+.role h3{font-size:1.12rem; margin-bottom:.15em}
+.role .q{font-family:var(--f-mono); font-size:.75rem; color:var(--ink-3); letter-spacing:.04em}
+.role p{font-size:.9rem; color:var(--ink-2); margin-top:var(--s2)}
+.role .ex{margin-top:var(--s2); font-size:.92rem; padding-top:var(--s2); border-top:1px solid var(--rule-2)}
+
+/* ---- tables ---- */
+.tbl-wrap{overflow-x:auto; margin-top:var(--s4); border:1px solid var(--rule); border-radius:4px; background:var(--surface)}
+.grid-tbl{font-family:var(--f-mono); font-size:.84rem; min-width:440px}
+.grid-tbl th,.grid-tbl td{padding:.6em .85em; text-align:left; border-bottom:1px solid var(--rule-2); white-space:nowrap}
+.grid-tbl thead th{
+  font-family:var(--f-display); font-size:.68rem; letter-spacing:.13em; text-transform:uppercase;
+  color:var(--ink-3); font-weight:600; border-bottom:1px solid var(--rule);
+}
+.grid-tbl tbody tr:last-child td,.grid-tbl tbody tr:last-child th{border-bottom:none}
+.grid-tbl tbody th{font-weight:600; color:var(--ink-2); font-family:var(--f-display); letter-spacing:.05em; font-size:.78rem; text-transform:uppercase}
+.grid-tbl .hot{background:var(--akk-bg); color:var(--akk); font-weight:600}
+.grid-tbl .warm{background:var(--nom-bg); color:var(--nom); font-weight:600}
+.tbl-cap{
+  padding:.7em .85em; border-top:1px solid var(--rule); font-size:.82rem;
+  color:var(--ink-2); font-family:var(--f-body); background:var(--raised);
+}
+.tbl-cap b{color:var(--ink)}
+
+.badge{
+  font-family:var(--f-mono); font-size:.66rem; letter-spacing:.08em; border:1px solid var(--rule);
+  border-radius:2px; padding:.1em .4em; color:var(--ink-3);
+}
+
+/* ---- callout ---- */
+.law{
+  margin-top:var(--s4); border-left:3px solid var(--ink); padding:var(--s2) 0 var(--s2) var(--s3);
+  max-width:64ch;
+}
+.law .eyebrow{display:block; margin-bottom:.3em}
+.law p{font-family:var(--f-display); font-size:1.16rem; line-height:1.4; letter-spacing:-.005em}
+
+/* ============ WIDGETS ============ */
+.tool{
+  margin-top:var(--s5); background:var(--surface); border:1px solid var(--rule); border-radius:4px;
+}
+.tool-head{
+  display:flex; flex-wrap:wrap; gap:var(--s2) var(--s3); justify-content:space-between; align-items:center;
+  padding:var(--s3) var(--s4); border-bottom:1px solid var(--rule);
+}
+.tool-body{padding:var(--s4)}
+.ctrls{display:grid; gap:var(--s3); grid-template-columns:1fr}
+@media(min-width:620px){.ctrls{grid-template-columns:repeat(2,1fr)}}
+@media(min-width:960px){.ctrls{grid-template-columns:repeat(4,1fr)}}
+.ctrl{display:flex; flex-direction:column; gap:var(--s1)}
+.ctrl > .eyebrow{font-size:.62rem}
+.chips{display:flex; flex-wrap:wrap; gap:.3em}
+.chip{
+  font-family:var(--f-mono); font-size:.76rem; padding:.35em .6em;
+  border:1px solid var(--rule); border-radius:3px; color:var(--ink-2); background:var(--raised);
+}
+.chip:hover{border-color:var(--ink-3); color:var(--ink)}
+.chip[aria-pressed="true"]{background:var(--ink); border-color:var(--ink); color:var(--paper)}
+.chip.k-nom[aria-pressed="true"]{background:var(--nom); border-color:var(--nom); color:#fff}
+.chip.k-akk[aria-pressed="true"]{background:var(--akk); border-color:var(--akk); color:#fff}
+.chip.k-dat[aria-pressed="true"]{background:var(--dat); border-color:var(--dat); color:#fff}
+.chip.k-gen[aria-pressed="true"]{background:var(--gen); border-color:var(--gen); color:#fff}
+select.chip{appearance:none; padding-right:1.6em; background-image:none; width:100%}
+
+.out{
+  margin-top:var(--s4); border:1px solid var(--rule); border-radius:4px; background:var(--raised);
+  overflow:hidden;
+}
+.out-phrase{
+  padding:var(--s4); font-family:var(--f-display); font-size:clamp(1.5rem,4.5vw,2.4rem);
+  letter-spacing:-.015em; border-bottom:1px solid var(--rule-2); overflow-x:auto; white-space:nowrap;
+}
+.out-phrase .art{font-weight:600}
+.out-phrase .end{position:relative}
+.out-phrase .end::after{
+  content:""; position:absolute; left:0; right:0; bottom:-.06em; height:2px; background:currentColor; opacity:.45;
+}
+.trace{padding:var(--s3) var(--s4); font-family:var(--f-mono); font-size:.79rem; line-height:1.85; overflow-x:auto}
+.trace .step{display:block; white-space:nowrap}
+.trace .arrow{color:var(--ink-3)}
+.trace .why{color:var(--ink-3)}
+.trace .lbl{display:inline-block; min-width:15ch; color:var(--ink-3)}
+
+/* ---- tense composer ---- */
+.compose{display:flex; flex-wrap:wrap; gap:.5em; align-items:center; font-family:var(--f-display); font-size:clamp(1.3rem,3.6vw,2rem)}
+.tok{padding:.12em .35em; border-radius:3px; white-space:nowrap}
+.t-aux{color:var(--nom); background:var(--nom-bg)}
+.t-part{color:var(--akk); background:var(--akk-bg)}
+.t-inf{color:var(--dat); background:var(--dat-bg)}
+.t-plain{color:var(--ink)}
+.formula{
+  margin-top:var(--s3); font-family:var(--f-mono); font-size:.79rem; color:var(--ink-2);
+  padding-top:var(--s3); border-top:1px solid var(--rule-2); overflow-x:auto; white-space:nowrap;
+}
+.tense-list{list-style:none; margin:var(--s4) 0 0; padding:0; display:grid; gap:var(--s2)}
+.tense-row{
+  display:grid; gap:var(--s1) var(--s3); padding:var(--s3);
+  border:1px solid var(--rule); border-radius:4px; background:var(--surface);
+  grid-template-columns:1fr;
+}
+@media(min-width:760px){.tense-row{grid-template-columns:11rem minmax(0,1fr)}}
+.tense-row h4{font-size:1rem}
+.tense-row .when{font-family:var(--f-mono); font-size:.68rem; color:var(--ink-3); letter-spacing:.05em; margin-top:.2em}
+.tense-row .form{font-family:var(--f-mono); font-size:.8rem; color:var(--ink-2); overflow-x:auto}
+.tense-row .form b{color:var(--ink); font-weight:600}
+.tense-row .samp{font-family:var(--f-display); font-size:1.05rem; margin-top:.3em}
+
+/* ============ DRILL ============ */
+.drill{border:1px solid var(--rule); border-radius:4px; background:var(--surface); margin-top:var(--s4); overflow:hidden}
+.drill-top{
+  display:flex; flex-wrap:wrap; gap:var(--s3); align-items:center; justify-content:space-between;
+  padding:var(--s3) var(--s4); border-bottom:1px solid var(--rule); background:var(--raised);
+}
+.stats{display:flex; gap:var(--s4); flex-wrap:wrap}
+.stat .eyebrow{font-size:.6rem}
+.stat .v{font-family:var(--f-display); font-size:1.5rem; line-height:1.1; font-variant-numeric:tabular-nums}
+.drill-body{padding:var(--s5) var(--s4)}
+.q-kind{font-family:var(--f-mono); font-size:.7rem; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-3)}
+.q-prompt{
+  font-family:var(--f-display); font-size:clamp(1.35rem,4vw,2.1rem); letter-spacing:-.015em;
+  margin-top:var(--s2); line-height:1.3;
+}
+.q-prompt .blank{
+  display:inline-block; min-width:2.8em; border-bottom:2px solid var(--nom); color:var(--nom);
+  text-align:center;
+}
+.q-hint{margin-top:var(--s2); font-size:.9rem; color:var(--ink-3)}
+.opts{display:flex; flex-wrap:wrap; gap:.5em; margin-top:var(--s4)}
+.opt{
+  font-family:var(--f-display); font-size:1.05rem; padding:.55em 1.1em;
+  border:1px solid var(--rule); border-radius:3px; background:var(--raised); min-width:5.5em;
+}
+.opt:hover:not(:disabled){border-color:var(--ink); }
+.opt:disabled{cursor:default}
+.opt.is-ok{border-color:var(--ok); background:var(--ok-bg); color:var(--ok); font-weight:600}
+.opt.is-no{border-color:var(--no); background:var(--no-bg); color:var(--no)}
+.opt.long{min-width:0; text-align:left; font-size:.98rem}
+.type-row{display:flex; flex-wrap:wrap; gap:.5em; margin-top:var(--s4)}
+.type-in{
+  font-family:var(--f-display); font-size:1.15rem; padding:.5em .7em; flex:1 1 14rem; min-width:0;
+  background:var(--raised); border:1px solid var(--rule); border-radius:3px; color:var(--ink);
+}
+.type-in:disabled{opacity:.75}
+.btn{
+  font-family:var(--f-display); font-size:.8rem; letter-spacing:.1em; text-transform:uppercase;
+  padding:.75em 1.3em; border-radius:3px; background:var(--ink); color:var(--paper); font-weight:600;
+}
+.btn:hover{opacity:.86}
+.btn-ghost{background:none; color:var(--ink-2); border:1px solid var(--rule)}
+.btn-ghost:hover{color:var(--ink); border-color:var(--ink-3); opacity:1}
+.verdict{margin-top:var(--s4); border-top:1px solid var(--rule); padding-top:var(--s3); display:none}
+.verdict.show{display:block}
+.verdict-line{font-family:var(--f-display); font-size:1.05rem; display:flex; gap:.5em; align-items:baseline; flex-wrap:wrap}
+.verdict-line .mark{font-family:var(--f-mono); font-weight:600}
+.v-ok .mark{color:var(--ok)} .v-no .mark{color:var(--no)}
+.verdict .trace{padding:var(--s3) 0 0; background:none}
+.actions{display:flex; gap:.5em; margin-top:var(--s4); flex-wrap:wrap; align-items:center}
+.kbd{font-family:var(--f-mono); font-size:.7rem; color:var(--ink-3); border:1px solid var(--rule); border-radius:2px; padding:.15em .4em}
+
+.mastery{padding:var(--s4); border-top:1px solid var(--rule); display:grid; gap:var(--s2)}
+@media(min-width:760px){.mastery{grid-template-columns:repeat(2,1fr); gap:var(--s2) var(--s5)}}
+.m-row{display:grid; grid-template-columns:1fr auto; gap:.2em var(--s3); align-items:baseline}
+.m-row .name{font-family:var(--f-display); font-size:.85rem}
+.m-row .val{font-family:var(--f-mono); font-size:.75rem; color:var(--ink-3); font-variant-numeric:tabular-nums}
+.m-bar{grid-column:1/-1; height:4px; background:var(--rule-2); border-radius:2px; overflow:hidden}
+.m-bar i{display:block; height:100%; background:var(--nom); border-radius:2px; transition:width .4s ease}
+@media(prefers-reduced-motion:reduce){.m-bar i{transition:none}}
+
+/* ============ FOOT ============ */
+.foot{
+  border-top:1px solid var(--rule); margin-top:var(--s6); padding:var(--s4) 0 var(--s6);
+  color:var(--ink-3); font-size:.85rem; display:flex; flex-wrap:wrap; gap:var(--s3); justify-content:space-between;
+}
+</style>
+
+<div class="shell">
+<div class="layout">
+
+  <!-- ========= INDEX RAIL ========= -->
+  <nav class="rail" aria-label="Sections">
+    <ul class="rail-list" id="railList">
+      <li><a class="rail-link" href="#s1"><span class="num">§1</span> Kasus</a></li>
+      <li><a class="rail-link" href="#s2"><span class="num">§2</span> Artikel</a></li>
+      <li><a class="rail-link" href="#s3"><span class="num">§3</span> Adjektive</a></li>
+      <li><a class="rail-link" href="#s4"><span class="num">§4</span> Präpositionen</a></li>
+      <li><a class="rail-link" href="#s5"><span class="num">§5</span> Zeiten</a></li>
+      <li><a class="rail-link" href="#s6"><span class="num">§6</span> Wortstellung</a></li>
+      <li><a class="rail-link" href="#drill"><span class="num">§7</span> Übung</a></li>
+    </ul>
+    <div class="rail-meter">
+      <span class="eyebrow">Gesamt</span>
+      <div class="big"><span id="railPct">0</span>%</div>
+      <button class="theme-toggle" id="themeBtn" type="button" style="margin-top:1rem">Theme</button>
+    </div>
+  </nav>
+
+  <!-- ========= MAIN ========= -->
+  <main>
+
+  <header class="hero">
+    <span class="eyebrow">Sprachspezifikation · Deutsch · A2–B2</span>
+    <h1>German is a <em>typed</em> language.</h1>
+    <p class="hero-lede">
+      Every noun phrase carries a type signature — <strong>gender, case, number</strong> — and the
+      article and adjective endings are just that signature, written down. Every sentence opens a
+      bracket and must close it. There are far fewer rules than tables; this page gives you the
+      rules, shows you the trace for every form, and then drills you until they compile without thinking.
+    </p>
+
+    <div class="klammer-card">
+      <div class="klammer-head">
+        <span class="eyebrow">Die Satzklammer · the sentence bracket</span>
+        <div class="seg" role="group" aria-label="Clause type">
+          <button type="button" id="kMain" aria-pressed="true">Hauptsatz</button>
+          <button type="button" id="kSub" aria-pressed="false">Nebensatz</button>
+        </div>
+      </div>
+      <div class="klammer-wrap">
+        <div class="klammer" id="klammer"></div>
+      </div>
+      <p class="klammer-note" id="klammerNote"></p>
+    </div>
+  </header>
+
+  <!-- ========= §1 CASES ========= -->
+  <section class="sec" id="s1">
+    <div class="sec-head">
+      <span class="sec-num">§1</span>
+      <div>
+        <h2>Four cases = four argument slots</h2>
+        <p class="sec-sub">
+          A German verb is a function, and its arguments are labelled by case rather than by position.
+          That is why word order can move: the labels are glued to the nouns, not to the slots.
+        </p>
+      </div>
+    </div>
+
+    <pre class="code" aria-label="Verb signature example">
+<span class="cm">// the verb declares which slots it takes</span>
+<span class="kw">geben</span>( <b class="c-nom">NOM</b> giver, <b class="c-dat">DAT</b> receiver, <b class="c-akk">AKK</b> thing )
+
+  <b class="c-nom">Der Mann</b>  gibt  <b class="c-dat">der Frau</b>  <b class="c-akk">den Schlüssel</b>.
+  <b class="c-akk">Den Schlüssel</b>  gibt  <b class="c-nom">der Mann</b>  <b class="c-dat">der Frau</b>.   <span class="cm">// same meaning</span>
+
+<span class="cm">// in English the slots ARE the positions, so this breaks:</span>
+<span class="cm">//   "The key gives the man the woman."  ✗</span></pre>
+
+    <div class="roles">
+      <div class="role r-nom">
+        <h3>Nominativ</h3><span class="q">wer? was?</span>
+        <p>The subject — who performs. Also the complement of <span class="mono">sein / werden / bleiben</span>.</p>
+        <p class="ex"><span class="c-nom">Der Hund</span> schläft. · Das ist <span class="c-nom">ein guter Freund</span>.</p>
+      </div>
+      <div class="role r-akk">
+        <h3>Akkusativ</h3><span class="q">wen? was?</span>
+        <p>The direct object — what is affected. The default object case, and the case after <span class="mono">durch, für, gegen, ohne, um</span>.</p>
+        <p class="ex">Ich sehe <span class="c-akk">den Hund</span>. · für <span class="c-akk">den Freund</span></p>
+      </div>
+      <div class="role r-dat">
+        <h3>Dativ</h3><span class="q">wem?</span>
+        <p>The indirect object — the recipient or beneficiary. Also forced by <span class="mono">mit, nach, von, zu, bei, aus, seit</span>.</p>
+        <p class="ex">Ich helfe <span class="c-dat">dem Hund</span>. · mit <span class="c-dat">dem Auto</span></p>
+      </div>
+      <div class="role r-gen">
+        <h3>Genitiv</h3><span class="q">wessen?</span>
+        <p>Possession and belonging. Increasingly replaced by <span class="mono">von&nbsp;+&nbsp;Dativ</span> in speech — learn it to read, not to chat.</p>
+        <p class="ex">die Farbe <span class="c-gen">des Hauses</span> · wegen <span class="c-gen">des Wetters</span></p>
+      </div>
+    </div>
+
+    <div class="law">
+      <span class="eyebrow">Regel 1.1 — case is assigned, never chosen</span>
+      <p>Something upstream always assigns the case: the verb, a preposition, or the possessive relation.
+      Find the assigner first, then decline. Never start from the noun.</p>
+    </div>
+  </section>
+
+  <!-- ========= §2 ARTICLES ========= -->
+  <section class="sec" id="s2">
+    <div class="sec-head">
+      <span class="sec-num">§2</span>
+      <div>
+        <h2>The article table is a lookup, and it&nbsp;is almost all repeats</h2>
+        <p class="sec-sub">
+          Sixteen cells, but only six distinct forms — and most rows repeat. Learn the exceptions,
+          not the grid.
+        </p>
+      </div>
+    </div>
+
+    <div class="tbl-wrap">
+      <table class="grid-tbl">
+        <caption class="eyebrow" style="padding:.8em .85em; text-align:left">Bestimmter Artikel · der-Wörter (dies-, jed-, welch-, all-)</caption>
+        <thead><tr><th scope="col">Kasus</th><th scope="col">Maskulin</th><th scope="col">Neutrum</th><th scope="col">Feminin</th><th scope="col">Plural</th></tr></thead>
+        <tbody>
+          <tr><th scope="row" class="c-nom">Nominativ</th><td>der</td><td>das</td><td>die</td><td>die</td></tr>
+          <tr><th scope="row" class="c-akk">Akkusativ</th><td class="hot">den</td><td>das</td><td>die</td><td>die</td></tr>
+          <tr><th scope="row" class="c-dat">Dativ</th><td>dem</td><td>dem</td><td>der</td><td class="warm">den + Nomen<b>n</b></td></tr>
+          <tr><th scope="row" class="c-gen">Genitiv</th><td>des + Nomen<b>s</b></td><td>des + Nomen<b>s</b></td><td>der</td><td>der</td></tr>
+        </tbody>
+      </table>
+      <p class="tbl-cap"><b>The whole Akkusativ row is free.</b> It is identical to Nominativ except one cell:
+      masculine <span class="mono">der → den</span>. If you know Nominativ, you know Akkusativ.</p>
+    </div>
+
+    <div class="tbl-wrap">
+      <table class="grid-tbl">
+        <caption class="eyebrow" style="padding:.8em .85em; text-align:left">ein-Wörter · ein, kein, mein/dein/sein/ihr/unser/euer</caption>
+        <thead><tr><th scope="col">Kasus</th><th scope="col">Maskulin</th><th scope="col">Neutrum</th><th scope="col">Feminin</th><th scope="col">Plural (kein-)</th></tr></thead>
+        <tbody>
+          <tr><th scope="row" class="c-nom">Nominativ</th><td class="hot">ein <span class="badge">—</span></td><td class="hot">ein <span class="badge">—</span></td><td>eine</td><td>keine</td></tr>
+          <tr><th scope="row" class="c-akk">Akkusativ</th><td>einen</td><td class="hot">ein <span class="badge">—</span></td><td>eine</td><td>keine</td></tr>
+          <tr><th scope="row" class="c-dat">Dativ</th><td>einem</td><td>einem</td><td>einer</td><td>keinen</td></tr>
+          <tr><th scope="row" class="c-gen">Genitiv</th><td>eines</td><td>eines</td><td>einer</td><td>keiner</td></tr>
+        </tbody>
+      </table>
+      <p class="tbl-cap">Same endings as the der-table, minus the stem — except <b>three naked cells</b>
+      (highlighted) where <span class="mono">ein</span> carries no ending at all. Remember those three:
+      they are the entire reason adjective endings exist. See §3.</p>
+    </div>
+
+    <div class="law">
+      <span class="eyebrow">Regel 2.1 — the ending is the type tag</span>
+      <p><span class="mono">-r</span> ≈ masc.NOM / fem.DAT+GEN · <span class="mono">-n</span> ≈ masc.AKK / plural.DAT ·
+      <span class="mono">-m</span> ≈ DAT masc+neut · <span class="mono">-s</span> ≈ GEN masc+neut.
+      The same four signals ride on <span class="mono">der-</span>, <span class="mono">ein-</span>, and adjectives alike.</p>
+    </div>
+  </section>
+
+  <!-- ========= §3 ADJECTIVES ========= -->
+  <section class="sec" id="s3">
+    <div class="sec-head">
+      <span class="sec-num">§3</span>
+      <div>
+        <h2>Adjective endings: one signal, marked exactly once</h2>
+        <p class="sec-sub">
+          Learners memorise three 16-cell tables. You only need one conditional and two shapes.
+        </p>
+      </div>
+    </div>
+
+    <pre class="code" aria-label="Adjective ending algorithm">
+<span class="kw">function</span> adjektivEndung(artikel, genus, kasus) {
+  <span class="cm">// does the article already show the case+gender signal?</span>
+  <span class="kw">if</span> (!artikel)                 <span class="kw">return</span> <b class="c-gen">STARK</b>[genus][kasus];   <span class="cm">// nothing there → adjective takes over</span>
+  <span class="kw">if</span> (artikel.endung === <b>""</b>)   <span class="kw">return</span> <b class="c-akk">STARK</b>[genus][kasus];   <span class="cm">// "ein", "ein" → naked, adjective covers</span>
+  <span class="kw">return</span>                        <b class="c-nom">SCHWACH</b>[genus][kasus]; <span class="cm">// signal already given → -e or -en</span>
+}</pre>
+
+    <p class="body-copy"><strong>That is the whole system.</strong> The case-and-gender signal must appear
+    exactly once in the noun phrase. If <span class="mono">der/dem/den…</span> already carries it, the
+    adjective relaxes into the weak set. If the article is one of the three naked <span class="mono">ein</span>
+    cells, or there is no article at all, the adjective picks up the signal itself and looks exactly like
+    the der-word would have.</p>
+
+    <div class="tbl-wrap">
+      <table class="grid-tbl">
+        <caption class="eyebrow" style="padding:.8em .85em; text-align:left">Schwach — after der / die / das / dies- / jed-</caption>
+        <thead><tr><th scope="col"></th><th scope="col">Mask</th><th scope="col">Neut</th><th scope="col">Fem</th><th scope="col">Plural</th></tr></thead>
+        <tbody>
+          <tr><th scope="row" class="c-nom">NOM</th><td class="hot">-e</td><td class="hot">-e</td><td class="hot">-e</td><td>-en</td></tr>
+          <tr><th scope="row" class="c-akk">AKK</th><td>-en</td><td class="hot">-e</td><td class="hot">-e</td><td>-en</td></tr>
+          <tr><th scope="row" class="c-dat">DAT</th><td>-en</td><td>-en</td><td>-en</td><td>-en</td></tr>
+          <tr><th scope="row" class="c-gen">GEN</th><td>-en</td><td>-en</td><td>-en</td><td>-en</td></tr>
+        </tbody>
+      </table>
+      <p class="tbl-cap"><b>Five cells are <span class="mono">-e</span>; everything else is <span class="mono">-en</span>.</b>
+      The shape is an L in the top-left corner. That is the single most valuable thing on this page —
+      it covers most of what you say out loud.</p>
+    </div>
+
+    <div class="tbl-wrap">
+      <table class="grid-tbl">
+        <caption class="eyebrow" style="padding:.8em .85em; text-align:left">Gemischt — after ein / kein / mein …</caption>
+        <thead><tr><th scope="col"></th><th scope="col">Mask</th><th scope="col">Neut</th><th scope="col">Fem</th><th scope="col">Plural</th></tr></thead>
+        <tbody>
+          <tr><th scope="row" class="c-nom">NOM</th><td class="hot">-er</td><td class="hot">-es</td><td>-e</td><td>-en</td></tr>
+          <tr><th scope="row" class="c-akk">AKK</th><td>-en</td><td class="hot">-es</td><td>-e</td><td>-en</td></tr>
+          <tr><th scope="row" class="c-dat">DAT</th><td>-en</td><td>-en</td><td>-en</td><td>-en</td></tr>
+          <tr><th scope="row" class="c-gen">GEN</th><td>-en</td><td>-en</td><td>-en</td><td>-en</td></tr>
+        </tbody>
+      </table>
+      <p class="tbl-cap">Identical to the weak table except the <b>three highlighted cells</b> — exactly the three
+      places where <span class="mono">ein</span> was naked. The adjective borrows the missing
+      <span class="mono">-er / -es</span> from the der-table.</p>
+    </div>
+
+    <div class="tbl-wrap">
+      <table class="grid-tbl">
+        <caption class="eyebrow" style="padding:.8em .85em; text-align:left">Stark — no article (guter Wein, kaltes Wasser, mit heißem Kaffee)</caption>
+        <thead><tr><th scope="col"></th><th scope="col">Mask</th><th scope="col">Neut</th><th scope="col">Fem</th><th scope="col">Plural</th></tr></thead>
+        <tbody>
+          <tr><th scope="row" class="c-nom">NOM</th><td>-er</td><td>-es</td><td>-e</td><td>-e</td></tr>
+          <tr><th scope="row" class="c-akk">AKK</th><td>-en</td><td>-es</td><td>-e</td><td>-e</td></tr>
+          <tr><th scope="row" class="c-dat">DAT</th><td>-em</td><td>-em</td><td>-er</td><td>-en</td></tr>
+          <tr><th scope="row" class="c-gen">GEN</th><td class="hot">-en</td><td class="hot">-en</td><td>-er</td><td>-er</td></tr>
+        </tbody>
+      </table>
+      <p class="tbl-cap">This is the der-table with the stems removed:
+      d<b>er</b>→-er, d<b>as</b>→-es, de<b>m</b>→-em. Only Genitiv masc/neut breaks the pattern
+      (<span class="mono">-en</span>, not <span class="mono">-es</span>) because the noun already
+      carries the <span class="mono">-s</span>.</p>
+    </div>
+
+    <!-- ===== EXPLORER ===== -->
+    <div class="tool" id="explorer">
+      <div class="tool-head">
+        <span class="eyebrow">Deklinations-Explorer · build any noun phrase and read its trace</span>
+        <button class="btn btn-ghost" type="button" id="expRandom">Zufall</button>
+      </div>
+      <div class="tool-body">
+        <div class="ctrls">
+          <div class="ctrl">
+            <span class="eyebrow">Kasus</span>
+            <div class="chips" id="expCase" role="group" aria-label="Kasus"></div>
+          </div>
+          <div class="ctrl">
+            <span class="eyebrow">Artikelwort</span>
+            <div class="chips" id="expArt" role="group" aria-label="Artikelwort"></div>
+          </div>
+          <div class="ctrl">
+            <label class="eyebrow" for="expNoun">Nomen</label>
+            <select class="chip" id="expNoun"></select>
+          </div>
+          <div class="ctrl">
+            <label class="eyebrow" for="expAdj">Adjektiv</label>
+            <select class="chip" id="expAdj"></select>
+          </div>
+        </div>
+
+        <div class="out">
+          <div class="out-phrase" id="expPhrase"></div>
+          <div class="trace" id="expTrace"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========= §4 PREPOSITIONS ========= -->
+  <section class="sec" id="s4">
+    <div class="sec-head">
+      <span class="sec-num">§4</span>
+      <div>
+        <h2>Prepositions are case constants</h2>
+        <p class="sec-sub">
+          Most prepositions hard-code their case — no thinking required once memorised. Nine of them
+          take a boolean argument.
+        </p>
+      </div>
+    </div>
+
+    <pre class="code" aria-label="Preposition case table">
+<b class="c-akk">const AKKUSATIV</b> = [ durch, für, gegen, ohne, um, bis, entlang ];
+<span class="cm">// mnemonic: DOGFUB — durch ohne gegen für um bis</span>
+
+<b class="c-dat">const DATIV</b>     = [ aus, außer, bei, mit, nach, seit, von, zu, gegenüber ];
+<span class="cm">// these nine are the highest-frequency ones in the language — learn them first</span>
+
+<b class="c-gen">const GENITIV</b>   = [ wegen, während, trotz, statt, innerhalb, außerhalb ];
+<span class="cm">// in speech these often take Dativ instead: "wegen dem Wetter"</span>
+
+<span class="kw">function</span> <b class="c-dat">WECHSEL</b>(prep, bewegung) {   <span class="cm">// an auf hinter in neben über unter vor zwischen</span>
+  <span class="kw">return</span> bewegung ? <b class="c-akk">AKKUSATIV</b> : <b class="c-dat">DATIV</b>;
+}</pre>
+
+    <div class="tool">
+      <div class="tool-head">
+        <span class="eyebrow">Wechselpräposition · flip the boolean</span>
+        <div class="seg" role="group" aria-label="Bewegung">
+          <button type="button" id="wWohin" aria-pressed="true">wohin? · Bewegung</button>
+          <button type="button" id="wWo" aria-pressed="false">wo? · Position</button>
+        </div>
+      </div>
+      <div class="tool-body">
+        <div class="out" style="margin-top:0">
+          <div class="out-phrase" id="wechselOut"></div>
+          <div class="trace" id="wechselTrace"></div>
+        </div>
+        <p class="body-copy" style="margin-top:1.2rem">
+          The test is not "is there movement in the scene" but <strong>does the phrase describe crossing
+          a boundary into the place</strong>. <span class="mono">Ich laufe in dem Park</span> — I am running
+          around inside the park (Dativ). <span class="mono">Ich laufe in den Park</span> — I am running
+          into it from outside (Akkusativ). Both have running.
+        </p>
+      </div>
+    </div>
+
+    <div class="law">
+      <span class="eyebrow">Regel 4.1 — contractions are not new words</span>
+      <p><span class="mono">im = in dem</span> · <span class="mono">ins = in das</span> ·
+      <span class="mono">am = an dem</span> · <span class="mono">ans = an das</span> ·
+      <span class="mono">zum = zu dem</span> · <span class="mono">zur = zu der</span> ·
+      <span class="mono">beim = bei dem</span> · <span class="mono">vom = von dem</span>.
+      Expand them mentally and the case is visible again.</p>
+    </div>
+  </section>
+
+  <!-- ========= §5 TENSES ========= -->
+  <section class="sec" id="s5">
+    <div class="sec-head">
+      <span class="sec-num">§5</span>
+      <div>
+        <h2>Six tenses, two building blocks</h2>
+        <p class="sec-sub">
+          German barely conjugates for tense. It composes: an auxiliary carries the person and the
+          time, and a fixed non-finite form carries the meaning. Learn two forms per verb and all six
+          tenses fall out.
+        </p>
+      </div>
+    </div>
+
+    <pre class="code" aria-label="Tense composition formulas">
+<span class="cm">// you only ever memorise these two per verb:</span>
+<span class="kw">Partizip II</span>   essen → <b class="c-akk">gegessen</b>      <span class="kw">Präteritum-Stamm</span>  essen → <b>aß</b>
+
+<span class="cm">// everything else is composition</span>
+Präsens          = <b>stamm + endung</b>
+Präteritum       = <b>prät-stamm + endung</b>
+Perfekt          = <b class="c-nom">haben/sein</b>[Präsens]    + <b class="c-akk">Partizip II</b>
+Plusquamperfekt  = <b class="c-nom">haben/sein</b>[Präteritum] + <b class="c-akk">Partizip II</b>
+Futur I          = <b class="c-nom">werden</b>[Präsens]        + <b class="c-dat">Infinitiv</b>
+Futur II         = <b class="c-nom">werden</b>[Präsens]        + <b class="c-akk">Partizip II</b> + <b class="c-dat">haben/sein</b></pre>
+
+    <p class="body-copy"><strong>haben or sein?</strong> Use <span class="mono">sein</span> when the verb
+    has no direct object and describes <em>movement from A to B</em> (gehen, fahren, kommen, fliegen,
+    laufen) or a <em>change of state</em> (aufstehen, einschlafen, sterben, wachsen) — plus the three
+    lexical exceptions <span class="mono">sein, bleiben, werden</span>. Everything else takes
+    <span class="mono">haben</span>. Roughly 95% of verbs take <span class="mono">haben</span>, so
+    <span class="mono">sein</span> is the list worth learning.</p>
+
+    <p class="body-copy"><strong>Building Partizip II.</strong> Weak verbs:
+    <span class="mono">ge- + Stamm + -t</span> (machen → gemacht). Strong verbs:
+    <span class="mono">ge- + veränderter Stamm + -en</span> (sprechen → gesprochen).
+    Drop the <span class="mono">ge-</span> when the verb starts with an unstressed prefix
+    (<span class="mono">be-, emp-, ent-, er-, ge-, miss-, ver-, zer-</span>) or ends in
+    <span class="mono">-ieren</span>: verstehen → <span class="mono">verstanden</span>,
+    studieren → <span class="mono">studiert</span>. With a separable prefix the
+    <span class="mono">ge-</span> slots into the middle: aufstehen → <span class="mono">aufgestanden</span>.</p>
+
+    <ul class="tense-list">
+      <li class="tense-row">
+        <div><h4>Präsens</h4><div class="when">jetzt · und auch: die Zukunft</div></div>
+        <div>
+          <div class="form"><b>Stamm + e/st/t/en/t/en</b></div>
+          <div class="samp">Ich <b>esse</b> einen Apfel. · Morgen <b>fahre</b> ich nach Berlin.</div>
+        </div>
+      </li>
+      <li class="tense-row">
+        <div><h4>Perfekt</h4><div class="when">gesprochene Vergangenheit</div></div>
+        <div>
+          <div class="form"><b class="c-nom">haben/sein</b> + … + <b class="c-akk">Partizip II</b></div>
+          <div class="samp">Ich <b class="c-nom">habe</b> einen Apfel <b class="c-akk">gegessen</b>.</div>
+        </div>
+      </li>
+      <li class="tense-row">
+        <div><h4>Präteritum</h4><div class="when">geschriebene Vergangenheit</div></div>
+        <div>
+          <div class="form"><b>Prät-Stamm + —/st/—/en/t/en</b> · gesprochen fast nur bei <span class="mono">sein, haben, Modalverben</span></div>
+          <div class="samp">Er <b>aß</b> einen Apfel. · Ich <b>war</b> müde. · Wir <b>hatten</b> Zeit.</div>
+        </div>
+      </li>
+      <li class="tense-row">
+        <div><h4>Plusquamperfekt</h4><div class="when">Vergangenheit vor der Vergangenheit</div></div>
+        <div>
+          <div class="form"><b class="c-nom">hatte/war</b> + … + <b class="c-akk">Partizip II</b></div>
+          <div class="samp">Ich <b class="c-nom">hatte</b> schon <b class="c-akk">gegessen</b>, als du kamst.</div>
+        </div>
+      </li>
+      <li class="tense-row">
+        <div><h4>Futur I</h4><div class="when">Absicht, Vermutung, Versprechen</div></div>
+        <div>
+          <div class="form"><b class="c-nom">werden</b> + … + <b class="c-dat">Infinitiv</b></div>
+          <div class="samp">Ich <b class="c-nom">werde</b> einen Apfel <b class="c-dat">essen</b>.</div>
+        </div>
+      </li>
+      <li class="tense-row">
+        <div><h4>Futur II</h4><div class="when">fertig bis zu einem Zeitpunkt · selten</div></div>
+        <div>
+          <div class="form"><b class="c-nom">werden</b> + … + <b class="c-akk">Partizip II</b> + <b class="c-dat">haben/sein</b></div>
+          <div class="samp">Bis acht <b class="c-nom">werde</b> ich <b class="c-akk">gegessen</b> <b class="c-dat">haben</b>.</div>
+        </div>
+      </li>
+    </ul>
+
+    <!-- ===== TENSE COMPOSER ===== -->
+    <div class="tool" id="composer">
+      <div class="tool-head">
+        <span class="eyebrow">Zeiten-Komponist · watch the pieces assemble</span>
+        <button class="btn btn-ghost" type="button" id="cmpRandom">Zufall</button>
+      </div>
+      <div class="tool-body">
+        <div class="ctrls" style="grid-template-columns:1fr">
+          <div class="ctrl">
+            <span class="eyebrow">Zeit</span>
+            <div class="chips" id="cmpTense" role="group" aria-label="Zeit"></div>
+          </div>
+        </div>
+        <div class="ctrls" style="margin-top:1rem; grid-template-columns:1fr">
+          <div class="ctrl">
+            <span class="eyebrow">Person</span>
+            <div class="chips" id="cmpPerson" role="group" aria-label="Person"></div>
+          </div>
+        </div>
+        <div class="ctrls" style="margin-top:1rem">
+          <div class="ctrl">
+            <label class="eyebrow" for="cmpVerb">Verb</label>
+            <select class="chip" id="cmpVerb"></select>
+          </div>
+        </div>
+
+        <div class="out">
+          <div class="out-phrase"><div class="compose" id="cmpOut"></div></div>
+          <div class="trace"><div class="formula" id="cmpFormula" style="border-top:none; padding-top:0; margin-top:0"></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========= §6 WORD ORDER ========= -->
+  <section class="sec" id="s6">
+    <div class="sec-head">
+      <span class="sec-num">§6</span>
+      <div>
+        <h2>Word order: open a bracket, close a bracket</h2>
+        <p class="sec-sub">
+          German syntax has one governing shape. Once you see it, sentence-final verbs stop feeling
+          random.
+        </p>
+      </div>
+    </div>
+
+    <pre class="code" aria-label="Word order rules">
+<span class="cm">// MAIN CLAUSE — the finite verb is locked to position 2</span>
+[ any one element ] [ <b class="c-nom">finites Verb</b> ] [ … Mittelfeld … ] [ <b class="c-akk">Rest des Verbs</b> ]
+   ↑ subject, time, place, object — your choice, but exactly ONE
+
+<span class="cm">// SUBORDINATE CLAUSE — the conjunction takes slot 2, so the verb is pushed to the end</span>
+[ <span class="kw">weil / dass / ob / wenn / obwohl / damit</span> ] [ … ] [ <b class="c-akk">Rest</b> ] [ <b class="c-nom">finites Verb</b> ]
+
+<span class="cm">// Mittelfeld ordering, when nothing is emphasised:</span>
+TE-KA-MO-LO  =  <b>Te</b>mporal → <b>Ka</b>usal → <b>Mo</b>dal → <b>Lo</b>kal
+               (wann?)     (warum?)   (wie?)     (wo/wohin?)
+Ich fahre <b>heute</b> <b>wegen der Arbeit</b> <b>mit dem Zug</b> <b>nach Köln</b>.
+
+<span class="cm">// two objects: DATIV before AKKUSATIV — unless the accusative is a pronoun</span>
+Ich gebe <b class="c-dat">dem Kind</b> <b class="c-akk">das Buch</b>.
+Ich gebe <b class="c-akk">es</b> <b class="c-dat">dem Kind</b>.      <span class="cm">// pronoun jumps the queue</span></pre>
+
+    <p class="body-copy"><strong>Why the bracket matters.</strong> The two verb parts are the walls of a
+    container, and everything else lives between them. That is why a German speaker can keep adding
+    detail for ten seconds and still land the meaning at the very end — and why you must hold the
+    opening auxiliary in memory until the closing participle arrives. Reading practice is bracket-matching
+    practice.</p>
+
+    <div class="law">
+      <span class="eyebrow">Regel 6.1 — position 1 is a slot, not a subject</span>
+      <p>Put anything you want first, but the finite verb still comes second and the subject slides
+      behind it: <span class="mono">Heute <b class="c-nom">fahre</b> ich…</span>, not
+      <span class="mono">Heute ich fahre…</span>. The verb never moves; everything else does.</p>
+    </div>
+  </section>
+
+  <!-- ========= §7 DRILL ========= -->
+  <section class="sec" id="drill">
+    <div class="sec-head">
+      <span class="sec-num">§7</span>
+      <div>
+        <h2>Übung — until it compiles without thinking</h2>
+        <p class="sec-sub">
+          Questions are generated fresh and weighted toward whatever you get wrong. Every answer,
+          right or wrong, shows the rule trace — the point is not the score, it is seeing the same
+          derivation until you run it yourself.
+        </p>
+      </div>
+    </div>
+
+    <div class="drill">
+      <div class="drill-top">
+        <div class="stats">
+          <div class="stat"><span class="eyebrow">Serie</span><div class="v" id="dStreak">0</div></div>
+          <div class="stat"><span class="eyebrow">Beste Serie</span><div class="v" id="dBest">0</div></div>
+          <div class="stat"><span class="eyebrow">Richtig</span><div class="v" id="dRate">—</div></div>
+          <div class="stat"><span class="eyebrow">Fragen</span><div class="v" id="dCount">0</div></div>
+        </div>
+        <div class="seg" role="group" aria-label="Übungsmodus" id="dMode">
+          <button type="button" data-mode="all" aria-pressed="true">Alles</button>
+          <button type="button" data-mode="decl" aria-pressed="false">Deklination</button>
+          <button type="button" data-mode="verb" aria-pressed="false">Verben</button>
+        </div>
+      </div>
+
+      <div class="drill-body">
+        <span class="q-kind" id="dKind"></span>
+        <div class="q-prompt" id="dPrompt"></div>
+        <p class="q-hint" id="dHint"></p>
+
+        <div class="opts" id="dOpts"></div>
+        <form class="type-row" id="dTypeRow" autocomplete="off">
+          <input class="type-in" id="dInput" type="text" placeholder="Antwort tippen…" spellcheck="false" aria-label="Antwort">
+          <button class="btn" type="submit" id="dSubmit">Prüfen</button>
+        </form>
+
+        <div class="verdict" id="dVerdict">
+          <div class="verdict-line" id="dVerdictLine"></div>
+          <div class="trace" id="dTrace"></div>
+        </div>
+
+        <div class="actions">
+          <button class="btn" type="button" id="dNext">Weiter</button>
+          <button class="btn btn-ghost" type="button" id="dSkip">Überspringen</button>
+          <span class="kbd">Enter</span>
+          <button class="btn btn-ghost" type="button" id="dReset" style="margin-left:auto">Fortschritt löschen</button>
+        </div>
+      </div>
+
+      <div class="mastery" id="dMastery"></div>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <span>Deutsch — Sprachspezifikation · Deklination &amp; Tempora</span>
+    <span class="mono">Fortschritt bleibt lokal in diesem Browser.</span>
+  </footer>
+
+  </main>
+</div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* =========================================================
+   DATA
+   ========================================================= */
+const CASES = [
+  {k:"nom", label:"Nominativ", short:"NOM", q:"wer? was?"},
+  {k:"akk", label:"Akkusativ", short:"AKK", q:"wen? was?"},
+  {k:"dat", label:"Dativ",     short:"DAT", q:"wem?"},
+  {k:"gen", label:"Genitiv",   short:"GEN", q:"wessen?"}
+];
+const GENDER_LABEL = {m:"Maskulin", n:"Neutrum", f:"Feminin", p:"Plural"};
+
+const DEF = {
+  m:{nom:"der", akk:"den", dat:"dem", gen:"des"},
+  n:{nom:"das", akk:"das", dat:"dem", gen:"des"},
+  f:{nom:"die", akk:"die", dat:"der", gen:"der"},
+  p:{nom:"die", akk:"die", dat:"den", gen:"der"}
+};
+// ein-word endings ("" = naked cell)
+const EIN_END = {
+  m:{nom:"",  akk:"en", dat:"em", gen:"es"},
+  n:{nom:"",  akk:"",   dat:"em", gen:"es"},
+  f:{nom:"e", akk:"e",  dat:"er", gen:"er"},
+  p:{nom:"e", akk:"e",  dat:"en", gen:"er"}
+};
+const WEAK = {
+  m:{nom:"e",  akk:"en", dat:"en", gen:"en"},
+  n:{nom:"e",  akk:"e",  dat:"en", gen:"en"},
+  f:{nom:"e",  akk:"e",  dat:"en", gen:"en"},
+  p:{nom:"en", akk:"en", dat:"en", gen:"en"}
+};
+const STRONG = {
+  m:{nom:"er", akk:"en", dat:"em", gen:"en"},
+  n:{nom:"es", akk:"es", dat:"em", gen:"en"},
+  f:{nom:"e",  akk:"e",  dat:"er", gen:"er"},
+  p:{nom:"e",  akk:"e",  dat:"en", gen:"er"}
+};
+
+const NOUNS = [
+  {w:"Mann",      g:"m", pl:"Männer",     gs:"Mannes",      en:"man"},
+  {w:"Hund",      g:"m", pl:"Hunde",      gs:"Hundes",      en:"dog"},
+  {w:"Tisch",     g:"m", pl:"Tische",     gs:"Tisches",     en:"table"},
+  {w:"Schlüssel", g:"m", pl:"Schlüssel",  gs:"Schlüssels",  en:"key"},
+  {w:"Freund",    g:"m", pl:"Freunde",    gs:"Freundes",    en:"friend"},
+  {w:"Apfel",     g:"m", pl:"Äpfel",      gs:"Apfels",      en:"apple"},
+  {w:"Kind",      g:"n", pl:"Kinder",     gs:"Kindes",      en:"child"},
+  {w:"Buch",      g:"n", pl:"Bücher",     gs:"Buches",      en:"book"},
+  {w:"Haus",      g:"n", pl:"Häuser",     gs:"Hauses",      en:"house"},
+  {w:"Auto",      g:"n", pl:"Autos",      gs:"Autos",       en:"car"},
+  {w:"Fenster",   g:"n", pl:"Fenster",    gs:"Fensters",    en:"window"},
+  {w:"Frau",      g:"f", pl:"Frauen",     gs:"Frau",        en:"woman"},
+  {w:"Katze",     g:"f", pl:"Katzen",     gs:"Katze",       en:"cat"},
+  {w:"Stadt",     g:"f", pl:"Städte",     gs:"Stadt",       en:"city"},
+  {w:"Tür",       g:"f", pl:"Türen",      gs:"Tür",         en:"door"},
+  {w:"Lampe",     g:"f", pl:"Lampen",     gs:"Lampe",       en:"lamp"},
+  {w:"Schwester", g:"f", pl:"Schwestern", gs:"Schwester",   en:"sister"}
+];
+const ADJ = ["alt","neu","klein","groß","rot","jung","schön","kalt","warm","schnell"];
+
+const PRON = ["ich","du","er/sie/es","wir","ihr","sie/Sie"];
+const PRON_SHORT = ["ich","du","er","wir","ihr","sie"];
+
+const VERBS = [
+  {inf:"machen",    en:"to do/make",  aux:"haben", pii:"gemacht",
+   pres:["mache","machst","macht","machen","macht","machen"],
+   prat:["machte","machtest","machte","machten","machtet","machten"]},
+  {inf:"gehen",     en:"to go",       aux:"sein",  pii:"gegangen",
+   pres:["gehe","gehst","geht","gehen","geht","gehen"],
+   prat:["ging","gingst","ging","gingen","gingt","gingen"]},
+  {inf:"fahren",    en:"to drive",    aux:"sein",  pii:"gefahren",
+   pres:["fahre","fährst","fährt","fahren","fahrt","fahren"],
+   prat:["fuhr","fuhrst","fuhr","fuhren","fuhrt","fuhren"]},
+  {inf:"sehen",     en:"to see",      aux:"haben", pii:"gesehen",
+   pres:["sehe","siehst","sieht","sehen","seht","sehen"],
+   prat:["sah","sahst","sah","sahen","saht","sahen"]},
+  {inf:"essen",     en:"to eat",      aux:"haben", pii:"gegessen",
+   pres:["esse","isst","isst","essen","esst","essen"],
+   prat:["aß","aßest","aß","aßen","aßt","aßen"]},
+  {inf:"sprechen",  en:"to speak",    aux:"haben", pii:"gesprochen",
+   pres:["spreche","sprichst","spricht","sprechen","sprecht","sprechen"],
+   prat:["sprach","sprachst","sprach","sprachen","spracht","sprachen"]},
+  {inf:"lesen",     en:"to read",     aux:"haben", pii:"gelesen",
+   pres:["lese","liest","liest","lesen","lest","lesen"],
+   prat:["las","lasest","las","lasen","last","lasen"]},
+  {inf:"haben",     en:"to have",     aux:"haben", pii:"gehabt",
+   pres:["habe","hast","hat","haben","habt","haben"],
+   prat:["hatte","hattest","hatte","hatten","hattet","hatten"]},
+  {inf:"sein",      en:"to be",       aux:"sein",  pii:"gewesen",
+   pres:["bin","bist","ist","sind","seid","sind"],
+   prat:["war","warst","war","waren","wart","waren"]},
+  {inf:"werden",    en:"to become",   aux:"sein",  pii:"geworden",
+   pres:["werde","wirst","wird","werden","werdet","werden"],
+   prat:["wurde","wurdest","wurde","wurden","wurdet","wurden"]},
+  {inf:"arbeiten",  en:"to work",     aux:"haben", pii:"gearbeitet",
+   pres:["arbeite","arbeitest","arbeitet","arbeiten","arbeitet","arbeiten"],
+   prat:["arbeitete","arbeitetest","arbeitete","arbeiteten","arbeitetet","arbeiteten"]},
+  {inf:"bleiben",   en:"to stay",     aux:"sein",  pii:"geblieben",
+   pres:["bleibe","bleibst","bleibt","bleiben","bleibt","bleiben"],
+   prat:["blieb","bliebst","blieb","blieben","bliebt","blieben"]},
+  {inf:"kommen",    en:"to come",     aux:"sein",  pii:"gekommen",
+   pres:["komme","kommst","kommt","kommen","kommt","kommen"],
+   prat:["kam","kamst","kam","kamen","kamt","kamen"]},
+  {inf:"verstehen", en:"to understand", aux:"haben", pii:"verstanden", note:"untrennbares Präfix ver- → kein ge-",
+   pres:["verstehe","verstehst","versteht","verstehen","versteht","verstehen"],
+   prat:["verstand","verstandst","verstand","verstanden","verstandet","verstanden"]},
+  {inf:"studieren", en:"to study",    aux:"haben", pii:"studiert", note:"-ieren → kein ge-",
+   pres:["studiere","studierst","studiert","studieren","studiert","studieren"],
+   prat:["studierte","studiertest","studierte","studierten","studiertet","studierten"]},
+  {inf:"aufstehen", en:"to get up",   aux:"sein",  pii:"aufgestanden", sep:"auf", note:"trennbar → ge- in die Mitte",
+   pres:["stehe","stehst","steht","stehen","steht","stehen"],
+   prat:["stand","standst","stand","standen","standet","standen"]}
+];
+const V = {};
+VERBS.forEach(v=>{V[v.inf]=v;});
+
+const TENSES = [
+  {k:"praesens",  label:"Präsens"},
+  {k:"perfekt",   label:"Perfekt"},
+  {k:"praeteritum", label:"Präteritum"},
+  {k:"plusquam",  label:"Plusquamperfekt"},
+  {k:"futur1",    label:"Futur I"},
+  {k:"futur2",    label:"Futur II"}
+];
+const TENSE_LABEL = {}; TENSES.forEach(t=>{TENSE_LABEL[t.k]=t.label;});
+
+const WECHSEL = ["an","auf","hinter","in","neben","über","unter","vor","zwischen"];
+
+/* =========================================================
+   CORE ENGINE — declension with rule trace
+   ========================================================= */
+function nounForm(noun, kasus, plural){
+  if(plural){
+    let p = noun.pl;
+    if(kasus === "dat" && !/[ns]$/.test(p)) return {w:p+"n", note:"Dativ Plural → Nomen + -n"};
+    return {w:p, note:""};
+  }
+  if(kasus === "gen" && (noun.g === "m" || noun.g === "n"))
+    return {w:noun.gs, note:"Genitiv Mask/Neut → Nomen + -(e)s"};
+  return {w:noun.w, note:""};
+}
+
+// artType: "def" | "ein" | "kein" | "none"
+function decline(noun, kasus, artType, adj, plural){
+  const g = plural ? "p" : noun.g;
+  const trace = [];
+  let article = "", artClass = "";
+
+  if(artType === "def"){
+    article = DEF[g][kasus];
+    artClass = "weak";
+    trace.push([GENDER_LABEL[g]+" + "+kasus.toUpperCase(), "der-Tabelle → "+article,
+      kasus==="akk" && g==="m" ? "einzige Zelle, die sich von NOM unterscheidet" : ""]);
+  } else if(artType === "ein" || artType === "kein"){
+    const stem = artType === "ein" ? "ein" : "kein";
+    if(artType === "ein" && plural){
+      article = ""; artClass = "strong";
+      trace.push(["ein + Plural", "existiert nicht → kein Artikel", "Adjektiv übernimmt das Signal"]);
+    } else {
+      const e = EIN_END[g][kasus];
+      article = stem + e;
+      artClass = e === "" ? "strong" : "weak";
+      trace.push([GENDER_LABEL[g]+" + "+kasus.toUpperCase(), stem+" + \""+(e||"∅")+"\" → "+article,
+        e === "" ? "nackte Zelle — kein Signal" : ""]);
+    }
+  } else {
+    article = ""; artClass = "strong";
+    trace.push(["kein Artikelwort", "Signal fehlt komplett", "Adjektiv muss es tragen"]);
+  }
+
+  let ending = "", table = "";
+  if(adj){
+    if(artClass === "weak"){
+      ending = WEAK[g][kasus]; table = "SCHWACH";
+      trace.push(["Artikel trägt Signal", "→ schwache Endung", ""]);
+    } else if(artType === "def"){
+      ending = WEAK[g][kasus]; table = "SCHWACH";
+    } else if(artType === "none" || (artType==="ein"&&plural)){
+      ending = STRONG[g][kasus]; table = "STARK";
+      trace.push(["kein Signal vorhanden", "→ starke Endung", "= die der-Endung"]);
+    } else {
+      ending = STRONG[g][kasus]; table = "GEMISCHT";
+      trace.push(["Artikel ist nackt", "→ gemischt = starke Endung hier", "borgt -er/-es von der-Tabelle"]);
+    }
+    trace.push([table+"["+GENDER_LABEL[g].slice(0,4)+"]["+kasus.toUpperCase()+"]", "→ -"+ending, ""]);
+  }
+
+  const nf = nounForm(noun, kasus, plural);
+  if(nf.note) trace.push(["Nomen", "→ "+nf.w, nf.note]);
+
+  const parts = [];
+  if(article) parts.push(article);
+  if(adj) parts.push(adj + ending);
+  parts.push(nf.w);
+
+  return {
+    article, adjEnding: ending, adjTable: table, noun: nf.w,
+    gender: g, kasus, text: parts.join(" "), trace
+  };
+}
+
+/* =========================================================
+   TENSE ENGINE
+   ========================================================= */
+function conjugate(verb, i, tense){
+  const v = typeof verb === "string" ? V[verb] : verb;
+  const sep = v.sep || "";
+  const out = [];
+  let formula = "";
+
+  if(tense === "praesens"){
+    out.push({t:v.pres[i], c:"plain"});
+    if(sep) out.push({t:sep, c:"part"});
+    formula = "Stamm + Personalendung" + (sep ? "   ·   trennbares Präfix wandert ans Ende" : "");
+  } else if(tense === "praeteritum"){
+    out.push({t:v.prat[i], c:"plain"});
+    if(sep) out.push({t:sep, c:"part"});
+    formula = "Präteritum-Stamm + Endung" + (sep ? "   ·   Präfix ans Ende" : "");
+  } else if(tense === "perfekt"){
+    out.push({t:V[v.aux].pres[i], c:"aux"});
+    out.push({t:v.pii, c:"part"});
+    formula = v.aux + "[Präsens] + Partizip II   ·   " + (v.aux==="sein" ? "sein: Bewegung / Zustandswechsel" : "haben: Standardfall");
+  } else if(tense === "plusquam"){
+    out.push({t:V[v.aux].prat[i], c:"aux"});
+    out.push({t:v.pii, c:"part"});
+    formula = v.aux + "[Präteritum] + Partizip II";
+  } else if(tense === "futur1"){
+    out.push({t:V["werden"].pres[i], c:"aux"});
+    out.push({t:v.inf, c:"inf"});
+    formula = "werden[Präsens] + Infinitiv";
+  } else if(tense === "futur2"){
+    out.push({t:V["werden"].pres[i], c:"aux"});
+    out.push({t:v.pii, c:"part"});
+    out.push({t:v.aux, c:"inf"});
+    formula = "werden[Präsens] + Partizip II + " + v.aux;
+  }
+  return {parts: out, formula, text: out.map(p=>p.t).join(" ")};
+}
+
+/* =========================================================
+   HELPERS
+   ========================================================= */
+const $ = s => document.querySelector(s);
+const rnd = a => a[Math.floor(Math.random()*a.length)];
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function shuffle(a){ a = a.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]];} return a; }
+function chipHTML(id, val, label, on, extra){
+  return '<button type="button" class="chip '+(extra||"")+'" data-v="'+val+'" aria-pressed="'+(on?"true":"false")+'">'+label+'</button>';
+}
+function traceHTML(rows){
+  return rows.map(r =>
+    '<span class="step"><span class="lbl">'+esc(r[0])+'</span><span class="arrow"> </span>'+esc(r[1])+
+    (r[2] ? '  <span class="why">// '+esc(r[2])+'</span>' : '')+'</span>'
+  ).join("");
+}
+function store(k, v){
+  try{ if(v===undefined) return JSON.parse(localStorage.getItem("dspec:"+k)); localStorage.setItem("dspec:"+k, JSON.stringify(v)); }
+  catch(e){ return null; }
+}
+
+/* =========================================================
+   THEME
+   ========================================================= */
+(function(){
+  const btn = $("#themeBtn"); if(!btn) return;
+  const saved = store("theme");
+  if(saved) document.documentElement.setAttribute("data-theme", saved);
+  btn.addEventListener("click", ()=>{
+    const cur = document.documentElement.getAttribute("data-theme");
+    const dark = cur ? cur === "dark"
+      : window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const next = dark ? "light" : "dark";
+    document.documentElement.setAttribute("data-theme", next);
+    store("theme", next);
+  });
+})();
+
+/* =========================================================
+   SATZKLAMMER DIAGRAM
+   ========================================================= */
+const KLAMMER = {
+  main: {
+    words: [
+      {w:"Ich", t:"1 · Subjekt"},
+      {w:"habe", t:"2 · finit", verb:true},
+      {w:"gestern", t:"Mittelfeld"},
+      {w:"meinem Bruder", t:""},
+      {w:"das Buch", t:""},
+      {w:"gegeben", t:"Ende · infinit", verb:true}
+    ],
+    from:2, to:7,
+    note:"Hauptsatz: das finite Verb steht auf Position 2, der Rest des Verbs ganz am Ende. Alles, was dazwischen liegt, ist das Mittelfeld — die Klammer hält es zusammen."
+  },
+  sub: {
+    words: [
+      {w:"…, weil", t:"Konjunktion"},
+      {w:"ich", t:""},
+      {w:"gestern", t:"Mittelfeld"},
+      {w:"meinem Bruder", t:""},
+      {w:"das Buch", t:""},
+      {w:"gegeben", t:"infinit", verb:true},
+      {w:"habe", t:"finit · ganz am Ende", verb:true}
+    ],
+    from:1, to:8,
+    note:"Nebensatz: die Konjunktion besetzt die vordere Klammer, also rutscht das finite Verb ganz nach hinten — hinter das Partizip. Die Klammer schließt sich, aber beide Verbteile liegen jetzt rechts."
+  }
+};
+function renderKlammer(kind){
+  const d = KLAMMER[kind];
+  let html = "";
+  d.words.forEach(w=>{
+    html += '<span class="k-word'+(w.verb?" k-verb":"")+'"><span class="k-tag">'+esc(w.t||"·")+'</span>'+esc(w.w)+'</span>';
+  });
+  html += '<span class="k-bracket" style="grid-column:'+d.from+" / "+d.to+'"><span>Satzklammer</span></span>';
+  $("#klammer").innerHTML = html;
+  $("#klammerNote").textContent = d.note;
+}
+$("#kMain").addEventListener("click", ()=>{
+  $("#kMain").setAttribute("aria-pressed","true"); $("#kSub").setAttribute("aria-pressed","false"); renderKlammer("main");
+});
+$("#kSub").addEventListener("click", ()=>{
+  $("#kSub").setAttribute("aria-pressed","true"); $("#kMain").setAttribute("aria-pressed","false"); renderKlammer("sub");
+});
+renderKlammer("main");
+
+/* =========================================================
+   DECLENSION EXPLORER
+   ========================================================= */
+const expState = {kasus:"akk", art:"def", noun:0, adj:"alt", plural:false};
+
+function buildExplorerControls(){
+  $("#expCase").innerHTML = CASES.map(c =>
+    chipHTML("case", c.k, c.short, expState.kasus===c.k, "k-"+c.k)).join("");
+  $("#expArt").innerHTML =
+    chipHTML("art","def","der/die/das", expState.art==="def") +
+    chipHTML("art","ein","ein-", expState.art==="ein") +
+    chipHTML("art","kein","kein-", expState.art==="kein") +
+    chipHTML("art","none","∅", expState.art==="none") +
+    '<button type="button" class="chip" data-pl="1" aria-pressed="'+(expState.plural?"true":"false")+'">Plural</button>';
+
+  $("#expNoun").innerHTML = NOUNS.map((n,i) =>
+    '<option value="'+i+'"'+(i===expState.noun?" selected":"")+'>'+
+    (n.g==="m"?"der ":n.g==="n"?"das ":"die ")+n.w+" — "+n.en+'</option>').join("");
+  $("#expAdj").innerHTML = '<option value="">— ohne Adjektiv —</option>' +
+    ADJ.map(a => '<option value="'+a+'"'+(a===expState.adj?" selected":"")+'>'+a+'</option>').join("");
+}
+function renderExplorer(){
+  const noun = NOUNS[expState.noun];
+  const r = decline(noun, expState.kasus, expState.art, expState.adj, expState.plural);
+  const cls = "c-"+expState.kasus;
+
+  let html = "";
+  if(r.article) html += '<span class="art '+cls+'">'+esc(r.article)+'</span> ';
+  if(expState.adj) html += '<span>'+esc(expState.adj)+'<span class="end '+cls+'">'+esc(r.adjEnding)+'</span></span> ';
+  html += '<span>'+esc(r.noun)+'</span>';
+  $("#expPhrase").innerHTML = html;
+
+  const head = [[
+    "decline()",
+    noun.w+" · "+GENDER_LABEL[r.gender]+" · "+expState.kasus.toUpperCase()+" · "+
+      (expState.art==="def"?"der-Wort":expState.art==="none"?"kein Artikel":expState.art+"-Wort"),
+    CASES.find(c=>c.k===expState.kasus).q
+  ]];
+  $("#expTrace").innerHTML = traceHTML(head.concat(r.trace).concat([["Ergebnis", r.text, ""]]));
+}
+$("#expCase").addEventListener("click", e=>{
+  const b = e.target.closest(".chip"); if(!b) return;
+  expState.kasus = b.dataset.v;
+  [...$("#expCase").children].forEach(c => c.setAttribute("aria-pressed", String(c===b)));
+  renderExplorer();
+});
+$("#expArt").addEventListener("click", e=>{
+  const b = e.target.closest(".chip"); if(!b) return;
+  if(b.dataset.pl){
+    expState.plural = !expState.plural;
+    b.setAttribute("aria-pressed", String(expState.plural));
+  } else {
+    expState.art = b.dataset.v;
+    [...$("#expArt").children].forEach(c => { if(!c.dataset.pl) c.setAttribute("aria-pressed", String(c===b)); });
+  }
+  renderExplorer();
+});
+$("#expNoun").addEventListener("change", e=>{ expState.noun = +e.target.value; renderExplorer(); });
+$("#expAdj").addEventListener("change", e=>{ expState.adj = e.target.value; renderExplorer(); });
+$("#expRandom").addEventListener("click", ()=>{
+  expState.kasus = rnd(CASES).k;
+  expState.art = rnd(["def","ein","kein","none"]);
+  expState.noun = Math.floor(Math.random()*NOUNS.length);
+  expState.adj = rnd(ADJ);
+  expState.plural = Math.random() < .25;
+  buildExplorerControls(); renderExplorer();
+});
+buildExplorerControls(); renderExplorer();
+
+/* =========================================================
+   WECHSELPRÄPOSITION
+   ========================================================= */
+const WECH = {
+  wohin: {
+    sentence: ["Ich stelle die Lampe ", "auf", " ", "den", " Tisch."],
+    kasus:"akk",
+    trace:[
+      ["Frage","wohin?","Ziel einer Bewegung"],
+      ["auf + Bewegung","→ Akkusativ","WECHSEL(auf, true)"],
+      ["Maskulin + AKK","der → den","die einzige AKK-Änderung"]
+    ]
+  },
+  wo: {
+    sentence: ["Die Lampe steht ", "auf", " ", "dem", " Tisch."],
+    kasus:"dat",
+    trace:[
+      ["Frage","wo?","Ort, keine Grenzüberschreitung"],
+      ["auf + Position","→ Dativ","WECHSEL(auf, false)"],
+      ["Maskulin + DAT","der → dem","-m ist das Dativ-Signal"]
+    ]
+  }
+};
+function renderWechsel(kind){
+  const d = WECH[kind], cls = "c-"+d.kasus;
+  $("#wechselOut").innerHTML =
+    esc(d.sentence[0]) + '<span class="'+cls+'">'+esc(d.sentence[1])+'</span>' + esc(d.sentence[2]) +
+    '<span class="art '+cls+'">'+esc(d.sentence[3])+'</span>' + esc(d.sentence[4]);
+  $("#wechselTrace").innerHTML = traceHTML(d.trace);
+}
+$("#wWohin").addEventListener("click",()=>{
+  $("#wWohin").setAttribute("aria-pressed","true"); $("#wWo").setAttribute("aria-pressed","false"); renderWechsel("wohin");
+});
+$("#wWo").addEventListener("click",()=>{
+  $("#wWo").setAttribute("aria-pressed","true"); $("#wWohin").setAttribute("aria-pressed","false"); renderWechsel("wo");
+});
+renderWechsel("wohin");
+
+/* =========================================================
+   TENSE COMPOSER
+   ========================================================= */
+const cmp = {tense:"perfekt", person:0, verb:"essen"};
+function buildComposer(){
+  $("#cmpTense").innerHTML = TENSES.map(t => chipHTML("t", t.k, t.label, cmp.tense===t.k)).join("");
+  $("#cmpPerson").innerHTML = PRON.map((p,i) => chipHTML("p", i, p, cmp.person===i)).join("");
+  $("#cmpVerb").innerHTML = VERBS.map(v =>
+    '<option value="'+v.inf+'"'+(v.inf===cmp.verb?" selected":"")+'>'+v.inf+" — "+v.en+'</option>').join("");
+}
+function renderComposer(){
+  const v = V[cmp.verb];
+  const r = conjugate(v, cmp.person, cmp.tense);
+  const classMap = {aux:"t-aux", part:"t-part", inf:"t-inf", plain:"t-plain"};
+  let html = '<span class="tok t-plain">'+esc(PRON_SHORT[cmp.person])+'</span>';
+  r.parts.forEach(p => { html += '<span class="tok '+classMap[p.c]+'">'+esc(p.t)+'</span>'; });
+  $("#cmpOut").innerHTML = html;
+  $("#cmpFormula").innerHTML =
+    '<span class="why" style="color:var(--ink-3)">' + esc(TENSE_LABEL[cmp.tense]) + ' = </span>' + esc(r.formula) +
+    (v.note ? '<br><span style="color:var(--ink-3)">// ' + esc(v.note) + '</span>' : "") +
+    '<br><span style="color:var(--ink-3)">// Partizip II: ' + esc(v.pii) +
+    '   ·   Präteritum: ' + esc(v.prat[2]) + '   ·   Hilfsverb: ' + esc(v.aux) + '</span>';
+}
+$("#cmpTense").addEventListener("click", e=>{
+  const b = e.target.closest(".chip"); if(!b) return;
+  cmp.tense = b.dataset.v;
+  [...$("#cmpTense").children].forEach(c => c.setAttribute("aria-pressed", String(c===b)));
+  renderComposer();
+});
+$("#cmpPerson").addEventListener("click", e=>{
+  const b = e.target.closest(".chip"); if(!b) return;
+  cmp.person = +b.dataset.v;
+  [...$("#cmpPerson").children].forEach(c => c.setAttribute("aria-pressed", String(c===b)));
+  renderComposer();
+});
+$("#cmpVerb").addEventListener("change", e=>{ cmp.verb = e.target.value; renderComposer(); });
+$("#cmpRandom").addEventListener("click", ()=>{
+  cmp.tense = rnd(TENSES).k; cmp.person = Math.floor(Math.random()*6); cmp.verb = rnd(VERBS).inf;
+  buildComposer(); renderComposer();
+});
+buildComposer(); renderComposer();
+
+/* =========================================================
+   DRILL ENGINE
+   ========================================================= */
+const RULES = [
+  {id:"kasus",   name:"Kasus & Artikel",  mode:"decl"},
+  {id:"adjektiv",name:"Adjektivendungen", mode:"decl"},
+  {id:"praep",   name:"Präpositionen",    mode:"decl"},
+  {id:"zeiten",  name:"Zeitformen",       mode:"verb"},
+  {id:"partizip",name:"Partizip II",      mode:"verb"},
+  {id:"ordnung", name:"Wortstellung",     mode:"verb"}
+];
+
+const drill = {
+  mode:"all", q:null, answered:false,
+  streak:0, best:0, right:0, total:0,
+  mastery:{}
+};
+RULES.forEach(r => { drill.mastery[r.id] = {r:0, t:0}; });
+
+(function loadProgress(){
+  const s = store("progress");
+  if(s && s.mastery){
+    drill.best = s.best||0; drill.right = s.right||0; drill.total = s.total||0;
+    RULES.forEach(r => { if(s.mastery[r.id]) drill.mastery[r.id] = s.mastery[r.id]; });
+  }
+})();
+function saveProgress(){
+  store("progress", {best:drill.best, right:drill.right, total:drill.total, mastery:drill.mastery});
+}
+
+function masteryOf(id){
+  const m = drill.mastery[id];
+  if(!m.t) return 0;
+  return m.r / m.t;
+}
+function pickRule(){
+  const pool = RULES.filter(r => drill.mode === "all" || r.mode === drill.mode);
+  // weight: unseen and weak rules come up more often
+  const weights = pool.map(r => {
+    const m = drill.mastery[r.id];
+    if(m.t < 3) return 3;
+    return 1 + (1 - masteryOf(r.id)) * 4;
+  });
+  const sum = weights.reduce((a,b)=>a+b,0);
+  let x = Math.random()*sum;
+  for(let i=0;i<pool.length;i++){ x -= weights[i]; if(x <= 0) return pool[i].id; }
+  return pool[pool.length-1].id;
+}
+
+/* ---- frames that assign a case ---- */
+const FRAMES = [
+  {k:"nom", pre:"Hier ist ",   post:".",  why:"„sein“ verlangt Nominativ"},
+  {k:"nom", pre:"Das ist ",    post:".",  why:"Gleichsetzung mit „sein“ → Nominativ"},
+  {k:"akk", pre:"Ich sehe ",   post:".",  why:"„sehen“ nimmt ein direktes Objekt"},
+  {k:"akk", pre:"Er kauft ",   post:".",  why:"„kaufen“ nimmt ein direktes Objekt"},
+  {k:"akk", pre:"Wir suchen ", post:".",  why:"„suchen“ nimmt ein direktes Objekt"},
+  {k:"akk", pre:"Das ist für ",post:".",  why:"„für“ ist eine feste Akkusativ-Präposition"},
+  {k:"akk", pre:"Sie geht ohne ", post:".", why:"„ohne“ ist eine feste Akkusativ-Präposition"},
+  {k:"dat", pre:"Ich helfe ",  post:".",  why:"„helfen“ verlangt Dativ (Ausnahmeverb)"},
+  {k:"dat", pre:"Wir danken ", post:".",  why:"„danken“ verlangt Dativ (Ausnahmeverb)"},
+  {k:"dat", pre:"Er fährt mit ", post:".", why:"„mit“ ist eine feste Dativ-Präposition"},
+  {k:"dat", pre:"Sie kommt aus ", post:".", why:"„aus“ ist eine feste Dativ-Präposition"},
+  {k:"dat", pre:"Ich spreche von ", post:".", why:"„von“ ist eine feste Dativ-Präposition"},
+  {k:"gen", pre:"die Farbe ",  post:"",   why:"Besitz / Zugehörigkeit → Genitiv"},
+  {k:"gen", pre:"wegen ",      post:" bleibe ich hier.", why:"„wegen“ ist eine Genitiv-Präposition"}
+];
+
+const ORDER_QS = [
+  {stem:"Ich bleibe zu Hause, …",
+   ok:"weil ich krank bin.",
+   bad:["weil ich bin krank.","weil bin ich krank."],
+   why:"Nebensatz mit „weil“ → das finite Verb rutscht ganz ans Ende."},
+  {stem:"Sie sagt, …",
+   ok:"dass sie morgen kommt.",
+   bad:["dass sie kommt morgen.","dass kommt sie morgen."],
+   why:"„dass“ ist eine Konjunktion → Verbletztstellung."},
+  {stem:"Vollständiger Satz:",
+   ok:"Heute fahre ich nach Köln.",
+   bad:["Heute ich fahre nach Köln.","Heute nach Köln ich fahre."],
+   why:"Position 1 ist ein freier Slot, aber das finite Verb bleibt auf Position 2 — das Subjekt rutscht dahinter."},
+  {stem:"Vollständiger Satz:",
+   ok:"Ich habe gestern einen Film gesehen.",
+   bad:["Ich habe gesehen gestern einen Film.","Ich gestern einen Film gesehen habe."],
+   why:"Satzklammer: „habe“ auf Position 2, „gesehen“ ganz am Ende, alles andere dazwischen."},
+  {stem:"Vollständiger Satz:",
+   ok:"Ich gebe dem Kind das Buch.",
+   bad:["Ich gebe das Buch dem Kind das.","Ich das Buch dem Kind gebe."],
+   why:"Zwei volle Nomen-Objekte: Dativ vor Akkusativ."},
+  {stem:"Vollständiger Satz:",
+   ok:"Er fährt heute mit dem Zug nach Köln.",
+   bad:["Er fährt nach Köln mit dem Zug heute.","Er fährt mit dem Zug heute nach Köln."],
+   why:"TE-KA-MO-LO: temporal (heute) → modal (mit dem Zug) → lokal (nach Köln)."},
+  {stem:"Vollständiger Satz:",
+   ok:"Ich weiß nicht, ob er heute kommt.",
+   bad:["Ich weiß nicht, ob kommt er heute.","Ich weiß nicht, ob er kommt heute."],
+   why:"„ob“ leitet einen Nebensatz ein → Verb ans Ende."},
+  {stem:"Vollständiger Satz:",
+   ok:"Morgen muss ich früh aufstehen.",
+   bad:["Morgen ich muss früh aufstehen.","Morgen muss aufstehen ich früh."],
+   why:"Modalverb auf Position 2, Infinitiv am Ende — wieder die Klammer."}
+];
+
+/* ---- question generators ---- */
+function qKasus(){
+  const f = rnd(FRAMES);
+  const noun = rnd(NOUNS);
+  const plural = Math.random() < .18;
+  const artType = plural ? rnd(["def","kein","def"]) : rnd(["def","def","ein","kein"]);
+  const r = decline(noun, f.k, artType, "", plural);
+  if(!r.article) return qKasus();
+
+  const g = plural ? "p" : noun.g;
+  const bank = new Set();
+  CASES.forEach(c => {
+    const x = decline(noun, c.k, artType, "", plural);
+    if(x.article) bank.add(x.article);
+  });
+  ["m","n","f","p"].forEach(gg => {
+    if(bank.size >= 5) return;
+    CASES.forEach(c => {
+      if(bank.size >= 5) return;
+      bank.add(artType === "def" ? DEF[gg][c.k] : (artType==="ein"?"ein":"kein") + EIN_END[gg][c.k]);
+    });
+  });
+  const opts = shuffle([...bank].filter(Boolean)).slice(0,4);
+  if(!opts.includes(r.article)){ opts[0] = r.article; }
+
+  const noundisp = r.noun;
+  return {
+    rule:"kasus", kind:"Kasus & Artikel", type:"choice",
+    prompt: esc(f.pre) + '<span class="blank">___</span> ' + esc(noundisp) + esc(f.post),
+    hint: (plural ? "Plural" : GENDER_LABEL[noun.g]) + " · " + noun.w + " (" + noun.en + ")",
+    options: shuffle(opts), answer: r.article,
+    trace: [["Auslöser", f.pre.trim() || "—", f.why],
+            ["Kasus", f.k.toUpperCase(), CASES.find(c=>c.k===f.k).q],
+            ["Genus", GENDER_LABEL[g], plural ? "Plural überschreibt das Genus" : ""],
+            [(artType==="def"?"der-Tabelle":artType+"-Tabelle")+"["+GENDER_LABEL[g].slice(0,4)+"]["+f.k.toUpperCase()+"]", "→ "+r.article, ""],
+            ["Ergebnis", f.pre + r.text + f.post, ""]]
+  };
+}
+
+function qAdjektiv(){
+  const f = rnd(FRAMES);
+  const noun = rnd(NOUNS);
+  const plural = Math.random() < .2;
+  const artType = plural ? rnd(["def","kein","none"]) : rnd(["def","def","ein","kein","none"]);
+  const adj = rnd(ADJ);
+  const r = decline(noun, f.k, artType, adj, plural);
+  const g = plural ? "p" : noun.g;
+
+  const opts = shuffle(["e","en","er","es","em"].filter(x => x !== r.adjEnding).slice(0,3).concat([r.adjEnding]));
+  const shown = (r.article ? esc(r.article) + " " : "") + esc(adj) + '<span class="blank">__</span> ' + esc(r.noun);
+
+  const tableName = r.adjTable;
+  return {
+    rule:"adjektiv", kind:"Adjektivendung", type:"choice",
+    prompt: esc(f.pre) + shown + esc(f.post),
+    hint: (plural ? "Plural" : GENDER_LABEL[noun.g]) + " · " +
+          (artType==="none" ? "kein Artikelwort" : artType==="def" ? "der-Wort" : artType+"-Wort"),
+    options: opts.map(o => "-"+o), answer: "-"+r.adjEnding,
+    trace: [["Auslöser", f.pre.trim() || "—", f.why],
+            ["Kasus + Genus", f.k.toUpperCase() + " · " + GENDER_LABEL[g], ""],
+            ["Artikelwort", r.article || "∅", r.article ? "trägt das Signal" : "kein Signal vorhanden"],
+            ["→ Tabelle", tableName, tableName==="SCHWACH" ? "-e in der Ecke oben links, sonst -en" :
+                          tableName==="STARK" ? "Adjektiv übernimmt die der-Endung" :
+                          "gemischt: nur da stark, wo ein- nackt ist"],
+            [tableName+"["+GENDER_LABEL[g].slice(0,4)+"]["+f.k.toUpperCase()+"]", "→ -"+r.adjEnding, ""],
+            ["Ergebnis", f.pre + r.text + f.post, ""]]
+  };
+}
+
+function qPraep(){
+  const noun = rnd(NOUNS.filter(n => n.g !== "p"));
+  const prep = rnd(["in","auf","an","unter","neben","vor","hinter"]);
+  const motion = Math.random() < .5;
+  const kasus = motion ? "akk" : "dat";
+  const verbs = motion
+    ? ["Ich stelle es ", "Wir gehen ", "Er legt das Buch ", "Sie fährt "]
+    : ["Es steht ", "Wir sind ", "Das Buch liegt ", "Sie wartet "];
+  const lead = rnd(verbs);
+  const art = DEF[noun.g][kasus];
+
+  const bank = new Set();
+  CASES.forEach(c => bank.add(DEF[noun.g][c.k]));
+  const opts = shuffle([...bank]).slice(0,4);
+  if(!opts.includes(art)) opts[0] = art;
+
+  return {
+    rule:"praep", kind:"Wechselpräposition", type:"choice",
+    prompt: esc(lead) + esc(prep) + ' <span class="blank">___</span> ' + esc(noun.w) + ".",
+    hint: (motion ? "Bewegung ins Ziel — wohin?" : "Position, kein Grenzübertritt — wo?") +
+          " · " + GENDER_LABEL[noun.g],
+    options: shuffle(opts), answer: art,
+    trace: [["Präposition", prep, "Wechselpräposition — Kasus hängt von der Frage ab"],
+            ["Frage", motion ? "wohin?" : "wo?", motion ? "Grenzüberschreitung ins Ziel" : "Aufenthalt an einem Ort"],
+            ["WECHSEL("+prep+", "+motion+")", "→ " + kasus.toUpperCase(), ""],
+            ["der-Tabelle["+GENDER_LABEL[noun.g].slice(0,4)+"]["+kasus.toUpperCase()+"]", "→ "+art, ""],
+            ["Ergebnis", lead + prep + " " + art + " " + noun.w + ".", ""]]
+  };
+}
+
+function qZeiten(){
+  const v = rnd(VERBS);
+  const i = Math.floor(Math.random()*6);
+  const t = rnd(TENSES).k;
+  const r = conjugate(v, i, t);
+  return {
+    rule:"zeiten", kind:"Zeitform bilden", type:"type",
+    prompt: '<span>'+esc(PRON_SHORT[i])+'</span> <span class="blank">___</span>',
+    hint: v.inf + " (" + v.en + ") · " + TENSE_LABEL[t] + " · nur den Verbteil tippen",
+    answer: r.text, accept:[r.text, PRON_SHORT[i]+" "+r.text],
+    trace: [["Verb", v.inf, v.note || (v.aux==="sein" ? "Hilfsverb sein" : "Hilfsverb haben")],
+            ["Zeit", TENSE_LABEL[t], r.formula],
+            ["Person", PRON[i] + " (" + (i+1) + ")", ""],
+            ["Bausteine", r.parts.map(p=>p.t).join("  +  "), ""],
+            ["Ergebnis", PRON_SHORT[i] + " " + r.text, ""]]
+  };
+}
+
+function qPartizip(){
+  const v = rnd(VERBS);
+  const withAux = Math.random() < .5;
+  if(withAux){
+    return {
+      rule:"partizip", kind:"Hilfsverb wählen", type:"choice",
+      prompt: esc(v.inf) + ' → Perfekt mit <span class="blank">___</span>?',
+      hint: v.en + " · haben oder sein?",
+      options:["haben","sein"], answer: v.aux,
+      trace: [["Verb", v.inf, v.en],
+              ["Test", v.aux==="sein" ? "Bewegung A→B oder Zustandswechsel? ja" : "hat es ein direktes Objekt / keine Ortsveränderung?",
+                v.aux==="sein" ? "auch: sein, bleiben, werden" : "≈95% aller Verben"],
+              ["Hilfsverb", v.aux, ""],
+              ["Perfekt", "ich " + conjugate(v,0,"perfekt").text, ""]]
+    };
+  }
+  return {
+    rule:"partizip", kind:"Partizip II", type:"type",
+    prompt: esc(v.inf) + ' → <span class="blank">___</span>',
+    hint: v.en + " · Partizip II tippen",
+    answer: v.pii, accept:[v.pii],
+    trace: [["Verb", v.inf, v.en],
+            ["Regel", v.note ? v.note :
+              (/en$/.test(v.pii) ? "stark: ge- + Stamm(+Ablaut) + -en" : "schwach: ge- + Stamm + -t"), ""],
+            ["Partizip II", v.pii, ""],
+            ["Hilfsverb", v.aux, ""],
+            ["Perfekt", "ich " + conjugate(v,0,"perfekt").text, ""]]
+  };
+}
+
+function qOrdnung(){
+  const q = rnd(ORDER_QS);
+  return {
+    rule:"ordnung", kind:"Wortstellung", type:"choice", longOpts:true,
+    prompt: esc(q.stem),
+    hint:"Welche Reihenfolge stimmt?",
+    options: shuffle([q.ok].concat(q.bad)), answer: q.ok,
+    trace: [["Regel", "Satzklammer / Verbstellung", q.why],
+            ["Richtig", q.ok, ""]]
+  };
+}
+
+const GEN = {kasus:qKasus, adjektiv:qAdjektiv, praep:qPraep, zeiten:qZeiten, partizip:qPartizip, ordnung:qOrdnung};
+
+/* ---- normalisation for typed answers ---- */
+function norm(s){
+  return String(s).toLowerCase().trim()
+    .replace(/\s+/g," ").replace(/[.!?,;]+$/,"")
+    .replace(/ß/g,"ss").replace(/ä/g,"ae").replace(/ö/g,"oe").replace(/ü/g,"ue");
+}
+
+/* ---- render ---- */
+function nextQuestion(){
+  const rule = pickRule();
+  drill.q = GEN[rule]();
+  drill.answered = false;
+
+  $("#dKind").textContent = drill.q.kind;
+  $("#dPrompt").innerHTML = drill.q.prompt;
+  $("#dHint").textContent = drill.q.hint || "";
+  $("#dVerdict").classList.remove("show","v-ok","v-no");
+
+  const optsEl = $("#dOpts"), typeEl = $("#dTypeRow");
+  if(drill.q.type === "choice"){
+    typeEl.style.display = "none";
+    optsEl.style.display = "flex";
+    optsEl.innerHTML = drill.q.options.map(o =>
+      '<button type="button" class="opt'+(drill.q.longOpts?" long":"")+'" data-a="'+esc(o)+'">'+esc(o)+'</button>').join("");
+  } else {
+    optsEl.style.display = "none";
+    optsEl.innerHTML = "";
+    typeEl.style.display = "flex";
+    $("#dInput").value = "";
+    $("#dInput").disabled = false;
+    $("#dSubmit").disabled = false;
+    $("#dInput").focus();
+  }
+}
+
+function judge(given){
+  if(drill.answered) return;
+  drill.answered = true;
+
+  const q = drill.q;
+  const accepted = (q.accept || [q.answer]).map(norm);
+  const ok = accepted.includes(norm(given));
+
+  drill.total++; if(ok){ drill.right++; drill.streak++; drill.best = Math.max(drill.best, drill.streak); }
+  else drill.streak = 0;
+  const m = drill.mastery[q.rule]; m.t++; if(ok) m.r++;
+  saveProgress();
+
+  if(q.type === "choice"){
+    [...$("#dOpts").children].forEach(b => {
+      b.disabled = true;
+      if(b.dataset.a === q.answer) b.classList.add("is-ok");
+      else if(b.dataset.a === given && !ok) b.classList.add("is-no");
+    });
+  } else {
+    $("#dInput").disabled = true; $("#dSubmit").disabled = true;
+  }
+
+  const v = $("#dVerdict");
+  v.classList.add("show", ok ? "v-ok" : "v-no");
+  $("#dVerdictLine").innerHTML = ok
+    ? '<span class="mark">✓ richtig</span><span>' + esc(q.answer) + '</span>'
+    : '<span class="mark">✗</span><span>Du: <b>' + esc(given || "—") + '</b> · Richtig: <b>' + esc(q.answer) + '</b></span>';
+  $("#dTrace").innerHTML = traceHTML(q.trace);
+
+  updateStats();
+}
+
+function updateStats(){
+  $("#dStreak").textContent = drill.streak;
+  $("#dBest").textContent = drill.best;
+  $("#dCount").textContent = drill.total;
+  $("#dRate").textContent = drill.total ? Math.round(drill.right/drill.total*100) + "%" : "—";
+
+  $("#dMastery").innerHTML = RULES.map(r => {
+    const m = drill.mastery[r.id];
+    const pct = m.t ? Math.round(m.r/m.t*100) : 0;
+    const color = m.t < 3 ? "var(--ink-3)" : pct >= 85 ? "var(--ok)" : pct >= 60 ? "var(--akk)" : "var(--no)";
+    return '<div class="m-row"><span class="name">'+r.name+'</span>' +
+      '<span class="val">'+(m.t ? pct+"% · "+m.r+"/"+m.t : "—")+'</span>' +
+      '<span class="m-bar"><i style="width:'+(m.t?pct:0)+'%; background:'+color+'"></i></span></div>';
+  }).join("");
+
+  const tot = RULES.reduce((a,r)=>a+drill.mastery[r.id].t,0);
+  const cor = RULES.reduce((a,r)=>a+drill.mastery[r.id].r,0);
+  const el = $("#railPct"); if(el) el.textContent = tot ? Math.round(cor/tot*100) : 0;
+}
+
+$("#dOpts").addEventListener("click", e=>{
+  const b = e.target.closest(".opt"); if(!b || b.disabled) return;
+  judge(b.dataset.a);
+});
+$("#dTypeRow").addEventListener("submit", e=>{
+  e.preventDefault();
+  if(drill.answered){ nextQuestion(); return; }
+  judge($("#dInput").value);
+});
+$("#dNext").addEventListener("click", nextQuestion);
+$("#dSkip").addEventListener("click", ()=>{
+  if(!drill.answered) judge("");
+  else nextQuestion();
+});
+$("#dMode").addEventListener("click", e=>{
+  const b = e.target.closest("button"); if(!b) return;
+  drill.mode = b.dataset.mode;
+  [...$("#dMode").children].forEach(c => c.setAttribute("aria-pressed", String(c===b)));
+  nextQuestion();
+});
+$("#dReset").addEventListener("click", ()=>{
+  drill.streak = 0; drill.best = 0; drill.right = 0; drill.total = 0;
+  RULES.forEach(r => { drill.mastery[r.id] = {r:0,t:0}; });
+  saveProgress(); updateStats(); nextQuestion();
+});
+document.addEventListener("keydown", e=>{
+  if(e.key !== "Enter") return;
+  const inDrill = $("#drill").contains(document.activeElement) || document.activeElement === document.body;
+  if(!inDrill) return;
+  if(drill.answered){ e.preventDefault(); nextQuestion(); }
+});
+
+updateStats();
+nextQuestion();
+
+/* =========================================================
+   RAIL — current section
+   ========================================================= */
+(function(){
+  const links = [...document.querySelectorAll(".rail-link")];
+  const targets = links.map(l => document.querySelector(l.getAttribute("href"))).filter(Boolean);
+  if(!("IntersectionObserver" in window) || !targets.length) return;
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(en => {
+      if(!en.isIntersecting) return;
+      links.forEach(l => l.setAttribute("aria-current", String(l.getAttribute("href") === "#"+en.target.id)));
+    });
+  }, {rootMargin:"-20% 0px -70% 0px"});
+  targets.forEach(t => io.observe(t));
+})();
+
+})();
+</script>
