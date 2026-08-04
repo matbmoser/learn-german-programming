@@ -9,6 +9,8 @@ No backend. Everything runs in the browser and progress stays in `localStorage`.
 
 ---
 
+![German Typed Language](docs/screenshots/typed.png)
+
 ## Screenshots
 
 | Übersicht | Regeln | Drill |
@@ -75,6 +77,32 @@ switches to Konjunktiv II and says so.
 adaptive ladder and estimates the level.
 
 ---
+
+## Teacher Chat
+
+Ask questions to the teacher (powered by Claude) and learn more how to write and understand German.
+
+![frau müller](docs/screenshots/teacher-chat.png)
+
+Frau Müller is always there to give you a hand and answer your question!
+
+## Learn to Write like in an IDE
+
+"Code" in the German language, like you would be learning a programming language, get highlighted chars which will enable you to understand the syntax. Let your imagination flow and get corrected by AI giving you recommendations on how to improve your german writting and what are you fails.
+
+![exercises](docs/screenshots/write-tooltip.png)
+
+### Correction
+
+Get recommendations to improve your text:
+
+![image-coorection](docs/screenshots/write-errors.png)
+
+### Learn from your errors
+
+Practice based on your own mistakes, and learn how to do it right and why.
+
+![image](docs/screenshots/write-practice.png)
 
 ## Connecting Claude
 
@@ -162,3 +190,5 @@ GPL-3.0-or-later — see [LICENSE](LICENSE).
 
 The code and content in this repository were generated with AI assistance
 (Claude Code, Anthropic), directed and edited by the author.
+
+AI makes mistakes, most of the content was verified by a German Teacher
