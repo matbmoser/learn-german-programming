@@ -44,6 +44,7 @@ import CloseRounded from "@mui/icons-material/CloseRounded";
 import FileDownloadRounded from "@mui/icons-material/FileDownloadRounded";
 import FullscreenExitRounded from "@mui/icons-material/FullscreenExitRounded";
 import FullscreenRounded from "@mui/icons-material/FullscreenRounded";
+import GitHubIcon from "@mui/icons-material/GitHub";
 import GridViewRounded from "@mui/icons-material/GridViewRounded";
 import HistoryRounded from "@mui/icons-material/HistoryRounded";
 import InfoRounded from "@mui/icons-material/InfoRounded";
@@ -79,6 +80,7 @@ export const IconBack           = icon(ArrowBackRounded, "IconBack");
 export const IconBook           = icon(MenuBookRounded, "IconBook");
 export const IconFullscreen     = icon(FullscreenRounded, "IconFullscreen");
 export const IconFullscreenExit = icon(FullscreenExitRounded, "IconFullscreenExit");
+export const IconGitHub         = icon(GitHubIcon, "IconGitHub");
 
 // -- teacher chat -----------------------------------------------------------
 export const IconTeacher   = icon(SchoolRounded, "IconTeacher");

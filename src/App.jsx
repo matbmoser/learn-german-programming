@@ -26,7 +26,7 @@ import Spec from "./components/Spec.jsx";
 import Settings from "./components/Settings.jsx";
 import TeacherChat from "./components/TeacherChat.jsx";
 import Dictionary from "./components/Dictionary.jsx";
-import { IconBook, IconClose, IconTeacher } from "./components/icons.jsx";
+import { IconBook, IconClose, IconGitHub, IconTeacher } from "./components/icons.jsx";
 import Rulebook from "./components/Rulebook.jsx";
 import {
   loadProgress, saveProgress, resetProgress, recordAnswer,
@@ -130,6 +130,16 @@ export default function App() {
             ))}
           </nav>
           <div className="topbar-right">
+            <a
+              className="topbar-icon"
+              href="https://github.com/matbmoser/learn-german-programming"
+              target="_blank"
+              rel="noopener noreferrer"
+              title="Auf GitHub ansehen"
+              aria-label="Auf GitHub ansehen"
+            >
+              <IconGitHub />
+            </a>
             <button
               className={"topbar-icon" + (dictOpen ? " is-on" : "")}
               type="button"

@@ -9,6 +9,18 @@ No backend. Everything runs in the browser and progress stays in `localStorage`.
 
 ---
 
+## Screenshots
+
+| Übersicht | Regeln | Drill |
+|---|---|---|
+| [![Dashboard](docs/screenshots/dashboard.png)](docs/screenshots/dashboard.png) | [![Learn](docs/screenshots/learn.png)](docs/screenshots/learn.png) | [![Drill](docs/screenshots/drill.png)](docs/screenshots/drill.png) |
+
+| Einstufung | Schreiben | Einstellungen |
+|---|---|---|
+| [![Exam](docs/screenshots/exam.png)](docs/screenshots/exam.png) | [![Write](docs/screenshots/write.png)](docs/screenshots/write.png) | [![Settings](docs/screenshots/settings.png)](docs/screenshots/settings.png) |
+
+---
+
 ## Run it
 
 ```bash

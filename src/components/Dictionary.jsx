@@ -120,6 +120,10 @@ export default function Dictionary({ open, onClose, query, setQuery, trigger }) 
           {enToDe ? "Englisch → Deutsch." : "Deutsch → Englisch."} Tipp: Doppelklick auf ein Wort im Text schlägt es direkt hier nach.
         </p>
 
+        <p className="dict-credit muted">
+          Übersetzungen von <a href="https://mymemory.translated.net/" target="_blank" rel="noopener noreferrer">MyMemory</a> (Translated S.r.l.) · Vorschläge von <a href="https://de.wiktionary.org/" target="_blank" rel="noopener noreferrer">Wiktionary</a> · Definitionen von <a href="https://dictionaryapi.dev/" target="_blank" rel="noopener noreferrer">Free Dictionary API</a>.
+        </p>
+
         {error && <Callout kind="bad">{error}</Callout>}
 
         {suggestions.length > 0 && (
