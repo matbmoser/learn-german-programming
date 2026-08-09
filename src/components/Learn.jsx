@@ -21,12 +21,22 @@ import { MODULES, MODULES_BY_LEVEL, LEVELS } from "../data/curriculum.js";
 import { RULE_BY_ID } from "../engine/drills.js";
 import { GrammarTable, LevelTag, Bar, accColor, CodeBlock } from "./ui.jsx";
 
-export default function Learn({ progress, onRead, onDrillTopic }) {
-  const [openId, setOpenId] = React.useState(MODULES[0].id);
+export default function Learn({ progress, onRead, onDrillTopic, section, onSectionChange }) {
+  const [openId, setOpenId] = React.useState(
+    MODULES.some((m) => m.id === section) ? section : MODULES[0].id
+  );
   const [levelFilter, setLevelFilter] = React.useState("alle");
   const mod = MODULES.find((m) => m.id === openId) || MODULES[0];
 
   React.useEffect(() => { onRead(mod.id); }, [mod.id, onRead]);
+  React.useEffect(() => {
+    if (MODULES.some((m) => m.id === section)) setOpenId(section);
+  }, [section]);
+
+  function openModule(id) {
+    setOpenId(id);
+    onSectionChange?.(id);
+  }
 
   const groups = MODULES_BY_LEVEL.filter((g) => levelFilter === "alle" || g.level === levelFilter);
 
@@ -67,7 +77,7 @@ export default function Learn({ progress, onRead, onDrillTopic }) {
                       type="button"
                       className="mod"
                       aria-current={m.id === openId}
-                      onClick={() => setOpenId(m.id)}
+                      onClick={() => openModule(m.id)}
                     >
                       <span className="mod-top">
                         <LevelTag level={m.level} />
@@ -84,11 +94,14 @@ export default function Learn({ progress, onRead, onDrillTopic }) {
           ))}
         </nav>
 
-        <article className="detail">
+        <article className="detail" id={`doc-${mod.id}`}>
           <span className="eyebrow">
             <LevelTag level={mod.level} /> {mod.en}
           </span>
-          <h2 style={{ marginTop: "var(--s2)" }}>{mod.title}</h2>
+          <h2 style={{ marginTop: "var(--s2)" }}>
+            {mod.title}
+            <a className="section-link" href={`#learn/${encodeURIComponent(mod.id)}`} aria-label={`Direktlink zu ${mod.title}`} title="Direktlink zu diesem Modul">#</a>
+          </h2>
           <p className="lede">{mod.summary}</p>
 
           <CodeBlock code={mod.code} />

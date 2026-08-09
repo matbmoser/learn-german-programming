@@ -45,16 +45,29 @@ const VIEWS = [
   { id: "settings", num: "§7", label: "Einstellungen" },
 ];
 
+function readRoute() {
+  const [rawView, ...rawSection] = window.location.hash.replace(/^#/, "").split("/");
+  const view = VIEWS.some((item) => item.id === rawView) ? rawView : "home";
+  let section = null;
+  if (rawSection.length) {
+    try { section = decodeURIComponent(rawSection.join("/")); }
+    catch { section = rawSection.join("/"); }
+  }
+  return { view, section };
+}
+
 export default function App() {
   const [progress, setProgress] = React.useState(loadProgress);
   const [apiKey, setApiKey] = React.useState(loadApiKey);
-  const [view, setView] = React.useState("home");
+  const [route, setRoute] = React.useState(readRoute);
   const [drillTopic, setDrillTopic] = React.useState(null);
   const [chatOpen, setChatOpen] = React.useState(false);
   const [writeContext, setWriteContext] = React.useState({ text: "", task: null });
   const [dictOpen, setDictOpen] = React.useState(false);
   const [dictQuery, setDictQuery] = React.useState("");
   const [dictTrigger, setDictTrigger] = React.useState(0);
+  const navRef = React.useRef(null);
+  const { view, section: routeSection } = route;
 
   const openDict = React.useCallback((word) => {
     if (word) {
@@ -92,10 +105,37 @@ export default function App() {
 
   const onApiKey = React.useCallback((k) => { saveApiKey(k); setApiKey(k); }, []);
 
-  const goto = React.useCallback((v) => {
-    setView(v);
-    window.scrollTo?.(0, 0);
+  const goto = React.useCallback((v, section = null) => {
+    const suffix = section ? `/${encodeURIComponent(section)}` : "";
+    const nextHash = `#${v}${suffix}`;
+    if (window.location.hash !== nextHash) window.history.pushState(null, "", nextHash);
+    setRoute({ view: v, section });
   }, []);
+
+  React.useEffect(() => {
+    const syncRoute = () => setRoute(readRoute());
+    window.addEventListener("hashchange", syncRoute);
+    window.addEventListener("popstate", syncRoute);
+    return () => {
+      window.removeEventListener("hashchange", syncRoute);
+      window.removeEventListener("popstate", syncRoute);
+    };
+  }, []);
+
+  React.useEffect(() => {
+    const frame = window.requestAnimationFrame(() => {
+      const target = routeSection && document.getElementById(`doc-${routeSection}`);
+      if (target) target.scrollIntoView({ block: "start" });
+      else window.scrollTo?.(0, 0);
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [view, routeSection]);
+
+  React.useEffect(() => {
+    navRef.current
+      ?.querySelector('[aria-current="true"]')
+      ?.scrollIntoView({ block: "nearest", inline: "center" });
+  }, [view]);
 
   const drillOn = React.useCallback((ruleId) => {
     setDrillTopic(ruleId);
@@ -117,7 +157,7 @@ export default function App() {
             <b>Deutsch</b> A2 → C1
             <small>Sprachspezifikation</small>
           </div>
-          <nav className="nav" aria-label="Bereiche">
+          <nav ref={navRef} className="nav" aria-label="Bereiche">
             {VIEWS.map((v) => (
               <button
                 key={v.id}
@@ -177,9 +217,20 @@ export default function App() {
               <Dashboard progress={progress} onGo={goto} onDrillTopic={drillOn} />
             )}
             {view === "learn" && (
-              <Learn progress={progress} onRead={onRead} onDrillTopic={drillOn} />
+              <Learn
+                progress={progress}
+                onRead={onRead}
+                onDrillTopic={drillOn}
+                section={routeSection}
+                onSectionChange={(id) => goto("learn", id)}
+              />
             )}
-            {view === "rulebook" && <Rulebook />}
+            {view === "rulebook" && (
+              <Rulebook
+                section={routeSection}
+                onSectionChange={(id) => goto("rulebook", id)}
+              />
+            )}
             {view === "drill" && (
               <Drill
                 key={drillTopic || "all"}

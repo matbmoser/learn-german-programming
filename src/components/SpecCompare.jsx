@@ -377,6 +377,7 @@ export default function CompareSection() {
   return (
     <section className="sec">
       <SecHead
+        anchor="vergleich"
         num="§8"
         title="German through a Spanish/Portuguese lens"
         sub="Every rule above exists in Spanish and Portuguese too — just built with different parts. Gender survives, case doesn't, and the verb keeps very different manners. Side by side, the real distance is smaller than it feels, and the traps sit exactly where the surface looks most similar."

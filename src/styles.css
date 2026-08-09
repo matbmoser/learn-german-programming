@@ -62,6 +62,7 @@
 * { box-sizing: border-box; }
 
 html, body, #root { min-height: 100%; }
+html { overflow-x: hidden; }
 
 body {
   margin: 0;
@@ -71,6 +72,7 @@ body {
   font-size: 17px;
   line-height: 1.62;
   -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
 }
 
 h1, h2, h3, h4 {
@@ -86,6 +88,7 @@ button, input, textarea, select { font: inherit; color: inherit; }
 button { background: none; border: none; cursor: pointer; }
 :focus-visible { outline: 2px solid var(--nom); outline-offset: 2px; border-radius: 3px; }
 table { border-collapse: collapse; width: 100%; }
+img, svg { max-width: 100%; }
 
 /* ---------------------------------------------------------------- icons --
    MUI icons (see components/icons.jsx) render with font-size: inherit, so
@@ -414,6 +417,7 @@ pre.code b { font-weight: 600; }
   background: var(--paper);
   overflow: hidden;
 }
+.ide-mobile-nav { display: none; }
 .ide.task-collapsed { grid-template-columns: 46px minmax(0, 1fr) 400px; }
 .ide.results-full { grid-template-columns: 0 0 minmax(0, 1fr); }
 
@@ -730,6 +734,101 @@ pre.code b { font-weight: 600; }
   }
   .ide-task, .ide-results { max-height: 60vh; }
   .ide.results-full .ide-task, .ide.results-full .ide-editor { display: none; }
+}
+
+/* ---------------------------------------------------------------- mobile --
+   The app keeps its dense, specification-like character on a phone, but
+   turns the top navigation and writing IDE into touch-friendly tab bars. */
+@media (max-width: 699px) {
+  body { font-size: 16px; line-height: 1.55; }
+
+  .shell { padding-inline: 16px; }
+  main { padding: 24px 0 48px; }
+
+  .topbar { padding-top: env(safe-area-inset-top); }
+  .topbar-in {
+    min-height: 0; padding: 8px 12px 0; gap: 6px 10px;
+    flex-wrap: wrap;
+  }
+  .brand { font-size: 0.9rem; }
+  .brand small { display: none; }
+  .topbar-right { margin-left: auto; gap: 6px; }
+  .topbar-right > a.topbar-icon { display: none; }
+  .topbar-icon { width: 40px; height: 40px; }
+  .level-chip { font-size: 0.68rem; }
+  .nav {
+    order: 3; flex: 1 0 calc(100% + 24px); width: calc(100% + 24px);
+    margin-inline: -12px; padding-inline: 8px;
+    border-top: 1px solid var(--rule-2);
+    scroll-snap-type: x proximity; overscroll-behavior-x: contain;
+  }
+  .nav button {
+    min-height: 44px; padding: 0.55em 0.8em;
+    scroll-snap-align: start;
+  }
+
+  .page-head { margin-bottom: 24px; }
+  .page-head h1 { font-size: clamp(1.75rem, 9vw, 2.25rem); }
+  .card-head, .card-body { padding: 16px; }
+  .g4 { grid-template-columns: 1fr; }
+
+  .btn { min-height: 44px; padding: 0.7em 1em; }
+  .btn-sm { min-height: 40px; }
+  .actions { align-items: stretch; }
+  .actions .btn { flex: 1 1 12rem; }
+  .seg { display: flex; width: 100%; }
+  .seg button { flex: 1 1 auto; min-height: 42px; padding-inline: 0.55em; }
+  .stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); width: 100%; gap: 16px; }
+  .opt { flex: 1 1 100%; min-height: 48px; }
+  .type-row .btn { flex: 1 1 100%; }
+
+  .trace .lbl { min-width: 12ch; }
+
+  .dict-drawer { width: 100%; height: 100dvh; border-left: 0; }
+  .dict-drawer-head { padding-top: max(16px, env(safe-area-inset-top)); }
+
+  .main-full { min-height: 0; }
+  .ide, .ide.task-collapsed, .ide.results-full {
+    height: calc(100dvh - 101px - env(safe-area-inset-top));
+    min-height: 360px;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: 48px minmax(0, 1fr);
+    overflow: hidden;
+  }
+  .ide-mobile-nav {
+    display: grid; grid-template-columns: repeat(3, 1fr); grid-column: 1; grid-row: 1;
+    background: var(--surface); border-bottom: 1px solid var(--rule); z-index: 2;
+  }
+  .ide-mobile-nav button {
+    position: relative; min-width: 0; padding: 0 8px;
+    font-family: var(--f-display); font-size: 0.78rem; color: var(--ink-3);
+    border-bottom: 2px solid transparent;
+  }
+  .ide-mobile-nav button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--nom); }
+  .ide-mobile-nav button span {
+    display: inline-grid; place-items: center; min-width: 18px; height: 18px;
+    margin-left: 5px; padding: 0 4px; border-radius: 9px;
+    background: var(--raised-2); color: var(--ink-2); font: 0.65rem var(--f-mono);
+  }
+  .ide-mobile-nav button span.has-feedback { background: var(--ok-bg); color: var(--ok); }
+
+  .ide > .ide-task, .ide > .ide-editor, .ide > .ide-results {
+    display: none; grid-column: 1; grid-row: 2; max-height: none; min-height: 0;
+  }
+  .ide.mobile-task > .ide-task,
+  .ide.mobile-editor > .ide-editor,
+  .ide.mobile-results > .ide-results { display: flex; }
+  .ide-toolbar { overflow-x: auto; overscroll-behavior-x: contain; }
+  .ide-toolbar > * { flex: none; }
+  .ide-toolbar .ide-spacer { display: none; }
+  .ide-code { min-height: 0; }
+  .ide-highlight, .ide-input { font-size: 1rem; padding: 14px 12px; }
+  .ide-gutter { padding: 14px 0.5em; }
+  .ide-statusbar { gap: 10px; overflow-x: auto; white-space: nowrap; }
+  .ide-results-body, .ide-task-body { padding: 14px; }
+  .ide-results-tools .ide-icon { min-width: 40px; min-height: 40px; }
+  .err-tip { min-width: min(240px, calc(100vw - 32px)); max-width: calc(100vw - 32px); }
+
 }
 
 .corr { display: grid; gap: var(--s2); }
@@ -1160,6 +1259,12 @@ pre.code b { font-weight: 600; }
   padding-top: 0.35em; font-variant-numeric: tabular-nums;
 }
 .spec .sec h2 { font-size: clamp(1.5rem, 3.4vw, 2.2rem); letter-spacing: -0.018em; }
+.section-link {
+  margin-left: 0.4em; color: var(--ink-3); text-decoration: none;
+  font-family: var(--f-mono); font-size: 0.55em; opacity: 0.45;
+}
+.section-link:hover, .section-link:focus-visible { color: var(--nom); opacity: 1; }
+[id^="doc-"] { scroll-margin-top: 76px; }
 .spec .sec-sub { color: var(--ink-2); max-width: 64ch; margin-top: var(--s2); }
 .spec .body-copy { max-width: 64ch; margin-top: var(--s3); color: var(--ink-2); }
 .spec .body-copy strong { color: var(--ink); font-weight: 600; }
@@ -1398,3 +1503,31 @@ pre.code b { font-weight: 600; }
 .law.cmp-same > .eyebrow { color: var(--ok); }
 .law.cmp-watch { border-left-color: var(--warn); }
 .law.cmp-watch > .eyebrow { color: var(--warn); }
+
+/* These components are defined after the primary mobile block above; keep
+   their small-screen overrides last so the cascade cannot restore desktop
+   padding or drawer offsets. */
+@media (max-width: 699px) {
+  .foot { padding: 20px 0 calc(28px + env(safe-area-inset-bottom)); }
+
+  .tc-fab {
+    right: max(16px, env(safe-area-inset-right));
+    bottom: max(20px, env(safe-area-inset-bottom));
+  }
+  .tc-drawer {
+    inset: 0; width: 100% !important; max-width: none; height: 100dvh;
+    z-index: 70; border-left: 0;
+  }
+  .tc-head { padding-top: max(12px, env(safe-area-inset-top)); }
+  .tc-input-row { padding-bottom: max(14px, env(safe-area-inset-bottom)); }
+  .tc-messages { padding-inline: 12px; }
+  .tc-msg-avatar { display: none; }
+  .tc-bubble { max-width: 94%; }
+
+  .spec-hero { padding-top: 16px; }
+  .spec .sec { padding: 40px 0; }
+  .spec .sec-head { align-items: flex-start; }
+  [id^="doc-"] { scroll-margin-top: 112px; }
+  .klammer-card, .spec-tool .tool-body, .spec-tool .out-phrase,
+  .spec-tool .trace, .komp-eq { padding-inline: 16px; }
+}

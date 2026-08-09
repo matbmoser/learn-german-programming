@@ -639,6 +639,7 @@ export default function Spec() {
       {/* ===================================================== §1 kasus === */}
       <section className="sec">
         <SecHead
+          anchor="kasus"
           num="§1"
           title="Four cases = four argument slots"
           sub="A German verb is a function, and its arguments are labelled by case rather than by position. That is why word order can move: the labels are glued to the nouns, not to the slots."
@@ -699,6 +700,7 @@ export default function Spec() {
       {/* ===================================================== §3 artikel === */}
       <section className="sec">
         <SecHead
+          anchor="artikel"
           num="§3"
           title="The article table is a lookup — and almost all repeats"
           sub="Sixteen cells, but only six distinct forms, and most rows repeat. Learn the exceptions, not the grid."
@@ -744,6 +746,7 @@ export default function Spec() {
       {/* ===================================================== §4 adjektive === */}
       <section className="sec">
         <SecHead
+          anchor="adjektive"
           num="§4"
           title="Adjective endings: one signal, marked exactly once"
           sub="Learners memorise three 16-cell tables. You only need one conditional and two shapes."
@@ -812,6 +815,7 @@ export default function Spec() {
       {/* ===================================================== §5 präpositionen === */}
       <section className="sec">
         <SecHead
+          anchor="praepositionen"
           num="§5"
           title="Prepositions are case constants"
           sub="Most prepositions hard-code their case — no thinking required once memorised. Nine of them take a boolean argument."
@@ -839,6 +843,7 @@ export default function Spec() {
       {/* ===================================================== §6 zeiten === */}
       <section className="sec">
         <SecHead
+          anchor="zeiten"
           num="§6"
           title="Six tenses, two building blocks"
           sub="German barely conjugates for tense. It composes: an auxiliary carries person and time, a fixed non-finite form carries meaning. Learn two forms per verb and all six tenses fall out."
@@ -885,6 +890,7 @@ export default function Spec() {
       {/* ===================================================== §7 wortstellung === */}
       <section className="sec">
         <SecHead
+          anchor="wortstellung"
           num="§7"
           title="Word order: open a bracket, close a bracket"
           sub="German syntax has one governing shape. Once you see it, sentence-final verbs stop feeling random."

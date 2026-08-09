@@ -566,6 +566,7 @@ export default function GenusSection() {
   return (
     <section className="sec">
       <SecHead
+        anchor="genus"
         num="§2"
         title="Gender is a lookup, not a coin flip"
         sub="der/die/das looks arbitrary because learners meet nouns one at a time. Sorted by ending, by meaning class, and by final compound part, most of the vocabulary you will ever need falls into place — and the residue is small enough to learn by heart."

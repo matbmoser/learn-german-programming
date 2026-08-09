@@ -60,6 +60,7 @@ export default function Write({ progress, apiKey, model, mode, targetLevel, sett
 
   const [taskOpen, setTaskOpen] = React.useState(true);
   const [resultsFull, setResultsFull] = React.useState(false);
+  const [mobilePane, setMobilePane] = React.useState("editor");
   const [tab, setTab] = React.useState("overview");
   const [activeError, setActiveError] = React.useState(null);
   const [showPhrases, setShowPhrases] = React.useState(false);
@@ -113,6 +114,7 @@ export default function Write({ progress, apiKey, model, mode, targetLevel, sett
     setActiveError(null);
     setManualOpen(false);
     setAcceptedSet(new Set());
+    setMobilePane("results");
     onSaveWriting({
       id: "w" + Date.now(),
       taskId: task.id,
@@ -148,6 +150,7 @@ export default function Write({ progress, apiKey, model, mode, targetLevel, sett
   function selectFreeTopic(topicId) {
     setFreeTopicId(topicId);
     setShowGallery(false);
+    setMobilePane("editor");
     clearAll();
   }
 
@@ -176,6 +179,7 @@ export default function Write({ progress, apiKey, model, mode, targetLevel, sett
   function jumpToError(i) {
     setActiveError(i);
     setResultsFull(false);
+    setMobilePane("editor");
   }
 
   // Replace one error's original text with the corrected version.
@@ -206,16 +210,45 @@ export default function Write({ progress, apiKey, model, mode, targetLevel, sett
   function loadWriting(w) {
     setText(w.text); setTaskId(w.taskId); setLevelFilter(w.level);
     setFeedback(w.feedback); setTab("overview"); setActiveError(null); setShowHistory(false);
+    setMobilePane("results");
   }
 
   const promptText = manualCorrectionPrompt({ task, text, targetLevel: targetLevel || "C1" });
 
-  const cls = ["ide"];
+  const cls = ["ide", `mobile-${mobilePane}`];
   if (!taskOpen) cls.push("task-collapsed");
   if (resultsFull) cls.push("results-full");
 
   return (
     <div className={cls.join(" ")}>
+      <div className="ide-mobile-nav" role="tablist" aria-label="Bereiche des Schreibtrainers">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={mobilePane === "task"}
+          onClick={() => { setTaskOpen(true); setMobilePane("task"); }}
+        >
+          Aufgabe
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={mobilePane === "editor"}
+          onClick={() => setMobilePane("editor")}
+        >
+          Schreiben
+          <span>{words}</span>
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={mobilePane === "results"}
+          onClick={() => setMobilePane("results")}
+        >
+          Feedback
+          {feedback && <span className="has-feedback">{feedback.corrections?.length ?? 0}</span>}
+        </button>
+      </div>
       {/* ============================================================ task === */}
       <aside className="ide-task">
         {taskOpen ? (
@@ -292,7 +325,7 @@ export default function Write({ progress, apiKey, model, mode, targetLevel, sett
                             key={t.id}
                             type="button"
                             className={"ide-taskitem" + (t.id === taskId ? " is-on" : "")}
-                            onClick={() => setTaskId(t.id)}
+                            onClick={() => { setTaskId(t.id); setMobilePane("editor"); }}
                           >
                             <span className="mono dim">{t.type}</span>
                             <span>{t.title}</span>

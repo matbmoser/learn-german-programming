@@ -21,13 +21,22 @@ import { RULES, RULES_BY_CATEGORY, RULES_BY_LEVEL, RULE_BY_ID } from "../data/ru
 import { LEVELS } from "../data/curriculum.js";
 import { LevelTag, CodeBlock } from "./ui.jsx";
 
-export default function Rulebook() {
+export default function Rulebook({ section, onSectionChange }) {
   const [catFilter, setCatFilter] = React.useState("alle");
   const [levelFilter, setLevelFilter] = React.useState("alle");
-  const [openId, setOpenId] = React.useState(RULES[0].id);
+  const [openId, setOpenId] = React.useState(RULE_BY_ID[section] ? section : RULES[0].id);
   const [query, setQuery] = React.useState("");
 
   const rule = RULE_BY_ID[openId] || RULES[0];
+
+  React.useEffect(() => {
+    if (RULE_BY_ID[section]) setOpenId(section);
+  }, [section]);
+
+  function openRule(id) {
+    setOpenId(id);
+    onSectionChange?.(id);
+  }
 
   const visibleRules = React.useMemo(() => {
     return RULES.filter((r) => {
@@ -57,7 +66,7 @@ export default function Rulebook() {
   // Make sure the open rule is always visible
   React.useEffect(() => {
     if (!visibleRules.find((r) => r.id === openId) && visibleRules.length > 0) {
-      setOpenId(visibleRules[0].id);
+      openRule(visibleRules[0].id);
     }
   }, [visibleRules, openId]);
 
@@ -130,7 +139,7 @@ export default function Rulebook() {
                       type="button"
                       className="mod"
                       aria-current={r.id === openId}
-                      onClick={() => setOpenId(r.id)}
+                      onClick={() => openRule(r.id)}
                     >
                       <span className="mod-top">
                         <LevelTag level={r.level} />
@@ -146,11 +155,14 @@ export default function Rulebook() {
           )}
         </nav>
 
-        <article className="detail">
+        <article className="detail" id={`doc-${rule.id}`}>
           <span className="eyebrow">
             <LevelTag level={rule.level} /> {rule.id} · {rule.en}
           </span>
-          <h2 style={{ marginTop: "var(--s2)" }}>{rule.title}</h2>
+          <h2 style={{ marginTop: "var(--s2)" }}>
+            {rule.title}
+            <a className="section-link" href={`#rulebook/${encodeURIComponent(rule.id)}`} aria-label={`Direktlink zu ${rule.title}`} title="Direktlink zu dieser Regel">#</a>
+          </h2>
 
           <CodeBlock code={rule.rule} />
 
@@ -191,7 +203,7 @@ export default function Rulebook() {
                       key={id}
                       type="button"
                       className="tag-btn"
-                      onClick={() => setOpenId(id)}
+                      onClick={() => openRule(id)}
                     >
                       <LevelTag level={ref.level} />
                       <span style={{ marginLeft: "var(--s1)" }}>{id} {ref.title}</span>

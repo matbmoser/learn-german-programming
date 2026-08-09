@@ -131,12 +131,19 @@ export function GrammarTable({ table }) {
 }
 
 /** Numbered section heading used by the Spezifikation views. */
-export function SecHead({ num, title, sub }) {
+export function SecHead({ num, title, sub, anchor }) {
   return (
-    <div className="sec-head">
+    <div className="sec-head" id={anchor ? `doc-${anchor}` : undefined}>
       <span className="sec-num">{num}</span>
       <div>
-        <h2>{title}</h2>
+        <h2>
+          {title}
+          {anchor && (
+            <a className="section-link" href={`#spec/${anchor}`} aria-label={`Direktlink zu ${title}`} title="Direktlink zu diesem Abschnitt">
+              #
+            </a>
+          )}
+        </h2>
         {sub && <p className="sec-sub">{sub}</p>}
       </div>
     </div>
