@@ -428,7 +428,7 @@ class end — subordinierend: finites Verb ans Ende
       },
     ],
     pitfalls: [
-      "wenn vs. als: als for a single completed past event, wenn for repeated or present/future. »Als ich klein war« but »Immer wenn ich klein war…« is wrong.",
+      "wenn vs. als: als for a single completed past event — »Als ich in Berlin ankam, …«. wenn for repeated past events and for present/future — »(Immer) wenn ich in Berlin war, besuchte ich das Museum.« Repeated events in the past take wenn, not als.",
       "damit vs. um … zu: damit when the two clauses have different subjects, um … zu when the subject is the same.",
       "The comma before a subordinate clause is obligatory in German.",
     ],
@@ -562,6 +562,10 @@ aufstehen → aufzustehen      teilnehmen → teilzunehmen
 // no zu after: modals, werden, sehen, hören, lassen, bleiben, gehen
 Ich lasse das Auto reparieren.     Ich gehe schwimmen.
 
+// helfen / lehren / lernen take BOTH — short: no zu, extended: zu
+Er hilft mir tragen.
+Er hilft mir, den schweren Schrank zu tragen.
+
 // the three clause-replacers
 um … zu      (purpose, same subject)   Ich lerne, um die Prüfung zu bestehen.
 ohne … zu    (negative accompaniment)  Er ging, ohne sich zu verabschieden.
@@ -569,6 +573,7 @@ ohne … zu    (negative accompaniment)  Er ging, ohne sich zu verabschieden.
     pitfalls: [
       "um … zu only works when both clauses share a subject. Different subjects require damit.",
       "After modal verbs there is no zu: »Ich muss gehen«, not »Ich muss zu gehen«.",
+      "helfen / lehren / lernen are not fixed either way — both »Er hilft mir tragen« and »Er hilft mir, das zu tragen« are standard; zu becomes the norm as the infinitive group grows.",
     ],
   },
 

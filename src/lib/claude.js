@@ -645,6 +645,27 @@ function normalizeTeacherCorrection(input, index) {
   };
 }
 
+function requestsInteractiveExercise(text, messages) {
+  const value = String(text || "").trim().toLowerCase();
+  const namedRequest = /\b(?:give|make|create|show|send|generate|want|need|have|get|try|do|start|another|new|next|more)\b.{0,50}\b(?:exercises?|quiz|drill|practice questions?|practice tasks?)\b/i.test(value) ||
+    /\b(?:exercises?|quiz|drill)\b.{0,20}\bplease\b/i.test(value) ||
+    /^(?:please\s+)?(?:an?\s+)?(?:interactive\s+)?(?:exercise|quiz|drill)\b/i.test(value) ||
+    /^(?:please\s+)?practice\b/i.test(value) ||
+    /\b(?:can|could|may)\s+(?:we|i)\s+(?:practice|try)\b/i.test(value) ||
+    /(?:übung|übungen|aufgabe|aufgaben)/i.test(value) ||
+    /\b(?:test me|give me something to solve)\b/i.test(value);
+  if (namedRequest) return true;
+
+  const asksForAnother = /^(?:please\s+)?(?:another|one more|the next|next one)(?:\s+one)?[.!?]*$/i.test(value);
+  return asksForAnother && messages.some((message) => message.role === "assistant" && message.exercises?.length);
+}
+
+function cleanTeacherReply(text) {
+  return String(text || "")
+    .replace(/\n*\[(?:Exercises shown to the student|Correction results shown to the student)\][\s\S]*$/i, "")
+    .trim();
+}
+
 export async function chatWithTeacher({ apiKey, model = MODEL, messages, currentText = "", task = null, targetLevel = "C1" }) {
   const system = buildChatSystem({ targetLevel, task, currentText });
   const lastMessage = messages.at(-1);
@@ -652,25 +673,31 @@ export async function chatWithTeacher({ apiKey, model = MODEL, messages, current
   const isExerciseSubmission = lastMessage?.role === "user" && (
     lastMessage.exerciseSubmission === true || /^I completed the exercise\b/i.test(lastContent.trim())
   );
+  const wantsExercise = lastMessage?.role === "user" && requestsInteractiveExercise(lastContent, messages);
+  const forcedTool = isExerciseSubmission
+    ? TEACHER_CORRECTION_TOOL.name
+    : wantsExercise
+      ? TEACHER_EXERCISE_TOOL.name
+      : null;
   try {
     const response = await (await client(apiKey)).messages.create({
       model,
       max_tokens: 2048,
       system,
       tools: [TEACHER_EXERCISE_TOOL, TEACHER_CORRECTION_TOOL],
-      ...(isExerciseSubmission
-        ? { tool_choice: { type: "tool", name: TEACHER_CORRECTION_TOOL.name, disable_parallel_tool_use: true } }
+      ...(forcedTool
+        ? { tool_choice: { type: "tool", name: forcedTool, disable_parallel_tool_use: isExerciseSubmission } }
         : {}),
       messages: messages.map((message) => ({
         role: message.role,
         content: message.modelContent || message.content,
       })),
     });
-    const reply = response.content
+    const reply = cleanTeacherReply(response.content
       .filter((block) => block.type === "text")
       .map((block) => block.text)
       .join("\n\n")
-      .trim();
+    );
     const exercises = response.content
       .filter((block) => block.type === "tool_use" && block.name === TEACHER_EXERCISE_TOOL.name)
       .map((block, index) => normalizeTeacherExercise(block.input, index));
@@ -679,6 +706,9 @@ export async function chatWithTeacher({ apiKey, model = MODEL, messages, current
       .map((block, index) => normalizeTeacherCorrection(block.input, index));
     if (isExerciseSubmission && !corrections.length) {
       throw new Error("Frau Müller could not build the visual correction results. Please submit the exercise again.");
+    }
+    if (wantsExercise && !exercises.length) {
+      throw new Error("Frau Müller could not build the interactive exercise. Please ask again.");
     }
     if (!reply && !exercises.length && !corrections.length) throw new Error("Empty response from Frau Müller.");
     return {

@@ -19,7 +19,8 @@
 import React from "react";
 import { MODULES, MODULES_BY_LEVEL, LEVELS } from "../data/curriculum.js";
 import { RULE_BY_ID } from "../engine/drills.js";
-import { GrammarTable, LevelTag, Bar, accColor, CodeBlock } from "./ui.jsx";
+import { MODULE_SOURCES } from "../data/sources.js";
+import { GrammarTable, LevelTag, Bar, accColor, CodeBlock, SourceList } from "./ui.jsx";
 
 export default function Learn({ progress, onRead, onDrillTopic, section, onSectionChange }) {
   const [openId, setOpenId] = React.useState(
@@ -149,6 +150,8 @@ export default function Learn({ progress, onRead, onDrillTopic, section, onSecti
               </div>
             </section>
           )}
+
+          <SourceList ids={mod.sources || MODULE_SOURCES[mod.id]} />
         </article>
       </div>
     </>

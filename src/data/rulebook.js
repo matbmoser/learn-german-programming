@@ -377,11 +377,18 @@ gut     → am besten     → der beste
 viel    → am meisten    → die meisten
 hoch    → am höchsten   → der höchste
 
-// -e- inserted before -sten when stem ends in -d/-t/-s/-ß/-z:
-laut → am lautesten`,
+// -e- inserted before -sten when stem ends in -d/-t/-s/-ß/-z/-sch:
+laut → am lautesten     stolz → am stolzesten     hübsch → am hübschesten
+
+// but groß breaks the pattern: am größten (never »am größesten«)`,
     examples: [
       { de: "Er ist am schnellsten.", en: "He is the fastest.", note: "Predicative superlative" },
       { de: "der schnellste Läufer", en: "the fastest runner", note: "Attributive superlative" },
+      { de: "am größten", en: "the biggest", note: "Exception: no -e- despite the -ß stem (Duden)" },
+    ],
+    exceptions: [
+      "groß → am größten, not »am größesten« — the standard exception to the -e- insertion rule.",
+      "Adjectives ending in unstressed -el/-er take no -e-: am dunkelsten, am teuersten.",
     ],
   },
 
@@ -597,7 +604,8 @@ Ich lerne Deutsch, um in Deutschland zu arbeiten.
       { de: "Sie geht, ohne sich zu verabschieden.", en: "She leaves without saying goodbye.", note: "ohne...zu" },
     ],
     exceptions: [
-      "helfen, lehren, lernen, sehen, hören, lassen, bleiben + infinitive WITHOUT zu (see R-039).",
+      "sehen, hören, lassen, bleiben, gehen + bare infinitive — never zu (see R-039).",
+      "helfen, lehren, lernen take BOTH: »Er hilft mir tragen« but »Er hilft mir, den Schrank zu tragen« — the longer the infinitive group, the more usual zu becomes.",
     ],
     seeAlso: ["R-032", "R-039"],
   },
@@ -616,16 +624,27 @@ sehen     Ich sehe ihn kommen.
 hören     Wir hören sie singen.
 bleiben   Er bleibt stehen.
 gehen     Sie geht schwimmen.
-helfen    Kannst du mir tragen helfen?
 
-// Perfekt → double infinitive (NOT Partizip)
-Ich habe ihn kommen sehen.     ✓
-Ich habe ihn kommen gesehen.   ✗ (only in very colloquial speech)`,
+// helfen / lehren / lernen are NOT in this closed group:
+// short infinitive → usually without zu, extended → usually with zu.
+Kannst du mir tragen helfen?                          (short, no zu)
+Er hat mir geholfen, den Schrank zu tragen.           (extended, with zu)
+
+// Perfekt of lassen → Ersatzinfinitiv (double infinitive), obligatory:
+Ich habe das Auto reparieren lassen.   ✓   (not: gelassen)
+
+// After sehen / hören the usage varies — both are standard German:
+Ich habe ihn kommen sehen.     ✓ (Ersatzinfinitiv — the more common variant)
+Ich habe ihn kommen gesehen.   ✓ (Partizip — less frequent, not wrong)`,
     examples: [
       { de: "Ich lasse mir die Haare schneiden.", en: "I'm getting my hair cut.", note: "lassen — bare infinitive" },
-      { de: "Ich habe sie singen hören.", en: "I heard her singing.", note: "Perfekt → double infinitive" },
+      { de: "Ich habe sie singen hören.", en: "I heard her singing.", note: "Ersatzinfinitiv; »singen gehört« is also attested" },
     ],
-    seeAlso: ["R-034", "R-038"],
+    exceptions: [
+      "helfen, lehren, lernen allow both: bare infinitive when short, zu-infinitive when the infinitive group is extended (Duden, IDS grammis).",
+      "lassen and the modals require the Ersatzinfinitiv in the Perfekt; sehen/hören/fühlen vary between Ersatzinfinitiv and Partizip II.",
+    ],
+    seeAlso: ["R-034", "R-038", "R-062"],
   },
 
   {
@@ -825,13 +844,24 @@ Imperativ: Komm!  (du)   Kommt!  (ihr)   Kommen Sie!  (Sie)`,
 …, weil    er       krank     ist.
 …, weil    er       krank     gewesen ist.    // Perfekt: sein last
 …, weil    er       kommen    muss.           // modal last
-…, weil    er       kommen    hat müssen.     // Perfekt of modal: müssen last
+
+// THE ONE EXCEPTION — Ersatzinfinitiv (double infinitive).
+// When the Perfekt of a modal produces two infinitives, the finite
+// auxiliary moves to the FRONT of the verb cluster, not to the end:
+
+…, weil    er       hat       kommen müssen.     ✓
+…, weil    er       kommen    müssen hat.        ✗
+…, wenn    ich      hätte     kommen können.     ✓
 
 // Conjunction can be dropped if verb moves to position 1:
 → NOT possible; verb-end is obligatory when conjunction is present.`,
     examples: [
       { de: "Ich weiß, dass er krank ist.", en: "I know that he is ill." },
       { de: "…, weil er nicht kommen konnte.", en: "…because he couldn't come.", note: "Modal Präteritum — konnte last" },
+      { de: "…, weil er nicht hat kommen dürfen.", en: "…because he wasn't allowed to come.", note: "Ersatzinfinitiv — hat BEFORE the two infinitives (IDS grammis)" },
+    ],
+    exceptions: [
+      "Double infinitive: the finite auxiliary precedes the infinitive cluster — »weil er nicht hat kommen dürfen«, not »weil er nicht kommen dürfen hat«.",
     ],
     seeAlso: ["R-060", "R-068"],
   },
@@ -1101,18 +1131,27 @@ glauben (person), schaden, nützen, ähneln`,
     title: "Präpositionen mit Akkusativ",
     en: "Accusative-only prepositions",
     rule:
-`// Always Akkusativ — no exceptions:
-durch   für   gegen   ohne   um   bis   entlang (follows noun)
+`// Always Akkusativ:
+durch   für   gegen   ohne   um   bis
 
-// Mnemonic: DOGFUB-e (Durch Ohne Gegen Für Um Bis Entlang)
+// Mnemonic: DOGFUB (Durch Ohne Gegen Für Um Bis)
 
 durch den Park     für meinen Vater     gegen den Wind
 ohne einen Mantel  um das Haus          bis nächsten Montag
 
-// bis often pairs with another prep: bis zum Bahnhof, bis nächsten Dienstag`,
+// bis often pairs with another prep: bis zum Bahnhof, bis nächsten Dienstag
+
+// entlang is NOT a fixed-Akkusativ preposition — its case depends on position:
+nachgestellt  → Akkusativ   die Straße entlang
+vorangestellt → Genitiv     entlang der Straße   (Dativ regional/CH: entlang dem Fluss)`,
     examples: [
       { de: "Ich kaufe ein Geschenk für meinen Bruder.", en: "I'm buying a gift for my brother.", note: "für → AKK" },
       { de: "Wir gehen durch den Wald.", en: "We're going through the forest.", note: "durch → AKK" },
+      { de: "Wir gehen die Straße entlang. / entlang der Straße", en: "We walk along the street.", note: "entlang: postposed → AKK, preposed → GEN (Duden)" },
+    ],
+    exceptions: [
+      "entlang: Akkusativ only when it follows the noun; before the noun it takes Genitiv (regionally Dativ).",
+      "bis before an article normally combines with a second preposition, which then assigns the case: bis zum Bahnhof (DAT), bis an die Grenze (AKK).",
     ],
     seeAlso: ["R-082", "R-083"],
   },
@@ -1545,8 +1584,8 @@ in Frage stellen                    = bezweifeln
 in Kraft treten                     = gültig werden
 zur Verfügung stellen               = bereitstellen
 Rücksicht nehmen auf + AKK          = berücksichtigen
-unter Druck setzen                  = unter Druck setzen / zwingen
-in Betrieb nehmen                   = anlaufen lassen
+unter Druck setzen                  = bedrängen / zwingen
+in Betrieb nehmen                   = starten / einschalten
 zum Ausdruck bringen                = ausdrücken
 in Anspruch nehmen                  = beanspruchen`,
     examples: [

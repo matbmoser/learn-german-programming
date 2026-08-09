@@ -128,7 +128,11 @@ export const REFLEX_DAT = ["mir", "dir", "sich", "uns", "euch", "sich"];
 // --- verbs ------------------------------------------------------------------
 // pres/prat/k2 are 6-slot arrays: ich, du, er, wir, ihr, sie
 // k1_3 = Konjunktiv I, 3rd person singular (indirect speech workhorse)
-// sep  = separable prefix · trans = takes an accusative object (passivisable)
+// sep  = separable prefix · trans = takes an accusative object
+// noPassiv = transitive but NOT passivisable — haben, wissen, kennen, besitzen,
+//   bekommen, kosten and friends take an accusative object yet form no
+//   werden-Passiv. See IDS grammis "Passivfähigkeit bei werden- und sein-Passiv":
+//   https://grammis.ids-mannheim.de/systematische-grammatik/1136
 
 export const VERBS = [
   { inf: "machen", en: "to do/make", aux: "haben", pii: "gemacht", type: "weak", trans: true,
@@ -174,9 +178,9 @@ export const VERBS = [
     k2: ["gäbe","gäbest","gäbe","gäben","gäbet","gäben"], k1_3: "gebe" },
   { inf: "finden", en: "to find", aux: "haben", pii: "gefunden", type: "strong", trans: true,
     pres: ["finde","findest","findet","finden","findet","finden"],
-    prat: ["fand","fandst","fand","fanden","fandet","fanden"],
+    prat: ["fand","fandest","fand","fanden","fandet","fanden"],
     k2: ["fände","fändest","fände","fänden","fändet","fänden"], k1_3: "finde" },
-  { inf: "haben", en: "to have", aux: "haben", pii: "gehabt", type: "mixed", trans: true,
+  { inf: "haben", en: "to have", aux: "haben", pii: "gehabt", type: "mixed", trans: true, noPassiv: true,
     pres: ["habe","hast","hat","haben","habt","haben"],
     prat: ["hatte","hattest","hatte","hatten","hattet","hatten"],
     k2: ["hätte","hättest","hätte","hätten","hättet","hätten"], k1_3: "habe" },
@@ -204,7 +208,7 @@ export const VERBS = [
   { inf: "verstehen", en: "to understand", aux: "haben", pii: "verstanden", type: "strong", trans: true,
     note: "untrennbares Präfix ver- → kein ge-",
     pres: ["verstehe","verstehst","versteht","verstehen","versteht","verstehen"],
-    prat: ["verstand","verstandst","verstand","verstanden","verstandet","verstanden"],
+    prat: ["verstand","verstandest","verstand","verstanden","verstandet","verstanden"],
     k2: ["verstünde","verstündest","verstünde","verstünden","verstündet","verstünden"], k1_3: "verstehe" },
   { inf: "studieren", en: "to study", aux: "haben", pii: "studiert", type: "weak", trans: true,
     note: "-ieren → kein ge-",
@@ -215,7 +219,7 @@ export const VERBS = [
   { inf: "aufstehen", en: "to get up", aux: "sein", pii: "aufgestanden", type: "strong", trans: false,
     sep: "auf", note: "trennbar → ge- rutscht in die Mitte",
     pres: ["stehe","stehst","steht","stehen","steht","stehen"],
-    prat: ["stand","standst","stand","standen","standet","standen"],
+    prat: ["stand","standest","stand","standen","standet","standen"],
     k2: ["stünde","stündest","stünde","stünden","stündet","stünden"], k1_3: "stehe" },
   { inf: "anrufen", en: "to call (phone)", aux: "haben", pii: "angerufen", type: "strong", trans: true,
     sep: "an", note: "trennbar",
@@ -230,11 +234,11 @@ export const VERBS = [
     pres: ["denke","denkst","denkt","denken","denkt","denken"],
     prat: ["dachte","dachtest","dachte","dachten","dachtet","dachten"],
     k2: ["dächte","dächtest","dächte","dächten","dächtet","dächten"], k1_3: "denke" },
-  { inf: "wissen", en: "to know (a fact)", aux: "haben", pii: "gewusst", type: "mixed", trans: true,
+  { inf: "wissen", en: "to know (a fact)", aux: "haben", pii: "gewusst", type: "mixed", trans: true, noPassiv: true,
     pres: ["weiß","weißt","weiß","wissen","wisst","wissen"],
     prat: ["wusste","wusstest","wusste","wussten","wusstet","wussten"],
     k2: ["wüsste","wüsstest","wüsste","wüssten","wüsstet","wüssten"], k1_3: "wisse" },
-  { inf: "lassen", en: "to let/have done", aux: "haben", pii: "gelassen", type: "strong", trans: true,
+  { inf: "lassen", en: "to let/have done", aux: "haben", pii: "gelassen", type: "strong", trans: true, noPassiv: true,
     pres: ["lasse","lässt","lässt","lassen","lasst","lassen"],
     prat: ["ließ","ließest","ließ","ließen","ließt","ließen"],
     k2: ["ließe","ließest","ließe","ließen","ließet","ließen"], k1_3: "lasse" },
@@ -269,7 +273,10 @@ export const MODALS = [
 
 // --- prepositions -----------------------------------------------------------
 
-export const PREP_AKK = ["durch", "für", "gegen", "ohne", "um", "bis", "entlang"];
+// entlang is deliberately absent: its case depends on its position relative to
+// the noun (nachgestellt → Akkusativ, vorangestellt → Genitiv/regional Dativ),
+// so it is not a case constant. See R-081 and https://www.duden.de/rechtschreibung/entlang_seitlich_zuseiten
+export const PREP_AKK = ["durch", "für", "gegen", "ohne", "um", "bis"];
 export const PREP_DAT = ["aus", "außer", "bei", "mit", "nach", "seit", "von", "zu", "gegenüber"];
 export const PREP_GEN = ["wegen", "während", "trotz", "statt", "innerhalb", "außerhalb", "aufgrund", "anhand", "hinsichtlich", "infolge", "mangels", "zwecks"];
 export const PREP_WECHSEL = ["an", "auf", "hinter", "in", "neben", "über", "unter", "vor", "zwischen"];

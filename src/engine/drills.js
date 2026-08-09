@@ -532,7 +532,9 @@ function qKonj1() {
 //  B1/B2 — Passiv
 // ---------------------------------------------------------------------------
 function qPassiv() {
-  const v = rnd(VERBS.filter((x) => x.trans && !x.sep));
+  // trans alone is not enough: haben/wissen/lassen take an accusative object
+  // but form no werden-Passiv (IDS grammis, Passivfähigkeit).
+  const v = rnd(VERBS.filter((x) => x.trans && !x.sep && !x.noPassiv));
   const f = rnd(PASSIVE_FORMS);
   const i = rnd([2, 2, 5, 0]);
   const r = conjugate(v, i, f.k);

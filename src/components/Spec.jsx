@@ -771,7 +771,7 @@ export default function Spec() {
             </thead>
             <tbody>
               <tr className="ref-row"><th scope="row" className="c-nom">Nominativ</th><td>der</td><td>das</td><td>die</td><td>die</td></tr>
-              <tr><th scope="row" className="c-akk">Akkusativ</th><td className="hot c-akk">den<Mark note="einzige Abweichung von Nominativ" /></td><td>das</td><td>die</td><td>die</td></tr>
+              <tr><th scope="row" className="c-akk">Akkusativ</th><td className="hot">den<Mark note="einzige Abweichung von Nominativ" /></td><td>das</td><td>die</td><td>die</td></tr>
               <tr><th scope="row" className="c-dat">Dativ</th><td>dem</td><td>dem</td><td>der</td><td>den + Nomen<Suf>n</Suf></td></tr>
               <tr><th scope="row" className="c-gen">Genitiv</th><td>des + Nomen<Suf>s</Suf></td><td>des + Nomen<Suf>s</Suf></td><td>der</td><td>der</td></tr>
             </tbody>
@@ -786,8 +786,8 @@ export default function Spec() {
               <tr><th scope="col">Kasus</th><th scope="col">Maskulin</th><th scope="col">Neutrum</th><th scope="col">Feminin</th><th scope="col">Plural (kein-)</th></tr>
             </thead>
             <tbody>
-              <tr className="ref-row"><th scope="row" className="c-nom">Nominativ</th><td className="hot c-nom">ein <span className="badge">—</span><Mark note="nackte Zelle, keine Endung" /></td><td className="hot c-nom">ein <span className="badge">—</span><Mark note="nackte Zelle, keine Endung" /></td><td>eine</td><td>keine</td></tr>
-              <tr><th scope="row" className="c-akk">Akkusativ</th><td>einen</td><td className="hot c-akk">ein <span className="badge">—</span><Mark note="nackte Zelle, keine Endung" /></td><td>eine</td><td>keine</td></tr>
+              <tr className="ref-row"><th scope="row" className="c-nom">Nominativ</th><td className="hot">ein <span className="badge">—</span><Mark note="nackte Zelle, keine Endung" /></td><td className="hot">ein <span className="badge">—</span><Mark note="nackte Zelle, keine Endung" /></td><td>eine</td><td>keine</td></tr>
+              <tr><th scope="row" className="c-akk">Akkusativ</th><td>einen</td><td className="hot">ein <span className="badge">—</span><Mark note="nackte Zelle, keine Endung" /></td><td>eine</td><td>keine</td></tr>
               <tr><th scope="row" className="c-dat">Dativ</th><td>einem</td><td>einem</td><td>einer</td><td>keinen + Nomen<Suf>n</Suf></td></tr>
               <tr><th scope="row" className="c-gen">Genitiv</th><td>eines + Nomen<Suf>s</Suf></td><td>eines + Nomen<Suf>s</Suf></td><td>einer</td><td>keiner</td></tr>
             </tbody>
@@ -826,8 +826,8 @@ export default function Spec() {
               <tr><th scope="col"></th><th scope="col">Mask</th><th scope="col">Neut</th><th scope="col">Fem</th><th scope="col">Plural</th></tr>
             </thead>
             <tbody>
-              <tr><th scope="row" className="c-nom">NOM</th><td className="hot c-nom">-e<Mark note="gehört zum -e-Block" /></td><td className="hot c-nom">-e<Mark note="gehört zum -e-Block" /></td><td className="hot c-nom">-e<Mark note="gehört zum -e-Block" /></td><td>-en</td></tr>
-              <tr><th scope="row" className="c-akk">AKK</th><td>-en</td><td className="hot c-akk">-e<Mark note="gehört zum -e-Block" /></td><td className="hot c-akk">-e<Mark note="gehört zum -e-Block" /></td><td>-en</td></tr>
+              <tr><th scope="row" className="c-nom">NOM</th><td className="hot">-e<Mark note="gehört zum -e-Block" /></td><td className="hot">-e<Mark note="gehört zum -e-Block" /></td><td className="hot">-e<Mark note="gehört zum -e-Block" /></td><td>-en</td></tr>
+              <tr><th scope="row" className="c-akk">AKK</th><td>-en</td><td className="hot">-e<Mark note="gehört zum -e-Block" /></td><td className="hot">-e<Mark note="gehört zum -e-Block" /></td><td>-en</td></tr>
               <tr><th scope="row" className="c-dat">DAT</th><td>-en</td><td>-en</td><td>-en</td><td>-en</td></tr>
               <tr><th scope="row" className="c-gen">GEN</th><td>-en</td><td>-en</td><td>-en</td><td>-en</td></tr>
             </tbody>
@@ -842,8 +842,8 @@ export default function Spec() {
               <tr><th scope="col"></th><th scope="col">Mask</th><th scope="col">Neut</th><th scope="col">Fem</th><th scope="col">Plural</th></tr>
             </thead>
             <tbody>
-              <tr><th scope="row" className="c-nom">NOM</th><td className="hot c-nom">-er<Mark note="weicht von SCHWACH ab" /></td><td className="hot c-nom">-es<Mark note="weicht von SCHWACH ab" /></td><td>-e</td><td>-en</td></tr>
-              <tr><th scope="row" className="c-akk">AKK</th><td>-en</td><td className="hot c-akk">-es<Mark note="weicht von SCHWACH ab" /></td><td>-e</td><td>-en</td></tr>
+              <tr><th scope="row" className="c-nom">NOM</th><td className="hot">-er<Mark note="weicht von SCHWACH ab" /></td><td className="hot">-es<Mark note="weicht von SCHWACH ab" /></td><td>-e</td><td>-en</td></tr>
+              <tr><th scope="row" className="c-akk">AKK</th><td>-en</td><td className="hot">-es<Mark note="weicht von SCHWACH ab" /></td><td>-e</td><td>-en</td></tr>
               <tr><th scope="row" className="c-dat">DAT</th><td>-en</td><td>-en</td><td>-en</td><td>-en</td></tr>
               <tr><th scope="row" className="c-gen">GEN</th><td>-en</td><td>-en</td><td>-en</td><td>-en</td></tr>
             </tbody>
@@ -861,7 +861,7 @@ export default function Spec() {
               <tr><th scope="row" className="c-nom">NOM</th><td>-er</td><td>-es</td><td>-e</td><td>-e</td></tr>
               <tr><th scope="row" className="c-akk">AKK</th><td>-en</td><td>-es</td><td>-e</td><td>-e</td></tr>
               <tr><th scope="row" className="c-dat">DAT</th><td>-em</td><td>-em</td><td>-er</td><td>-en</td></tr>
-              <tr><th scope="row" className="c-gen">GEN</th><td className="hot c-gen">-en<Mark note="bricht das Muster der der-Tabelle" /></td><td className="hot c-gen">-en<Mark note="bricht das Muster der der-Tabelle" /></td><td>-er</td><td>-er</td></tr>
+              <tr><th scope="row" className="c-gen">GEN</th><td className="hot">-en<Mark note="bricht das Muster der der-Tabelle" /></td><td className="hot">-en<Mark note="bricht das Muster der der-Tabelle" /></td><td>-er</td><td>-er</td></tr>
             </tbody>
           </table>
           <p className="tbl-cap">The der-table with the stems removed: d<b>er</b>→-er, d<b>as</b>→-es, de<b>m</b>→-em. Only Genitiv masc/neut breaks the pattern (<span className="mono">-en</span>) because the noun already carries the <span className="mono">-s</span>.</p>

@@ -39,7 +39,7 @@ function fmtTokens(n) {
   return n >= 1000 ? (n / 1000).toFixed(1) + "k" : String(n);
 }
 
-export default function TeacherChat({ apiKey, model, mode, currentText, task, targetLevel, sessions = [], onSaveSession, onClose }) {
+export default function TeacherChat({ apiKey, model, mode, currentText, task, targetLevel, sessions = [], draftRequest, onSaveSession, onClose }) {
   const sessionId        = React.useRef("cs_" + Date.now());
   const sessionStartedAt = React.useRef(Date.now());
 
@@ -53,6 +53,13 @@ export default function TeacherChat({ apiKey, model, mode, currentText, task, ta
 
   const bottomRef = React.useRef(null);
   const inputRef  = React.useRef(null);
+
+  React.useEffect(() => {
+    if (!draftRequest?.text) return;
+    setPanel("chat");
+    setInput(draftRequest.text);
+    window.requestAnimationFrame(() => inputRef.current?.focus());
+  }, [draftRequest]);
 
   React.useEffect(() => {
     if (!messages.some((m) => m.role === "user") || !onSaveSession) return;
@@ -197,7 +204,7 @@ export default function TeacherChat({ apiKey, model, mode, currentText, task, ta
             <div key={i} className={"tc-msg " + (m.role === "user" ? "tc-user" : "tc-teacher")}>
               {m.role === "assistant" && <span className="tc-msg-avatar" aria-hidden="true"><IconTeacher /></span>}
               <div className="tc-msg-content">
-                <div className="tc-bubble"><MessageText text={m.content} /></div>
+                <div className="tc-bubble"><MessageText text={m.role === "assistant" ? withoutInternalContext(m.content) : m.content} /></div>
                 {m.role === "assistant" && m.exercises?.map((exercise, exerciseIndex) => (
                   <TeacherExercise
                     key={`${exerciseIndex}-${exercise.id || "exercise"}`}
@@ -326,6 +333,12 @@ function MessageText({ text }) {
     i++;
   }
   return <>{out}</>;
+}
+
+function withoutInternalContext(text) {
+  return String(text || "")
+    .replace(/\n*\[(?:Exercises shown to the student|Correction results shown to the student)\][\s\S]*$/i, "")
+    .trim();
 }
 
 function isTableRow(line) {

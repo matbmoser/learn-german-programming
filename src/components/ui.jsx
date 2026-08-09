@@ -19,6 +19,7 @@
 import React from "react";
 import { IconCheck } from "./icons.jsx";
 import { tokenizeCode } from "../lib/highlight.js";
+import { resolveSources } from "../data/sources.js";
 
 /** Renders a prompt string, turning every "___" into a visible blank. */
 export function Prompt({ text }) {
@@ -147,6 +148,33 @@ export function SecHead({ num, title, sub, anchor }) {
         {sub && <p className="sec-sub">{sub}</p>}
       </div>
     </div>
+  );
+}
+
+/**
+ * Where a rule comes from. Only official / institutional references are listed
+ * (Rat für deutsche Rechtschreibung, IDS grammis, Duden, DWDS) — see
+ * src/data/sources.js. Renders nothing when a rule has no source on file, which
+ * is itself information: that rule is uncontroversial school grammar or this
+ * app's own didactic shorthand.
+ */
+export function SourceList({ ids, label = "Quellen" }) {
+  const items = resolveSources(ids);
+  if (!items.length) return null;
+  return (
+    <section className="sources">
+      <span className="eyebrow">{label}</span>
+      <ul>
+        {items.map((s) => (
+          <li key={s.id}>
+            <a href={s.url} target="_blank" rel="noopener noreferrer">
+              {s.label}
+            </a>
+            <span className="org">{s.org.name}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 

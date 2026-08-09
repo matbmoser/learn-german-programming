@@ -62,6 +62,7 @@ export default function App() {
   const [route, setRoute] = React.useState(readRoute);
   const [drillTopic, setDrillTopic] = React.useState(null);
   const [chatOpen, setChatOpen] = React.useState(false);
+  const [teacherDraft, setTeacherDraft] = React.useState(null);
   const [writeContext, setWriteContext] = React.useState({ text: "", task: null });
   const [dictOpen, setDictOpen] = React.useState(false);
   const [dictQuery, setDictQuery] = React.useState("");
@@ -75,6 +76,11 @@ export default function App() {
       setDictTrigger((n) => n + 1);
     }
     setDictOpen(true);
+  }, []);
+
+  const askTeacher = React.useCallback((text) => {
+    setTeacherDraft({ id: Date.now(), text });
+    setChatOpen(true);
   }, []);
 
   React.useEffect(() => { saveProgress(progress); }, [progress]);
@@ -210,6 +216,7 @@ export default function App() {
             onSaveWriting={onSaveWriting}
             onWriteContext={setWriteContext}
             onLookupWord={openDict}
+            onAskTeacher={askTeacher}
           />
         ) : (
           <div className="shell">
@@ -287,6 +294,7 @@ export default function App() {
           task={writeContext.task}
           targetLevel={targetLevel}
           sessions={progress.chatSessions || []}
+          draftRequest={teacherDraft}
           onSaveSession={onSaveChatSession}
           onClose={() => setChatOpen(false)}
         />

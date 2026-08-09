@@ -29,7 +29,7 @@ import { LevelTag, Callout, Spinner, CopyButton, countWords, Prompt } from "./ui
 import {
   IconArrowRight, IconBack, IconCancel, IconCheck, IconCheckCircle, IconClose,
   IconDice, IconDownload, IconFullscreen, IconFullscreenExit, IconGallery,
-  IconIdea, IconRun, IconSparkle, IconUndo, IconWarning,
+  IconIdea, IconRun, IconSparkle, IconTeacher, IconUndo, IconWarning,
 } from "./icons.jsx";
 
 
@@ -43,7 +43,7 @@ const TABS = [
   { id: "practice", label: "Üben" },
 ];
 
-export default function Write({ progress, apiKey, model, mode, targetLevel, settings, onSettings, onSaveWriting, onWriteContext, onLookupWord }) {
+export default function Write({ progress, apiKey, model, mode, targetLevel, settings, onSettings, onSaveWriting, onWriteContext, onLookupWord, onAskTeacher }) {
   const [levelFilter, setLevelFilter] = React.useState(
     LEVELS.includes(targetLevel) ? targetLevel : "C1"
   );
@@ -68,13 +68,21 @@ export default function Write({ progress, apiKey, model, mode, targetLevel, sett
   const [showGallery, setShowGallery] = React.useState(false);
   const [freeTopicId, setFreeTopicId] = React.useState(null);
   const [galleryCat, setGalleryCat] = React.useState(TOPIC_CATEGORIES[0]);
+  const [customOpen, setCustomOpen] = React.useState(false);
+  const [customTitle, setCustomTitle] = React.useState("");
+  const [customPrompt, setCustomPrompt] = React.useState("");
+  const [customMinWords, setCustomMinWords] = React.useState(
+    ({ A2: 60, B1: 120, B2: 180, C1: 250 })[targetLevel] || 120
+  );
+  const [customTopic, setCustomTopic] = React.useState(null);
 
   const suggestionsOn = settings?.suggestions !== false;
   function toggleSuggestions() {
     onSettings?.({ suggestions: !suggestionsOn });
   }
 
-  const freeTopic = freeTopicId ? WRITING_TOPICS.find((t) => t.id === freeTopicId) : null;
+  const galleryTopic = freeTopicId ? WRITING_TOPICS.find((t) => t.id === freeTopicId) : null;
+  const freeTopic = customTopic || galleryTopic;
   // Memoised: a fresh object here would re-fire the onWriteContext effect below
   // on every render, and that effect writes state in the parent — an endless loop.
   const task = React.useMemo(
@@ -149,9 +157,34 @@ export default function Write({ progress, apiKey, model, mode, targetLevel, sett
 
   function selectFreeTopic(topicId) {
     setFreeTopicId(topicId);
+    setCustomTopic(null);
+    setCustomOpen(false);
     setShowGallery(false);
     setMobilePane("editor");
     clearAll();
+  }
+
+  function selectCustomTopic(event) {
+    event.preventDefault();
+    const title = customTitle.trim();
+    if (!title) return;
+    const prompt = customPrompt.trim() || `Schreiben Sie einen Text über „${title}“. Entwickeln Sie Ihre Gedanken anhand konkreter Beispiele und begründen Sie Ihre Meinung.`;
+    setCustomTopic({
+      id: "personalized",
+      category: "Eigenes Thema",
+      minWords: Math.max(20, Number(customMinWords) || 120),
+      title,
+      prompt,
+    });
+    setFreeTopicId(null);
+    setCustomOpen(false);
+    setShowGallery(false);
+    setMobilePane("editor");
+    clearAll();
+  }
+
+  function askTeacherForTopic() {
+    onAskTeacher?.(`Schlagen Sie mir bitte drei persönliche Schreibthemen auf Deutsch für mein Niveau ${targetLevel || "C1"} vor. Berücksichtigen Sie, was Sie bereits über meine Interessen wissen. Falls Sie noch nichts darüber wissen, fragen Sie mich zuerst kurz nach meinen Interessen.`);
   }
 
   function pickRandomTopic() {
@@ -161,6 +194,7 @@ export default function Write({ progress, apiKey, model, mode, targetLevel, sett
 
   function backToTasks() {
     setFreeTopicId(null);
+    setCustomTopic(null);
     clearAll();
   }
 
@@ -264,7 +298,7 @@ export default function Write({ progress, apiKey, model, mode, targetLevel, sett
                   className={"btn btn-sm" + (showGallery ? " is-on" : "")}
                   type="button"
                   style={{ flex: 1 }}
-                  onClick={() => { setShowGallery((v) => !v); }}
+                  onClick={() => { setShowGallery((v) => !v); setCustomOpen(false); }}
                 >
                   {showGallery ? <><IconClose /> Galerie schließen</> : <><IconGallery /> Themen-Galerie</>}
                 </button>
@@ -278,7 +312,61 @@ export default function Write({ progress, apiKey, model, mode, targetLevel, sett
                 </button>
               </div>
 
-              {freeTopic && !showGallery && (
+              <div className="ide-topic-actions">
+                <button
+                  className={"btn btn-ghost btn-sm" + (customOpen ? " is-on" : "")}
+                  type="button"
+                  aria-expanded={customOpen}
+                  onClick={() => { setCustomOpen((v) => !v); setShowGallery(false); }}
+                >
+                  <span aria-hidden="true">＋</span> Eigenes Thema
+                </button>
+                <button className="btn btn-ghost btn-sm" type="button" onClick={askTeacherForTopic}>
+                  <IconTeacher /> Lehrerin fragen
+                </button>
+              </div>
+
+              {customOpen && (
+                <form className="ide-custom-topic" onSubmit={selectCustomTopic}>
+                  <label>
+                    <span>Worüber möchten Sie schreiben?</span>
+                    <input
+                      className="input"
+                      value={customTitle}
+                      onChange={(event) => setCustomTitle(event.target.value)}
+                      placeholder="z. B. Mein Umzug nach Berlin"
+                      autoFocus
+                    />
+                  </label>
+                  <label>
+                    <span>Schreibauftrag <small>(optional)</small></span>
+                    <textarea
+                      className="input"
+                      value={customPrompt}
+                      onChange={(event) => setCustomPrompt(event.target.value)}
+                      placeholder="Bestimmte Fragen, Perspektive oder Textart …"
+                      rows={3}
+                    />
+                  </label>
+                  <label className="ide-custom-words">
+                    <span>Mindestlänge</span>
+                    <input
+                      className="input"
+                      type="number"
+                      min="20"
+                      step="10"
+                      value={customMinWords}
+                      onChange={(event) => setCustomMinWords(event.target.value)}
+                    />
+                    <span>Wörter</span>
+                  </label>
+                  <button className="btn btn-sm" type="submit" disabled={!customTitle.trim()}>
+                    Thema verwenden <IconArrowRight />
+                  </button>
+                </form>
+              )}
+
+              {freeTopic && !showGallery && !customOpen && (
                 <div className="ide-free-topic-banner">
                   <span className="eyebrow">{freeTopic.category}</span>
                   <button className="btn btn-ghost btn-sm" type="button" onClick={backToTasks} style={{ marginLeft: "auto" }}>
@@ -310,7 +398,7 @@ export default function Write({ progress, apiKey, model, mode, targetLevel, sett
                     ))}
                   </div>
                 </div>
-              ) : (
+              ) : !customOpen && (
                 <>
                   {!freeTopic && (
                     <>

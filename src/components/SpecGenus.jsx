@@ -129,7 +129,7 @@ const SIGNALS = [
   { id: "eend", g: "f", kind: "end", label: "-e (zweisilbig)", sure: 1,
     why: "Rund drei Viertel der zweisilbigen -e-Wörter sind weiblich. Nützlich zum Raten, nicht zum Verlassen.",
     ex: [["Lampe", "lamp"], ["Blume", "flower"], ["Karte", "card"]],
-    warn: "der Name, der Junge, der Käse · das Auge, das Ende, das Interesse." },
+    warn: "der Name, der Junge, der Käse · das Auge, das Ende, das Erbe." },
   { id: "frau", g: "f", kind: "sem", label: "Weibliche Personen", sure: 2,
     why: "Natürliches Geschlecht — aber nur, wenn keine Endung dazwischenfunkt.",
     ex: [["Frau", "woman"], ["Mutter", "mother"], ["Ärztin", "doctor (f.)"]],
@@ -155,9 +155,10 @@ const SIGNALS = [
     why: "Die Verkleinerung überschreibt alles — auch das natürliche Geschlecht.",
     ex: [["Mädchen", "girl"], ["Brötchen", "bread roll"], ["Fräulein", "young lady"]],
     warn: "Genau deshalb: das Mädchen, obwohl es eine Person weiblichen Geschlechts ist." },
-  { id: "um", g: "n", kind: "end", label: "-um", sure: 3,
+  { id: "um", g: "n", kind: "end", label: "-um", sure: 2,
     why: "Lateinische Neutra. Plural oft auf -en: das Museum → die Museen.",
-    ex: [["Museum", "museum"], ["Datum", "date"], ["Zentrum", "centre"]] },
+    ex: [["Museum", "museum"], ["Datum", "date"], ["Zentrum", "centre"]],
+    warn: "der Konsum, der Reichtum, der Irrtum — die -tum-Wörter sind sonst neutral (das Eigentum), diese beiden nicht." },
   { id: "ment", g: "n", kind: "end", label: "-ment", sure: 2,
     why: "Entspricht dem englischen -ment.",
     ex: [["Dokument", "document"], ["Instrument", "instrument"], ["Argument", "argument"]],
@@ -179,13 +180,14 @@ const SIGNALS = [
   { id: "adj", g: "n", kind: "end", label: "Adjektiv als Nomen", sure: 3,
     why: "Solange keine Person gemeint ist: das Gute, aber der Alte.",
     ex: [["Gute", "the good"], ["Neue", "the new"], ["Beste", "the best"]] },
-  { id: "jung", g: "n", kind: "sem", label: "Junge Lebewesen", sure: 3,
-    why: "Alles Junge ist sächlich, bis es einen eigenen Namen bekommt.",
-    ex: [["Kind", "child"], ["Baby", "baby"], ["Kalb", "calf"]] },
-  { id: "metall", g: "n", kind: "sem", label: "Metalle & Elemente", sure: 2,
-    why: "Das Periodensystem ist neutral.",
+  { id: "jung", g: "n", kind: "sem", label: "Junge Lebewesen", sure: 2,
+    why: "Junge Lebewesen sind meist sächlich, solange sie keinen eigenen Namen bekommen.",
+    ex: [["Kind", "child"], ["Baby", "baby"], ["Kalb", "calf"]],
+    warn: "der Welpe, der Säugling, der Junge — Wortbildung schlägt die Bedeutungsgruppe." },
+  { id: "metall", g: "n", kind: "sem", label: "Metalle", sure: 2,
+    why: "Reine Metalle sind fast durchgehend sächlich.",
     ex: [["Gold", "gold"], ["Eisen", "iron"], ["Kupfer", "copper"]],
-    warn: "der Stahl, die Bronze — Legierungen scheren aus." },
+    warn: "Nichtmetalle folgen der Regel NICHT: der Sauerstoff, der Stickstoff, der Kohlenstoff, der Schwefel, der Phosphor. Legierungen ebenfalls nicht: der Stahl, die Bronze." },
   { id: "farbe", g: "n", kind: "sem", label: "Farben · Sprachen · Buchstaben", sure: 3,
     why: "Alles, was als abstrakte Bezeichnung gebraucht wird.",
     ex: [["Blau", "the blue"], ["Deutsch", "German"], ["A", "the letter A"]] },
@@ -277,6 +279,8 @@ function Signale() {
 
   const s = SIGNALS.find((x) => x.id === id);
   const gen = GEN[s.g];
+  // true while the answer for the current signal is still covered
+  const masked = hide && !shown[s.ex[0][0]];
 
   const choose = (next) => {
     setId(next);
@@ -330,7 +334,7 @@ function Signale() {
           <div className="out-phrase">
             {/* the readout must respect "Artikel verstecken" too — otherwise it
                 prints the answer directly above the blanked-out examples */}
-            {hide && !shown[s.ex[0][0]]
+            {masked
               ? <span className="blank">___ </span>
               : <span className={gen.cls}>{gen.art} </span>}
             <span>{s.ex[0][0]}</span>
@@ -345,27 +349,41 @@ function Signale() {
             <span className="step">
               <span className="lbl">Genus</span>
               <span className="arrow">→ </span>
-              {hide && !shown[s.ex[0][0]]
+              {masked
                 ? <span className="blank">___</span>
                 : <><b className={gen.cls}>{gen.art}</b> · {gen.label}</>}
             </span>
-            <span className={"step " + gen.cls}>
+            {/* the meter takes its colour from currentColor, so tinting this row
+                by gender would leak the answer through the swatch alone */}
+            <span className={"step " + (masked ? "" : gen.cls)}>
               <span className="lbl" style={{ color: "var(--ink-3)" }}>Sicherheit</span>
               <span className="arrow">→ </span>
               <Meter level={s.sure} />{" "}
               <span style={{ color: "var(--ink-2)" }}>{SURE[s.sure]}</span>
             </span>
-            <span className="step">
-              <span className="lbl">Warum</span>
-              <span className="arrow">→ </span>
-              <span className="why">{s.why}</span>
-            </span>
-            {s.warn && (
-              <span className="step">
-                <span className="lbl">Ausnahmen</span>
+            {/* Warum/Ausnahmen quote real noun phrases ("wohnen → die Wohnung"),
+                so they are the explanation you read *after* guessing. */}
+            {masked ? (
+              <span className="step" style={{ color: "var(--ink-3)" }}>
+                <span className="lbl">Warum</span>
                 <span className="arrow">→ </span>
-                <span className="genus-warn">{s.warn}</span>
+                <span className="why">verdeckt — erst raten, dann aufdecken</span>
               </span>
+            ) : (
+              <>
+                <span className="step">
+                  <span className="lbl">Warum</span>
+                  <span className="arrow">→ </span>
+                  <span className="why">{s.why}</span>
+                </span>
+                {s.warn && (
+                  <span className="step">
+                    <span className="lbl">Ausnahmen</span>
+                    <span className="arrow">→ </span>
+                    <span className="genus-warn">{s.warn}</span>
+                  </span>
+                )}
+              </>
             )}
           </div>
           <div className="genus-ex">

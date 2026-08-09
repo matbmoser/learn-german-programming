@@ -294,18 +294,17 @@ pre.code b { font-weight: 600; }
   font-family: var(--f-display); font-size: 0.75rem; letter-spacing: 0.05em;
   text-transform: uppercase; color: var(--ink-2); font-weight: 600;
 }
-/* Exception mark. Neutral by default so it never claims a case it does not
-   belong to; add a .c-* class to tint it to the case the row actually is.
-   The inset bar carries the same information without relying on colour. */
+/* Exception mark — deliberately colourless. It used to be painted in the
+   Akkusativ hue, which made NOM and GEN exception cells look accusative.
+   Tinting each cell to its own row's case was no better: the highlighted
+   cells in a table are one *group* (the three naked ein-cells, the -e block),
+   and per-case colours split the group apart. The row header already carries
+   the case, so the mark only has to say "this cell is the exception". */
 .grid-tbl td.hot {
-  background: color-mix(in srgb, var(--ink-2) 11%, transparent);
+  background: color-mix(in srgb, var(--ink-2) 14%, transparent);
   color: var(--ink); font-weight: 600;
-  box-shadow: inset 2px 0 0 var(--ink-3);
+  box-shadow: inset 2px 0 0 var(--ink-2);
 }
-.grid-tbl td.hot.c-nom { background: color-mix(in srgb, var(--nom) 13%, transparent); color: var(--nom); box-shadow: inset 2px 0 0 var(--nom); }
-.grid-tbl td.hot.c-akk { background: color-mix(in srgb, var(--akk) 13%, transparent); color: var(--akk); box-shadow: inset 2px 0 0 var(--akk); }
-.grid-tbl td.hot.c-dat { background: color-mix(in srgb, var(--dat) 13%, transparent); color: var(--dat); box-shadow: inset 2px 0 0 var(--dat); }
-.grid-tbl td.hot.c-gen { background: color-mix(in srgb, var(--gen) 13%, transparent); color: var(--gen); box-shadow: inset 2px 0 0 var(--gen); }
 
 /* "the noun takes an ending here too" — a different phenomenon from an
    exception cell, so it gets its own mark rather than a second fill colour. */
@@ -438,6 +437,25 @@ pre.code b { font-weight: 600; }
   font-size: 0.94rem; color: var(--ink-2);
 }
 
+/* Sources. Set apart from the rule body — this is provenance, not teaching
+   material, so it reads quieter and sits last. */
+.sources {
+  margin-top: var(--s5); padding-top: var(--s3);
+  border-top: 1px solid var(--rule);
+}
+.sources > .eyebrow { display: block; margin-bottom: var(--s2); }
+.sources ul { display: grid; gap: var(--s1); margin: 0; padding: 0; list-style: none; }
+.sources li {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s2);
+  font-size: 0.88rem;
+}
+.sources a { color: var(--ink); text-decoration: underline; text-underline-offset: 2px; }
+.sources a:hover { color: var(--nom); }
+.sources .org {
+  font-family: var(--f-mono); font-size: 0.72rem; color: var(--ink-3);
+  white-space: nowrap;
+}
+
 /* --------------------------------------------------------------- write --- */
 /* Full-screen IDE: task sidebar · editor · results sidebar. */
 
@@ -524,6 +542,19 @@ pre.code b { font-weight: 600; }
 .ide-gallery-card.is-on { background: var(--rule-2); border-color: var(--acc); color: var(--ink); font-weight: 600; }
 .ide-gallery-title { font-family: var(--f-display); font-size: 0.88rem; }
 .ide-gallery-hint { font-size: 0.72rem; font-family: var(--f-mono); color: var(--ink-3); white-space: nowrap; flex-shrink: 0; }
+.ide-topic-actions { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s1); }
+.ide-topic-actions .btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.35em; }
+.ide-custom-topic {
+  display: grid; gap: var(--s2); padding: var(--s3);
+  border: 1px solid var(--acc); border-radius: 5px; background: var(--raised);
+}
+.ide-custom-topic label { display: grid; gap: 0.3em; }
+.ide-custom-topic label > span:first-child { font-family: var(--f-display); font-size: 0.78rem; color: var(--ink-2); }
+.ide-custom-topic small { color: var(--ink-3); }
+.ide-custom-topic textarea { resize: vertical; min-height: 5.5em; line-height: 1.45; }
+.ide-custom-words { grid-template-columns: 1fr 5.5em auto; align-items: center; }
+.ide-custom-words .input { padding-block: 0.4em; }
+.ide-custom-words > span:last-child { font-size: 0.78rem; color: var(--ink-3); }
 
 .ide-rail {
   width: 100%; height: 100%; display: flex; flex-direction: column;

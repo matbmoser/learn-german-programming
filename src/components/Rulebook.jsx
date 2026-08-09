@@ -19,7 +19,8 @@
 import React from "react";
 import { RULES, RULES_BY_CATEGORY, RULES_BY_LEVEL, RULE_BY_ID } from "../data/rulebook.js";
 import { LEVELS } from "../data/curriculum.js";
-import { LevelTag, CodeBlock } from "./ui.jsx";
+import { RULE_SOURCES } from "../data/sources.js";
+import { LevelTag, CodeBlock, SourceList } from "./ui.jsx";
 
 export default function Rulebook({ section, onSectionChange }) {
   const [catFilter, setCatFilter] = React.useState("alle");
@@ -213,6 +214,8 @@ export default function Rulebook({ section, onSectionChange }) {
               </div>
             </section>
           )}
+
+          <SourceList ids={rule.sources || RULE_SOURCES[rule.id]} />
         </article>
       </div>
     </>

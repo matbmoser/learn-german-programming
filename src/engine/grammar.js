@@ -154,7 +154,11 @@ export function konjunktiv1(verb, i) {
   if (v.inf === "sein") {
     return { form: ["sei", "seist", "sei", "seien", "seiet", "seien"][i], fellBack: false };
   }
-  const candidate = stemOf(v.inf) + K1_ENDINGS[i];
+  // A separable prefix is not part of the stem: aufstehen → stehe … auf,
+  // never *aufstehe. Strip it before building the form; conjugate() re-appends
+  // it at the clause end like every other tense.
+  const base = v.sep && v.inf.startsWith(v.sep) ? v.inf.slice(v.sep.length) : v.inf;
+  const candidate = stemOf(base) + K1_ENDINGS[i];
   if (candidate === v.pres[i]) return { form: v.k2[i], fellBack: true };
   return { form: candidate, fellBack: false };
 }
