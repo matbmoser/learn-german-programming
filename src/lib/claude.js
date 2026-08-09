@@ -543,6 +543,42 @@ const TEACHER_EXERCISE_TOOL = {
   },
 };
 
+const TEACHER_CORRECTION_TOOL = {
+  name: "present_correction",
+  description:
+    "Show a structured visual correction after the learner submits an exercise or writing task. Include score statistics and a clear comparison of their answer with the correct or improved answer, plus a short reason.",
+  input_schema: {
+    type: "object",
+    properties: {
+      id: { type: "string" },
+      title: { type: "string" },
+      summary: { type: "string", description: "A short, encouraging overall assessment in English." },
+      score_percent: { type: "integer", minimum: 0, maximum: 100 },
+      total_items: { type: "integer", minimum: 0 },
+      correct_items: { type: "integer", minimum: 0 },
+      items: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            label: { type: "string", description: "Short question, field, or error label." },
+            student_answer: { type: "string", description: "The learner's exact answer or text excerpt." },
+            correct_answer: { type: "string", description: "The correct answer or an improved version." },
+            is_correct: { type: "boolean" },
+            why: { type: "string", description: "A concise explanation in simple English." },
+          },
+          required: ["label", "student_answer", "correct_answer", "is_correct", "why"],
+          additionalProperties: false,
+        },
+      },
+      strengths: { type: "array", items: { type: "string" } },
+      next_step: { type: "string", description: "One specific recommendation in English." },
+    },
+    required: ["id", "title", "summary", "score_percent", "total_items", "correct_items", "items", "strengths", "next_step"],
+    additionalProperties: false,
+  },
+};
+
 function normalizeTeacherExercise(input, index) {
   const exercise = input && typeof input === "object" ? { ...input } : {};
   const options = Array.isArray(exercise.options) ? exercise.options.filter(Boolean).map(String) : [];
@@ -574,6 +610,40 @@ function normalizeTeacherExercise(input, index) {
   };
 }
 
+function normalizeTeacherCorrection(input, index) {
+  const correction = input && typeof input === "object" ? { ...input } : {};
+  const items = Array.isArray(correction.items)
+    ? correction.items.filter((item) => item && typeof item === "object").map((item, itemIndex) => ({
+        label: String(item.label || `Answer ${itemIndex + 1}`),
+        student_answer: String(item.student_answer || "—"),
+        correct_answer: String(item.correct_answer || "—"),
+        is_correct: Boolean(item.is_correct),
+        why: String(item.why || ""),
+      }))
+    : [];
+  const derivedCorrect = items.filter((item) => item.is_correct).length;
+  const total = items.length || Math.max(0, Number.isFinite(correction.total_items) ? correction.total_items : 0);
+  const correct = items.length
+    ? derivedCorrect
+    : Math.min(total, Math.max(0, Number.isFinite(correction.correct_items) ? correction.correct_items : 0));
+  const derivedScore = total ? Math.round((correct / total) * 100) : 0;
+
+  return {
+    ...correction,
+    id: correction.id || `correction-${Date.now()}-${index}`,
+    title: correction.title || "Exercise results",
+    summary: correction.summary || "Here is your feedback.",
+    score_percent: total
+      ? derivedScore
+      : Math.min(100, Math.max(0, Number.isFinite(correction.score_percent) ? correction.score_percent : 0)),
+    total_items: total,
+    correct_items: correct,
+    items,
+    strengths: Array.isArray(correction.strengths) ? correction.strengths.filter(Boolean).map(String) : [],
+    next_step: String(correction.next_step || "Review the explanation and try one similar example."),
+  };
+}
+
 export async function chatWithTeacher({ apiKey, model = MODEL, messages, currentText = "", task = null, targetLevel = "C1" }) {
   const system = buildChatSystem({ targetLevel, task, currentText });
   try {
@@ -581,7 +651,7 @@ export async function chatWithTeacher({ apiKey, model = MODEL, messages, current
       model,
       max_tokens: 2048,
       system,
-      tools: [TEACHER_EXERCISE_TOOL],
+      tools: [TEACHER_EXERCISE_TOOL, TEACHER_CORRECTION_TOOL],
       messages: messages.map((message) => ({
         role: message.role,
         content: message.modelContent || message.content,
@@ -595,10 +665,14 @@ export async function chatWithTeacher({ apiKey, model = MODEL, messages, current
     const exercises = response.content
       .filter((block) => block.type === "tool_use" && block.name === TEACHER_EXERCISE_TOOL.name)
       .map((block, index) => normalizeTeacherExercise(block.input, index));
-    if (!reply && !exercises.length) throw new Error("Empty response from Frau Müller.");
+    const corrections = response.content
+      .filter((block) => block.type === "tool_use" && block.name === TEACHER_CORRECTION_TOOL.name)
+      .map((block, index) => normalizeTeacherCorrection(block.input, index));
+    if (!reply && !exercises.length && !corrections.length) throw new Error("Empty response from Frau Müller.");
     return {
-      reply: reply || "Here is a little exercise for you.",
+      reply: reply || (corrections.length ? "Let’s look at your results." : "Here is a little exercise for you."),
       exercises,
+      corrections,
       usage: response.usage,
     };
   } catch (err) {

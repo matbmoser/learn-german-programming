@@ -21,6 +21,7 @@ import { chatWithTeacher } from "../lib/claude.js";
 import { AGENT } from "../lib/teacherAgent.js";
 import { Spinner } from "./ui.jsx";
 import TeacherExercise, { exerciseContext } from "./TeacherExercise.jsx";
+import TeacherCorrection, { correctionContext } from "./TeacherCorrection.jsx";
 import {
   IconArrowDown, IconArrowUp, IconClose, IconFullscreen, IconFullscreenExit,
   IconHistory, IconInfo, IconTeacher,
@@ -83,11 +84,12 @@ export default function TeacherChat({ apiKey, model, mode, currentText, task, ta
 
     const history = nextMessages.filter((m) => !(m.role === "assistant" && m.content === GREETING));
     try {
-      const { reply, exercises = [], usage } = await chatWithTeacher({ apiKey, model, messages: history, currentText, task, targetLevel });
-      const modelContent = exercises.length
-        ? `${reply}\n\n[Exercises shown to the student]\n${exerciseContext(exercises)}`
-        : reply;
-      setMessages((prev) => [...prev, { role: "assistant", content: reply, modelContent, exercises }]);
+      const { reply, exercises = [], corrections = [], usage } = await chatWithTeacher({ apiKey, model, messages: history, currentText, task, targetLevel });
+      const contextParts = [reply];
+      if (exercises.length) contextParts.push(`[Exercises shown to the student]\n${exerciseContext(exercises)}`);
+      if (corrections.length) contextParts.push(`[Correction results shown to the student]\n${correctionContext(corrections)}`);
+      const modelContent = contextParts.join("\n\n");
+      setMessages((prev) => [...prev, { role: "assistant", content: reply, modelContent, exercises, corrections }]);
       if (usage) setTokens((t) => ({ in: t.in + (usage.input_tokens || 0), out: t.out + (usage.output_tokens || 0) }));
     } catch (e) {
       setError(e.message);
@@ -202,6 +204,12 @@ export default function TeacherChat({ apiKey, model, mode, currentText, task, ta
                         : message);
                       send(answer, withSubmitted);
                     }}
+                  />
+                ))}
+                {m.role === "assistant" && m.corrections?.map((correction, correctionIndex) => (
+                  <TeacherCorrection
+                    key={`${correctionIndex}-${correction.id || "correction"}`}
+                    correction={correction}
                   />
                 ))}
               </div>
