@@ -105,6 +105,15 @@ export function MasteryRow({ name, level, r, t }) {
 
 export function GrammarTable({ table }) {
   const hot = new Set((table.hot || []).map(([r, c]) => `${r}:${c}`));
+  const warm = new Set((table.warm || []).map(([r, c]) => `${r}:${c}`));
+  const caseClass = (label) => {
+    const key = String(label).trim().toLowerCase();
+    if (key === "nominativ" || key === "nom") return "c-nom";
+    if (key === "akkusativ" || key === "akk") return "c-akk";
+    if (key === "dativ" || key === "dat") return "c-dat";
+    if (key === "genitiv" || key === "gen") return "c-gen";
+    return undefined;
+  };
   return (
     <div className="tbl-wrap">
       <table className="grid-tbl">
@@ -117,9 +126,14 @@ export function GrammarTable({ table }) {
             <tr key={ri}>
               {row.map((cell, ci) =>
                 ci === 0 ? (
-                  <th key={ci} scope="row">{cell}</th>
+                  <th key={ci} scope="row" className={caseClass(cell)}>{cell}</th>
                 ) : (
-                  <td key={ci} className={hot.has(`${ri}:${ci}`) ? "hot" : undefined}>{cell}</td>
+                  <td
+                    key={ci}
+                    className={hot.has(`${ri}:${ci}`) ? "hot" : warm.has(`${ri}:${ci}`) ? "warm" : undefined}
+                  >
+                    {cell}
+                  </td>
                 )
               )}
             </tr>

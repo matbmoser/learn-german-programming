@@ -20,20 +20,26 @@ import React from "react";
 import { downloadProgress, importProgress } from "../lib/storage.js";
 import { testKey, MODEL } from "../lib/claude.js";
 import { Callout, Spinner } from "./ui.jsx";
+import { LEVELS } from "../data/curriculum.js";
+import { learningPathStats } from "../lib/learningPath.js";
 
 export default function Settings({
   progress, apiKey, onApiKey, onSettings, onReset, onImport,
+  learningPathEnabled, onPathLevel, onResetPath,
 }) {
   const [keyDraft, setKeyDraft] = React.useState(apiKey);
   const [showKey, setShowKey] = React.useState(false);
   const [testing, setTesting] = React.useState(false);
   const [testResult, setTestResult] = React.useState(null);
   const [confirmReset, setConfirmReset] = React.useState(false);
+  const [confirmPathReset, setConfirmPathReset] = React.useState(false);
   const [importMsg, setImportMsg] = React.useState("");
   const fileRef = React.useRef(null);
 
   const mode = progress.settings.mode || "api";
   const model = progress.settings.model || MODEL;
+  const experienceMode = learningPathEnabled && progress.settings.experienceMode !== "free" ? "learning" : "free";
+  const pathStats = learningPathStats(progress.learningPath);
 
   async function runTest() {
     setTesting(true); setTestResult(null);
@@ -61,8 +67,63 @@ export default function Settings({
     <>
       <div className="page-head">
         <span className="eyebrow">§ Einstellungen</span>
-        <h1>Claude anbinden und Fortschritt verwalten</h1>
+        <h1>Lernmodus, Claude und Fortschritt</h1>
       </div>
+
+      {learningPathEnabled && (
+        <div className="card settings-path-card" style={{ marginBottom: "var(--s4)" }}>
+          <div className="card-head"><span className="eyebrow">Lernerfahrung</span></div>
+          <div className="card-body">
+            <div className="seg" role="group" aria-label="Lernmodus wählen">
+              <button type="button" aria-pressed={experienceMode === "learning"} onClick={() => onSettings({ experienceMode: "learning" })}>
+                Lernmodus
+              </button>
+              <button type="button" aria-pressed={experienceMode === "free"} onClick={() => onSettings({ experienceMode: "free" })}>
+                Freier Modus
+              </button>
+            </div>
+            <p className="help" style={{ marginTop: "var(--s3)" }}>
+              {experienceMode === "learning"
+                ? "Ein Kapitel nach dem anderen. Der nächste Schritt wird nach einem bestandenen Checkpoint freigegeben."
+                : "Alle Regeln, Drills, Prüfungen und Schreibaufgaben sind frei zugänglich — die bisherige Ansicht."}
+            </p>
+
+            <div className="path-settings-grid">
+              <div>
+                <span className="eyebrow">Aktueller Stand</span>
+                <p><b>{pathStats.current.level} · {pathStats.current.title}</b></p>
+                <p className="muted">{pathStats.completedCount} von {pathStats.total} Kapiteln · {pathStats.percent}%</p>
+              </div>
+              <div>
+                <span className="eyebrow">Bei einem Niveau einsteigen</span>
+                <div className="chips" style={{ marginTop: "var(--s2)" }}>
+                  {LEVELS.map((level) => (
+                    <button key={level} type="button" className="chip" aria-pressed={pathStats.current.level === level} onClick={() => onPathLevel(level)}>
+                      {level === "A2" ? "A1/A2 Grundlagen" : level}
+                    </button>
+                  ))}
+                </div>
+                <p className="help">Hilfreich nach verlorenem Browser-Fortschritt. Frühere Kapitel werden dadurch nicht als abgeschlossen markiert.</p>
+              </div>
+            </div>
+
+            <div className="actions">
+              {!confirmPathReset ? (
+                <button className="btn btn-danger btn-sm" type="button" onClick={() => setConfirmPathReset(true)}>
+                  Nur Lernpfad zurücksetzen
+                </button>
+              ) : (
+                <>
+                  <button className="btn btn-danger btn-sm" type="button" onClick={() => { onResetPath(); setConfirmPathReset(false); }}>
+                    Ja, Lernpfad löschen
+                  </button>
+                  <button className="btn btn-ghost btn-sm" type="button" onClick={() => setConfirmPathReset(false)}>Abbrechen</button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="card" style={{ marginBottom: "var(--s4)" }}>
         <div className="card-head"><span className="eyebrow">Wie Claude erreicht wird</span></div>
@@ -198,7 +259,7 @@ export default function Settings({
         <div className="card-head"><span className="eyebrow">Zurücksetzen</span></div>
         <div className="card-body">
           <p className="muted">
-            Löscht Beherrschungswerte, Serien, Einstufungen und gespeicherte Texte. Der API-Key bleibt
+            Löscht Lernpfad, Beherrschungswerte, Serien, Einstufungen und gespeicherte Texte. Der API-Key bleibt
             erhalten — den löschst du oben separat.
           </p>
           <div className="actions">

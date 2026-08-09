@@ -129,9 +129,8 @@ directly. That means:
   `localStorage` entry and excluded from the export.
 
 The API path uses the official `@anthropic-ai/sdk` with
-`dangerouslyAllowBrowser: true`, `claude-opus-5`, and structured outputs, so the
-response is schema-validated JSON rather than prose to parse. The SDK is loaded
-lazily, so it stays out of the initial bundle if you never use it.
+`dangerouslyAllowBrowser: true`, `claude-sonnet-5`, and structured outputs, so
+the response is schema-validated JSON rather than prose to parse.
 
 Get a key at [console.anthropic.com](https://console.anthropic.com/settings/keys).
 Requests are billed to your own account.

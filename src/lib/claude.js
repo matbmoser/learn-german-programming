@@ -26,33 +26,23 @@
 //               paste the JSON answer back. No key anywhere.
 // ============================================================================
 
-export const MODEL = "claude-sonnet-5";
+import Anthropic from "@anthropic-ai/sdk";
 
-// The SDK is only needed once the user actually calls the API, so it is loaded
-// on demand and kept out of the initial bundle.
-let sdk = null;
-async function loadSdk() {
-  if (!sdk) sdk = await import("@anthropic-ai/sdk");
-  return sdk;
-}
+export const MODEL = "claude-sonnet-5";
 
 async function client(apiKey) {
   if (!apiKey) throw new Error("Kein API-Key hinterlegt.");
-  const { default: Anthropic } = await loadSdk();
   return new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
 }
 
 function friendlyError(err) {
-  const Anthropic = sdk?.default;
-  if (Anthropic) {
-    if (err instanceof Anthropic.AuthenticationError) return "Der API-Key wurde abgelehnt. Prüfe ihn in den Einstellungen.";
-    if (err instanceof Anthropic.PermissionDeniedError) return "Dieser Key darf dieses Modell nicht verwenden.";
-    if (err instanceof Anthropic.RateLimitError) return "Rate-Limit erreicht. Warte kurz und versuche es erneut.";
-    if (err instanceof Anthropic.NotFoundError) return "Modell nicht gefunden — prüfe die Modell-ID in den Einstellungen.";
-    if (err instanceof Anthropic.APIConnectionError)
-      return "Keine Verbindung zur API. Manche Browser oder Erweiterungen blockieren den Direktaufruf — nutze dann den manuellen Modus.";
-    if (err instanceof Anthropic.APIError) return `API-Fehler ${err.status ?? ""}: ${err.message}`;
-  }
+  if (err instanceof Anthropic.AuthenticationError) return "Der API-Key wurde abgelehnt. Prüfe ihn in den Einstellungen.";
+  if (err instanceof Anthropic.PermissionDeniedError) return "Dieser Key darf dieses Modell nicht verwenden.";
+  if (err instanceof Anthropic.RateLimitError) return "Rate-Limit erreicht. Warte kurz und versuche es erneut.";
+  if (err instanceof Anthropic.NotFoundError) return "Modell nicht gefunden — prüfe die Modell-ID in den Einstellungen.";
+  if (err instanceof Anthropic.APIConnectionError)
+    return "Keine Verbindung zur API. Manche Browser oder Erweiterungen blockieren den Direktaufruf — nutze dann den manuellen Modus.";
+  if (err instanceof Anthropic.APIError) return `API-Fehler ${err.status ?? ""}: ${err.message}`;
   return err?.message || "Unbekannter Fehler.";
 }
 

@@ -22,10 +22,11 @@
 // ============================================================================
 
 import { RULE_IDS } from "../engine/drills.js";
+import { emptyLearningPath, normalizeLearningPath } from "./learningPath.js";
 
 const PROGRESS_KEY = "dc1:progress";
 const API_KEY = "dc1:apikey";
-const SCHEMA_VERSION = 1;
+const SCHEMA_VERSION = 2;
 
 export function emptyProgress() {
   return {
@@ -39,7 +40,14 @@ export function emptyProgress() {
     challenges: [],     // Claude-generated question sets
     chatSessions: [],   // { id, startedAt, title, task, targetLevel, messages }
     read: {},           // moduleId -> true
-    settings: { model: "claude-sonnet-5", mode: "api", focusLevel: "auto", suggestions: true },
+    learningPath: emptyLearningPath(),
+    settings: {
+      model: "claude-sonnet-5",
+      mode: "api",
+      focusLevel: "auto",
+      suggestions: true,
+      experienceMode: "learning",
+    },
   };
 }
 
@@ -56,6 +64,7 @@ function migrate(p) {
   merged.challenges = p.challenges || [];
   merged.chatSessions = p.chatSessions || [];
   merged.read = p.read || {};
+  merged.learningPath = normalizeLearningPath(p.learningPath);
   merged.v = SCHEMA_VERSION;
   return merged;
 }

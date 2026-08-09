@@ -26,6 +26,7 @@ import Spec from "./components/Spec.jsx";
 import Settings from "./components/Settings.jsx";
 import TeacherChat from "./components/TeacherChat.jsx";
 import Dictionary from "./components/Dictionary.jsx";
+import LearningPath from "./components/LearningPath.jsx";
 import { IconBook, IconClose, IconGitHub, IconTeacher } from "./components/icons.jsx";
 import Rulebook from "./components/Rulebook.jsx";
 import {
@@ -33,8 +34,17 @@ import {
   loadApiKey, saveApiKey, saveChatSession,
 } from "./lib/storage.js";
 import { MODEL } from "./lib/claude.js";
+import { LEARNING_PATH_ENABLED } from "./config.js";
+import {
+  advanceLearningPath,
+  emptyLearningPath,
+  jumpToLevel,
+  learningPathStats,
+  recordCheckpoint,
+} from "./lib/learningPath.js";
 
 const VIEWS = [
+  { id: "path", num: "§0", label: "Lernpfad" },
   { id: "home", num: "§0", label: "Übersicht" },
   { id: "learn", num: "§1", label: "Regeln" },
   { id: "rulebook", num: "§2", label: "Regelwerk" },
@@ -45,9 +55,9 @@ const VIEWS = [
   { id: "settings", num: "§7", label: "Einstellungen" },
 ];
 
-function readRoute() {
+function readRoute(fallback = "home") {
   const [rawView, ...rawSection] = window.location.hash.replace(/^#/, "").split("/");
-  const view = VIEWS.some((item) => item.id === rawView) ? rawView : "home";
+  const view = VIEWS.some((item) => item.id === rawView) ? rawView : fallback;
   let section = null;
   if (rawSection.length) {
     try { section = decodeURIComponent(rawSection.join("/")); }
@@ -58,8 +68,9 @@ function readRoute() {
 
 export default function App() {
   const [progress, setProgress] = React.useState(loadProgress);
+  const learningMode = LEARNING_PATH_ENABLED && progress.settings.experienceMode !== "free";
   const [apiKey, setApiKey] = React.useState(loadApiKey);
-  const [route, setRoute] = React.useState(readRoute);
+  const [route, setRoute] = React.useState(() => readRoute(learningMode ? "path" : "home"));
   const [drillTopic, setDrillTopic] = React.useState(null);
   const [chatOpen, setChatOpen] = React.useState(false);
   const [teacherDraft, setTeacherDraft] = React.useState(null);
@@ -87,6 +98,18 @@ export default function App() {
 
   const onAnswer = React.useCallback((ruleId, correct) => {
     setProgress((p) => recordAnswer(p, ruleId, correct));
+  }, []);
+
+  const onCheckpointAnswer = React.useCallback((moduleId, ruleId, correct) => {
+    setProgress((p) => {
+      const answered = recordAnswer(p, ruleId, correct);
+      return { ...answered, learningPath: recordCheckpoint(answered.learningPath, moduleId, correct) };
+    });
+  }, []);
+
+  const onAdvancePath = React.useCallback(() => {
+    setProgress((p) => ({ ...p, learningPath: advanceLearningPath(p.learningPath) }));
+    window.scrollTo?.(0, 0);
   }, []);
 
   const onRead = React.useCallback((moduleId) => {
@@ -119,14 +142,19 @@ export default function App() {
   }, []);
 
   React.useEffect(() => {
-    const syncRoute = () => setRoute(readRoute());
+    const syncRoute = () => setRoute(readRoute(learningMode ? "path" : "home"));
     window.addEventListener("hashchange", syncRoute);
     window.addEventListener("popstate", syncRoute);
     return () => {
       window.removeEventListener("hashchange", syncRoute);
       window.removeEventListener("popstate", syncRoute);
     };
-  }, []);
+  }, [learningMode]);
+
+  React.useEffect(() => {
+    if (learningMode && !["path", "settings"].includes(view)) goto("path");
+    if (!learningMode && view === "path") goto("home");
+  }, [learningMode, view, goto]);
 
   React.useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
@@ -154,6 +182,10 @@ export default function App() {
     : "C1";
   const mode = progress.settings.mode || "api";
   const model = progress.settings.model || MODEL;
+  const pathStats = learningPathStats(progress.learningPath);
+  const visibleViews = learningMode
+    ? VIEWS.filter((item) => item.id === "path" || item.id === "settings")
+    : VIEWS.filter((item) => item.id !== "path");
 
   return (
     <div className="app">
@@ -164,7 +196,7 @@ export default function App() {
             <small>Sprachspezifikation</small>
           </div>
           <nav ref={navRef} className="nav" aria-label="Bereiche">
-            {VIEWS.map((v) => (
+            {visibleViews.map((v) => (
               <button
                 key={v.id}
                 type="button"
@@ -196,11 +228,21 @@ export default function App() {
             >
               <IconBook />
             </button>
-            <span className="level-chip" title="Letzte Einstufung">
-              {lastExam ? lastExam.level : "kein Test"}
-            </span>
+            <button
+              className="level-chip"
+              type="button"
+              title={learningMode ? "Zum Lernpfad" : "Letzte Einstufung"}
+              onClick={() => learningMode && goto("path")}
+            >
+              {learningMode ? `${pathStats.current.level} · ${pathStats.percent}%` : (lastExam ? lastExam.level : "kein Test")}
+            </button>
           </div>
         </div>
+        {learningMode && (
+          <div className="topbar-path-bar" aria-label={`Lernpfad zu ${pathStats.percent}% abgeschlossen`}>
+            <i style={{ width: `${pathStats.percent}%` }} />
+          </div>
+        )}
       </header>
 
       <main className={view === "write" ? "main-full" : ""}>
@@ -220,6 +262,15 @@ export default function App() {
           />
         ) : (
           <div className="shell">
+            {view === "path" && learningMode && (
+              <LearningPath
+                progress={progress}
+                onRead={onRead}
+                onCheckpointAnswer={onCheckpointAnswer}
+                onAdvance={onAdvancePath}
+                onOpenSettings={() => goto("settings")}
+              />
+            )}
             {view === "home" && (
               <Dashboard progress={progress} onGo={goto} onDrillTopic={drillOn} />
             )}
@@ -261,6 +312,15 @@ export default function App() {
                 onSettings={onSettings}
                 onReset={() => setProgress(resetProgress())}
                 onImport={(p) => setProgress(p)}
+                learningPathEnabled={LEARNING_PATH_ENABLED}
+                onPathLevel={(level) => {
+                  setProgress((p) => ({ ...p, learningPath: jumpToLevel(p.learningPath, level) }));
+                  goto("path");
+                }}
+                onResetPath={() => {
+                  setProgress((p) => ({ ...p, learningPath: emptyLearningPath() }));
+                  goto("path");
+                }}
               />
             )}
           </div>

@@ -96,64 +96,72 @@ export default function Learn({ progress, onRead, onDrillTopic, section, onSecti
         </nav>
 
         <article className="detail" id={`doc-${mod.id}`}>
-          <span className="eyebrow">
-            <LevelTag level={mod.level} /> {mod.en}
-          </span>
-          <h2 style={{ marginTop: "var(--s2)" }}>
-            {mod.title}
-            <a className="section-link" href={`#learn/${encodeURIComponent(mod.id)}`} aria-label={`Direktlink zu ${mod.title}`} title="Direktlink zu diesem Modul">#</a>
-          </h2>
-          <p className="lede">{mod.summary}</p>
-
-          <CodeBlock code={mod.code} />
-
-          {mod.tables?.length > 0 && (
-            <section>
-              <span className="eyebrow">Tabellen</span>
-              {mod.tables.map((t, i) => <GrammarTable key={i} table={t} />)}
-            </section>
-          )}
-
-          {mod.examples?.length > 0 && (
-            <section>
-              <span className="eyebrow">Beispiele</span>
-              <div className="ex-list">
-                {mod.examples.map((e, i) => (
-                  <div className="ex" key={i}>
-                    <div className="de">{e.de}</div>
-                    <div className="en">{e.en}</div>
-                    {e.note && <div className="note">{e.note}</div>}
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
-
-          {mod.pitfalls?.length > 0 && (
-            <section>
-              <span className="eyebrow">Typische Fehler</span>
-              <ul className="pit">
-                {mod.pitfalls.map((p, i) => <li key={i}>{p}</li>)}
-              </ul>
-            </section>
-          )}
-
-          {mod.drills?.length > 0 && (
-            <section>
-              <span className="eyebrow">Dazu üben</span>
-              <div className="actions" style={{ marginTop: 0 }}>
-                {mod.drills.map((d) => (
-                  <button key={d} className="btn" type="button" onClick={() => onDrillTopic(d)}>
-                    {RULE_BY_ID[d]?.name || d} drillen
-                  </button>
-                ))}
-              </div>
-            </section>
-          )}
-
-          <SourceList ids={mod.sources || MODULE_SOURCES[mod.id]} />
+          <ModuleContent module={mod} onDrillTopic={onDrillTopic} />
         </article>
       </div>
+    </>
+  );
+}
+
+export function ModuleContent({ module: mod, onDrillTopic, anchorView = "learn", showDrills = true }) {
+  return (
+    <>
+      <span className="eyebrow">
+        <LevelTag level={mod.level} /> {mod.en}
+      </span>
+      <h2 style={{ marginTop: "var(--s2)" }}>
+        {mod.title}
+        <a className="section-link" href={`#${anchorView}/${encodeURIComponent(mod.id)}`} aria-label={`Direktlink zu ${mod.title}`} title="Direktlink zu diesem Modul">#</a>
+      </h2>
+      <p className="lede">{mod.summary}</p>
+
+      <CodeBlock code={mod.code} />
+
+      {mod.tables?.length > 0 && (
+        <section>
+          <span className="eyebrow">Tabellen</span>
+          {mod.tables.map((t, i) => <GrammarTable key={i} table={t} />)}
+        </section>
+      )}
+
+      {mod.examples?.length > 0 && (
+        <section>
+          <span className="eyebrow">Beispiele</span>
+          <div className="ex-list">
+            {mod.examples.map((e, i) => (
+              <div className="ex" key={i}>
+                <div className="de">{e.de}</div>
+                <div className="en">{e.en}</div>
+                {e.note && <div className="note">{e.note}</div>}
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {mod.pitfalls?.length > 0 && (
+        <section>
+          <span className="eyebrow">Typische Fehler</span>
+          <ul className="pit">
+            {mod.pitfalls.map((p, i) => <li key={i}>{p}</li>)}
+          </ul>
+        </section>
+      )}
+
+      {showDrills && mod.drills?.length > 0 && (
+        <section>
+          <span className="eyebrow">Dazu üben</span>
+          <div className="actions" style={{ marginTop: 0 }}>
+            {mod.drills.map((d) => (
+              <button key={d} className="btn" type="button" onClick={() => onDrillTopic?.(d)}>
+                {RULE_BY_ID[d]?.name || d} drillen
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+
+      <SourceList ids={mod.sources || MODULE_SOURCES[mod.id]} />
     </>
   );
 }

@@ -294,12 +294,21 @@ pre.code b { font-weight: 600; }
   font-family: var(--f-display); font-size: 0.75rem; letter-spacing: 0.05em;
   text-transform: uppercase; color: var(--ink-2); font-weight: 600;
 }
+.grid-tbl tbody th.c-nom { color: var(--nom); }
+.grid-tbl tbody th.c-akk { color: var(--akk); }
+.grid-tbl tbody th.c-dat { color: var(--dat); }
+.grid-tbl tbody th.c-gen { color: var(--gen); }
 /* Learning-pattern highlight. Keep one warm accent across each marked shape
    so related cells read as a group and stand out from the neutral table. */
 .grid-tbl td.hot {
   background: color-mix(in srgb, var(--akk) 13%, transparent);
   color: var(--akk); font-weight: 600;
   box-shadow: inset 2px 0 0 var(--akk);
+}
+.grid-tbl td.warm {
+  background: color-mix(in srgb, var(--nom) 13%, transparent);
+  color: var(--nom); font-weight: 600;
+  box-shadow: inset 2px 0 0 var(--nom);
 }
 
 /* "the noun takes an ending here too" — a different phenomenon from an
@@ -1525,7 +1534,8 @@ pre.code b { font-weight: 600; }
 
 /* ---- table extras ---- */
 /* the row the rest of the table is measured against */
-.spec .grid-tbl tr.ref-row td, .spec .grid-tbl tr.ref-row th { background: color-mix(in srgb, var(--ink-2) 5%, transparent); }
+.spec .grid-tbl tr.ref-row td:not(.hot):not(.warm),
+.spec .grid-tbl tr.ref-row th { background: color-mix(in srgb, var(--ink-2) 5%, transparent); }
 .spec .grid-tbl tr.ref-row th[scope="row"]::after {
   content: " ▸"; color: var(--ink-3); font-weight: 400;
 }

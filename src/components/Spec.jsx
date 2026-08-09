@@ -772,7 +772,7 @@ export default function Spec() {
             <tbody>
               <tr className="ref-row"><th scope="row" className="c-nom">Nominativ</th><td>der</td><td>das</td><td>die</td><td>die</td></tr>
               <tr><th scope="row" className="c-akk">Akkusativ</th><td className="hot">den<Mark note="einzige Abweichung von Nominativ" /></td><td>das</td><td>die</td><td>die</td></tr>
-              <tr><th scope="row" className="c-dat">Dativ</th><td>dem</td><td>dem</td><td>der</td><td>den + Nomen<Suf>n</Suf></td></tr>
+              <tr><th scope="row" className="c-dat">Dativ</th><td>dem</td><td>dem</td><td>der</td><td className="warm">den + Nomen<Suf>n</Suf></td></tr>
               <tr><th scope="row" className="c-gen">Genitiv</th><td>des + Nomen<Suf>s</Suf></td><td>des + Nomen<Suf>s</Suf></td><td>der</td><td>der</td></tr>
             </tbody>
           </table>
