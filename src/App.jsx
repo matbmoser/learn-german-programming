@@ -36,6 +36,13 @@ import {
   loadApiKey, saveApiKey, saveChatSession,
 } from "./lib/storage.js";
 import { MODEL } from "./lib/claude.js";
+import {
+  API_USAGE_EVENT,
+  apiKeyId,
+  loadApiUsage,
+  resetApiUsage,
+  totalTokens,
+} from "./lib/apiUsage.js";
 import { LEARNING_PATH_ENABLED } from "./config.js";
 import {
   advanceLearningPath,
@@ -85,6 +92,7 @@ export default function App() {
   const [progress, setProgress] = React.useState(loadProgress);
   const learningMode = LEARNING_PATH_ENABLED && progress.settings.experienceMode !== "free";
   const [apiKey, setApiKey] = React.useState(loadApiKey);
+  const [apiUsage, setApiUsage] = React.useState(() => loadApiUsage(loadApiKey()));
   const [route, setRoute] = React.useState(() => readRoute("home"));
   const [drillTopic, setDrillTopic] = React.useState(null);
   const [chatOpen, setChatOpen] = React.useState(false);
@@ -110,6 +118,21 @@ export default function App() {
   }, []);
 
   React.useEffect(() => { saveProgress(progress); }, [progress]);
+
+  React.useEffect(() => {
+    setApiUsage(loadApiUsage(apiKey));
+    const id = apiKeyId(apiKey);
+    const onUsage = (event) => {
+      if (event.detail?.id === id) setApiUsage(event.detail.usage);
+    };
+    const onStorage = () => setApiUsage(loadApiUsage(apiKey));
+    window.addEventListener(API_USAGE_EVENT, onUsage);
+    window.addEventListener("storage", onStorage);
+    return () => {
+      window.removeEventListener(API_USAGE_EVENT, onUsage);
+      window.removeEventListener("storage", onStorage);
+    };
+  }, [apiKey]);
 
   const onAnswer = React.useCallback((ruleId, correct) => {
     setProgress((p) => recordAnswer(p, ruleId, correct));
@@ -243,6 +266,13 @@ export default function App() {
             ))}
           </nav>
           <div className="topbar-right">
+            {mode === "api" && (
+              <TokenUsageChip
+                apiKey={apiKey}
+                usage={apiUsage}
+                onClick={() => goto("settings")}
+              />
+            )}
             <a
               className="topbar-icon"
               href="https://github.com/matbmoser/learn-german-programming"
@@ -365,7 +395,9 @@ export default function App() {
               <Settings
                 progress={progress}
                 apiKey={apiKey}
+                apiUsage={apiUsage}
                 onApiKey={onApiKey}
+                onResetApiUsage={() => resetApiUsage(apiKey)}
                 onSettings={onSettings}
                 onReset={() => setProgress(resetProgress())}
                 onImport={(p) => setProgress(p)}
@@ -428,6 +460,45 @@ export default function App() {
         trigger={dictTrigger}
       />
     </div>
+  );
+}
+
+function formatTokens(value) {
+  const tokens = Math.max(0, Number(value) || 0);
+  if (tokens >= 1_000_000) return `${(tokens / 1_000_000).toLocaleString("de-DE", { maximumFractionDigits: 1 })}M`;
+  if (tokens >= 1_000) return `${(tokens / 1_000).toLocaleString("de-DE", { maximumFractionDigits: 1 })}k`;
+  return String(tokens);
+}
+
+function TokenUsageChip({ apiKey, usage, onClick }) {
+  if (!apiKey) {
+    return (
+      <button className="token-usage-chip is-empty" type="button" onClick={onClick} title="API-Key in den Einstellungen hinterlegen">
+        <span>API</span><b>kein Key</b>
+      </button>
+    );
+  }
+
+  const used = totalTokens(usage);
+  const remaining = usage.rateLimit?.remaining;
+  const reset = usage.rateLimit?.reset ? new Date(usage.rateLimit.reset) : null;
+  const validReset = reset && !Number.isNaN(reset.getTime());
+  const detail = remaining == null
+    ? "Nach dem nächsten API-Aufruf erscheint hier das von Anthropic gemeldete Ratenlimit. Ein Guthabenstand ist über normale API-Keys nicht verfügbar."
+    : `Zuletzt gemeldetes Ratenlimit${validReset ? `; vollständig aufgefüllt bis ${reset.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}` : ""}. Kein Guthabenstand.`;
+
+  return (
+    <button
+      className="token-usage-chip"
+      type="button"
+      onClick={onClick}
+      title={`${formatTokens(used)} Tokens durch diese App genutzt. ${detail}`}
+      aria-label={`${formatTokens(used)} Tokens genutzt. ${remaining == null ? "Verfügbare Rate noch unbekannt" : `${formatTokens(remaining)} im Ratenlimit verfügbar`}. Details öffnen.`}
+    >
+      <span><b>{formatTokens(used)}</b><small>genutzt</small></span>
+      <i aria-hidden="true">/</i>
+      <span><b>{remaining == null ? "—" : formatTokens(remaining)}</b><small>frei*</small></span>
+    </button>
   );
 }
 

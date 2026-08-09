@@ -22,9 +22,17 @@ import { testKey, MODEL } from "../lib/claude.js";
 import { Callout, Spinner } from "./ui.jsx";
 import { LEVELS, MODULES } from "../data/curriculum.js";
 import { learningPathStats } from "../lib/learningPath.js";
+import { totalInputTokens, totalTokens } from "../lib/apiUsage.js";
+
+function formatTokens(value) {
+  const tokens = Math.max(0, Number(value) || 0);
+  if (tokens >= 1_000_000) return `${(tokens / 1_000_000).toLocaleString("de-DE", { maximumFractionDigits: 1 })}M`;
+  if (tokens >= 1_000) return `${(tokens / 1_000).toLocaleString("de-DE", { maximumFractionDigits: 1 })}k`;
+  return String(tokens);
+}
 
 export default function Settings({
-  progress, apiKey, onApiKey, onSettings, onReset, onImport,
+  progress, apiKey, apiUsage, onApiKey, onResetApiUsage, onSettings, onReset, onImport,
   learningPathEnabled, onPathLevel, onPathModule, onOpenPath, onResetPath,
 }) {
   const [keyDraft, setKeyDraft] = React.useState(apiKey);
@@ -41,6 +49,10 @@ export default function Settings({
   const experienceMode = learningPathEnabled && progress.settings.experienceMode !== "free" ? "learning" : "free";
   const pathStats = learningPathStats(progress.learningPath);
   const levelModules = MODULES.filter((module) => module.level === pathStats.current.level);
+  const usedTokens = totalTokens(apiUsage);
+  const usedInputTokens = totalInputTokens(apiUsage);
+  const remainingTokens = apiUsage?.rateLimit?.remaining;
+  const rateLimit = apiUsage?.rateLimit?.limit;
 
   async function runTest() {
     setTesting(true); setTestResult(null);
@@ -216,6 +228,40 @@ export default function Settings({
               {testResult && (
                 <Callout kind={testResult.ok ? "info" : "bad"}>{testResult.message}</Callout>
               )}
+
+              <div className="api-usage-panel">
+                <div className="api-usage-head">
+                  <span className="eyebrow">Tokenverbrauch dieses API-Keys</span>
+                  <span className="mono">{apiUsage?.requests || 0} API-Aufrufe</span>
+                </div>
+                <div className="api-usage-grid">
+                  <div><b>{formatTokens(usedTokens)}</b><span>insgesamt genutzt</span></div>
+                  <div><b>{formatTokens(usedInputTokens)}</b><span>Eingabe inkl. Cache</span></div>
+                  <div><b>{formatTokens(apiUsage?.outputTokens)}</b><span>Ausgabe</span></div>
+                  <div>
+                    <b>{remainingTokens == null ? "—" : formatTokens(remainingTokens)}</b>
+                    <span>zuletzt im Ratenlimit frei</span>
+                  </div>
+                </div>
+                {rateLimit > 0 && (
+                  <div className="api-rate-track" role="progressbar" aria-label="Verfügbares Token-Ratenlimit" aria-valuemin="0" aria-valuemax={rateLimit} aria-valuenow={remainingTokens || 0}>
+                    <i style={{ width: `${Math.max(0, Math.min(100, ((remainingTokens || 0) / rateLimit) * 100))}%` }} />
+                  </div>
+                )}
+                <p className="help">
+                  „Genutzt“ zählt alle Antworten, die diese App seit Einführung des Zählers in diesem Browser erhalten hat.
+                  „Frei“ ist das zuletzt von Anthropic gemeldete, laufend wieder aufgefüllte Ratenlimit — kein Token- oder
+                  Guthabenstand des Kontos. Ein normaler API-Key stellt diesen Kontostand nicht bereit.
+                </p>
+                {apiUsage?.lastRequestAt && (
+                  <p className="help mono">Zuletzt aktualisiert: {new Date(apiUsage.lastRequestAt).toLocaleString("de-DE")}</p>
+                )}
+                {usedTokens > 0 && (
+                  <button className="btn btn-ghost btn-sm" type="button" onClick={onResetApiUsage}>
+                    Lokalen Zähler zurücksetzen
+                  </button>
+                )}
+              </div>
             </div>
           ) : (
             <div style={{ marginTop: "var(--s4)" }}>

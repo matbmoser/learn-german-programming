@@ -27,6 +27,7 @@
 // ============================================================================
 
 import Anthropic from "@anthropic-ai/sdk";
+import { recordApiUsage } from "./apiUsage.js";
 
 export const MODEL = "claude-sonnet-5";
 
@@ -55,7 +56,18 @@ const MAX_TOKENS = 32000;
 
 async function createMessage(apiKey, params) {
   const anthropic = await client(apiKey);
-  return anthropic.messages.stream(params).finalMessage();
+  const stream = anthropic.messages.stream(params);
+  const { response } = await stream.withResponse();
+  const message = await stream.finalMessage();
+  recordApiUsage(apiKey, message.usage, response.headers);
+  return message;
+}
+
+async function createDirectMessage(apiKey, params) {
+  const anthropic = await client(apiKey);
+  const { data, response } = await anthropic.messages.create(params).withResponse();
+  recordApiUsage(apiKey, data.usage, response.headers);
+  return data;
 }
 
 const TRUNCATED =
@@ -603,7 +615,7 @@ Kontext: ${question.hint || "—"}
 Richtige Antwort: ${question.answer}
 Antwort des Lernenden: ${given || "(leer)"}`;
   try {
-    const response = await (await client(apiKey)).messages.create({
+    const response = await createDirectMessage(apiKey, {
       model,
       max_tokens: 4000,
       output_config: { format: { type: "json_schema", schema: EXPLAIN_SCHEMA } },
@@ -618,7 +630,7 @@ Antwort des Lernenden: ${given || "(leer)"}`;
 
 export async function testKey({ apiKey, model = MODEL }) {
   try {
-    const r = await (await client(apiKey)).messages.create({
+    const r = await createDirectMessage(apiKey, {
       model,
       max_tokens: 16,
       messages: [{ role: "user", content: "Antworte mit genau dem Wort: OK" }],
@@ -860,7 +872,7 @@ export async function chatWithTeacher({ apiKey, model = MODEL, messages, current
       ? TEACHER_EXERCISE_TOOL.name
       : null;
   try {
-    const response = await (await client(apiKey)).messages.create({
+    const response = await createDirectMessage(apiKey, {
       model,
       max_tokens: 2048,
       system,

@@ -136,6 +136,10 @@ directly. That means:
   the key if you ever publish the site somewhere others use it.
 - **A progress export never contains the key** — it is stored under a separate
   `localStorage` entry and excluded from the export.
+- The header and API settings count input, output, and cached tokens used by
+  this app for each key. The available figure is Anthropic's latest rolling
+  token rate-limit value; standard API keys do not expose an account credit
+  balance. The local counter can be reset independently of learning progress.
 
 The API path uses the official `@anthropic-ai/sdk` with
 `dangerouslyAllowBrowser: true`, `claude-sonnet-5`, and structured outputs, so
