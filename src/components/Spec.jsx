@@ -27,15 +27,35 @@ import CompareSection from "./SpecCompare.jsx";
 //  The drill lives in its own §2 view, so it is not repeated here.
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+//  Table markers. Both carry a screen-reader label so the meaning never lives
+//  in the background colour alone.
+// ---------------------------------------------------------------------------
+
+/** Reason a highlighted cell is highlighted. Goes inside a `.hot` cell. */
+function Mark({ note }) {
+  return <span className="sr-only"> — {note}</span>;
+}
+
+/** An ending that belongs to the noun rather than to the article word. */
+function Suf({ children }) {
+  return (
+    <b className="nsuf">
+      {children}
+      <span className="sr-only"> (Endung am Nomen)</span>
+    </b>
+  );
+}
+
 const KLAMMER = {
   main: {
     seg: "Hauptsatz",
     pre: ["Er"],
     frame: [
-      { t: "hat", verb: true, tag: "Pos. 2 · finit" },
+      { t: "hat", fin: true, tag: "Pos. 2 · finit" },
       { t: "gestern" },
       { t: "einen Brief" },
-      { t: "geschrieben", verb: true, tag: "Ende · infinit" },
+      { t: "geschrieben", inf: true, tag: "Ende · infinit" },
     ],
     label: "Satzklammer",
     note: "The finite verb is nailed to position 2; every other verb part waits at the very end. Everything in between — time, objects, place — lives inside the bracket.",
@@ -44,26 +64,28 @@ const KLAMMER = {
     seg: "Nebensatz",
     pre: ["…,"],
     frame: [
-      { t: "weil", kw: true, tag: "Konj. · Pos. 2" },
+      { t: "weil", kw: true, tag: "Konj. · linke Klammer" },
       { t: "er" },
       { t: "gestern" },
       { t: "einen Brief" },
-      { t: "geschrieben", verb: true },
-      { t: "hat", verb: true, tag: "Ende · finit" },
+      { t: "geschrieben", inf: true, tag: "infinit" },
+      { t: "hat", fin: true, tag: "Ende · finit" },
     ],
     label: "Verb ans Ende",
-    note: "A subordinating conjunction takes the second slot, so the finite verb is pushed all the way to the back — behind even the participle it normally carries.",
+    note: "A subordinating conjunction occupies the opening slot of the bracket — the slot the finite verb held in the main clause. With that slot taken, the finite verb is pushed all the way to the back, behind even the participle it normally carries.",
   },
 };
 
+// Only the article is tinted: between the two states exactly one token changes
+// (die → der), and colouring the whole noun phrase buries it.
 const WECHSEL = {
   wohin: {
     phrase: [
       { t: "Ich hänge das Bild " },
       { t: "an", c: "akk" },
       { t: " " },
-      { t: "die Wand", c: "akk" },
-      { t: "." },
+      { t: "die", c: "akk", flip: true },
+      { t: " Wand." },
     ],
     trace: [
       ["Präposition", "an — Wechselpräposition"],
@@ -77,8 +99,8 @@ const WECHSEL = {
       { t: "Das Bild hängt " },
       { t: "an", c: "dat" },
       { t: " " },
-      { t: "der Wand", c: "dat" },
-      { t: "." },
+      { t: "der", c: "dat", flip: true },
+      { t: " Wand." },
     ],
     trace: [
       ["Präposition", "an — Wechselpräposition"],
@@ -151,15 +173,25 @@ const ART_TYPES = [
   { v: "none", label: "∅" },
 ];
 
+// Returns the noun split into { stem, suf } so the caller can mark the ending
+// the trace talks about instead of printing it as an undifferentiated word.
 function nounForm(noun, kasus, plural) {
   if (plural) {
     const p = noun.pl;
-    if (kasus === "dat" && !/[ns]$/.test(p)) return { w: p + "n", note: "Dativ Plural → Nomen + -n" };
-    return { w: p, note: "" };
+    if (kasus === "dat" && !/[ns]$/.test(p))
+      return { w: p + "n", stem: p, suf: "n", note: "Dativ Plural → Nomen + -n" };
+    return { w: p, stem: p, suf: "", note: "" };
   }
-  if (kasus === "gen" && (noun.g === "m" || noun.g === "n"))
-    return { w: noun.gs, note: "Genitiv Mask/Neut → Nomen + -(e)s" };
-  return { w: noun.w, note: "" };
+  if (kasus === "gen" && (noun.g === "m" || noun.g === "n")) {
+    const suf = noun.gs.startsWith(noun.w) ? noun.gs.slice(noun.w.length) : "";
+    return {
+      w: noun.gs,
+      stem: suf ? noun.w : noun.gs,
+      suf,
+      note: "Genitiv Mask/Neut → Nomen + -(e)s",
+    };
+  }
+  return { w: noun.w, stem: noun.w, suf: "", note: "" };
 }
 
 // artType: "def" | "ein" | "kein" | "none"
@@ -181,7 +213,11 @@ function decline(noun, kasus, artType, adj, plural) {
     const stem = artType === "ein" ? "ein" : "kein";
     if (artType === "ein" && plural) {
       artClass = "strong";
-      trace.push(["ein + Plural", "existiert nicht → kein Artikel", "Adjektiv übernimmt das Signal"]);
+      trace.push([
+        "ein + Plural",
+        "existiert nicht → kein Artikel",
+        adj ? "Adjektiv übernimmt das Signal" : "ohne Adjektiv bleibt das Signal ungesagt",
+      ]);
     } else {
       const e = EIN_END[g][kasus];
       article = stem + e;
@@ -194,7 +230,11 @@ function decline(noun, kasus, artType, adj, plural) {
     }
   } else {
     artClass = "strong";
-    trace.push(["kein Artikelwort", "Signal fehlt komplett", "Adjektiv muss es tragen"]);
+    trace.push([
+      "kein Artikelwort",
+      "Signal fehlt komplett",
+      adj ? "Adjektiv muss es tragen" : "ohne Adjektiv bleibt das Signal ungesagt",
+    ]);
   }
 
   let ending = "";
@@ -224,7 +264,17 @@ function decline(noun, kasus, artType, adj, plural) {
   if (adj) parts.push(adj + ending);
   parts.push(nf.w);
 
-  return { article, adjEnding: ending, noun: nf.w, gender: g, kasus, text: parts.join(" "), trace };
+  return {
+    article,
+    adjEnding: ending,
+    noun: nf.w,
+    nounStem: nf.stem,
+    nounSuf: nf.suf,
+    gender: g,
+    kasus,
+    text: parts.join(" "),
+    trace,
+  };
 }
 
 const pick = (a) => a[Math.floor(Math.random() * a.length)];
@@ -295,7 +345,8 @@ const TENSES = [
 ];
 const PERSONS = ["ich", "du", "er/sie/es", "wir", "ihr", "sie/Sie"];
 
-// c: "plain" | "aux" (nom) | "part" (akk) | "inf" (dat) | "sep" (ink-3)
+// c: "plain" | "aux" (nom) | "part" (akk) | "inf" (dat) | "sep" (neutral — a
+// separable prefix is not a verb slot, so it must not borrow a case colour)
 function conjugate(verb, personIdx, tense) {
   const v = typeof verb === "string" ? VB[verb] : verb;
   const sep = v.sep || "";
@@ -331,7 +382,7 @@ function conjugate(verb, personIdx, tense) {
   return { parts: out, formula };
 }
 
-const CMP_COLOR = { plain: "", aux: "c-nom", part: "c-akk", inf: "c-dat", sep: "c-dat" };
+const CMP_COLOR = { plain: "", aux: "c-nom", part: "c-akk", inf: "c-dat", sep: "c-sep" };
 
 function Composer() {
   const [tense, setTense] = React.useState("perfekt");
@@ -440,7 +491,9 @@ function Klammer() {
             {k.frame.map((f, i) => (
               <span
                 key={f.t + "-" + i}
-                className={"k-word" + (f.verb ? " k-verb" : "") + (f.kw ? " k-kw" : "")}
+                className={
+                  "k-word" + (f.fin ? " k-fin" : "") + (f.inf ? " k-inf" : "") + (f.kw ? " k-kw" : "")
+                }
               >
                 {f.tag && <span className="k-tag">{f.tag}</span>}
                 {f.t}
@@ -555,7 +608,10 @@ function Explorer() {
                 <span className={"end " + cls}>{r.adjEnding}</span>{" "}
               </span>
             )}
-            <span>{r.noun}</span>
+            <span>
+              {r.nounStem}
+              {r.nounSuf && <span className={"end " + cls}>{r.nounSuf}</span>}
+            </span>
           </div>
           <div className="trace">
             {rows.map((row, i) => (
@@ -593,7 +649,9 @@ function Wechsel() {
         <div className="out">
           <div className="out-phrase">
             {w.phrase.map((p, i) => (
-              <span key={p.t + "-" + i} className={p.c ? "c-" + p.c : ""}>{p.t}</span>
+              <span key={p.t + "-" + i} className={(p.c ? "c-" + p.c : "") + (p.flip ? " end" : "")}>
+                {p.t}
+              </span>
             ))}
           </div>
           <div className="trace">
@@ -712,13 +770,13 @@ export default function Spec() {
               <tr><th scope="col">Kasus</th><th scope="col">Maskulin</th><th scope="col">Neutrum</th><th scope="col">Feminin</th><th scope="col">Plural</th></tr>
             </thead>
             <tbody>
-              <tr><th scope="row" className="c-nom">Nominativ</th><td>der</td><td>das</td><td>die</td><td>die</td></tr>
-              <tr><th scope="row" className="c-akk">Akkusativ</th><td className="hot">den</td><td>das</td><td>die</td><td>die</td></tr>
-              <tr><th scope="row" className="c-dat">Dativ</th><td>dem</td><td>dem</td><td>der</td><td className="warm">den + Nomen<b>n</b></td></tr>
-              <tr><th scope="row" className="c-gen">Genitiv</th><td>des + Nomen<b>s</b></td><td>des + Nomen<b>s</b></td><td>der</td><td>der</td></tr>
+              <tr className="ref-row"><th scope="row" className="c-nom">Nominativ</th><td>der</td><td>das</td><td>die</td><td>die</td></tr>
+              <tr><th scope="row" className="c-akk">Akkusativ</th><td className="hot c-akk">den<Mark note="einzige Abweichung von Nominativ" /></td><td>das</td><td>die</td><td>die</td></tr>
+              <tr><th scope="row" className="c-dat">Dativ</th><td>dem</td><td>dem</td><td>der</td><td>den + Nomen<Suf>n</Suf></td></tr>
+              <tr><th scope="row" className="c-gen">Genitiv</th><td>des + Nomen<Suf>s</Suf></td><td>des + Nomen<Suf>s</Suf></td><td>der</td><td>der</td></tr>
             </tbody>
           </table>
-          <p className="tbl-cap"><b>The whole Akkusativ row is free.</b> It is identical to Nominativ except one cell: masculine <span className="mono">der → den</span>. Know Nominativ, and you know Akkusativ.</p>
+          <p className="tbl-cap"><b>The whole Akkusativ row is free.</b> It is identical to the marked Nominativ row (▸) except one cell: masculine <span className="mono">der → den</span>. Know Nominativ, and you know Akkusativ. The <span className="nsuf">dashed</span> endings are the three places where the <b>noun itself</b> also changes — they belong to the noun, not to the article.</p>
         </div>
 
         <div className="tbl-wrap">
@@ -728,18 +786,18 @@ export default function Spec() {
               <tr><th scope="col">Kasus</th><th scope="col">Maskulin</th><th scope="col">Neutrum</th><th scope="col">Feminin</th><th scope="col">Plural (kein-)</th></tr>
             </thead>
             <tbody>
-              <tr><th scope="row" className="c-nom">Nominativ</th><td className="hot">ein <span className="badge">—</span></td><td className="hot">ein <span className="badge">—</span></td><td>eine</td><td>keine</td></tr>
-              <tr><th scope="row" className="c-akk">Akkusativ</th><td>einen</td><td className="hot">ein <span className="badge">—</span></td><td>eine</td><td>keine</td></tr>
-              <tr><th scope="row" className="c-dat">Dativ</th><td>einem</td><td>einem</td><td>einer</td><td>keinen</td></tr>
-              <tr><th scope="row" className="c-gen">Genitiv</th><td>eines</td><td>eines</td><td>einer</td><td>keiner</td></tr>
+              <tr className="ref-row"><th scope="row" className="c-nom">Nominativ</th><td className="hot c-nom">ein <span className="badge">—</span><Mark note="nackte Zelle, keine Endung" /></td><td className="hot c-nom">ein <span className="badge">—</span><Mark note="nackte Zelle, keine Endung" /></td><td>eine</td><td>keine</td></tr>
+              <tr><th scope="row" className="c-akk">Akkusativ</th><td>einen</td><td className="hot c-akk">ein <span className="badge">—</span><Mark note="nackte Zelle, keine Endung" /></td><td>eine</td><td>keine</td></tr>
+              <tr><th scope="row" className="c-dat">Dativ</th><td>einem</td><td>einem</td><td>einer</td><td>keinen + Nomen<Suf>n</Suf></td></tr>
+              <tr><th scope="row" className="c-gen">Genitiv</th><td>eines + Nomen<Suf>s</Suf></td><td>eines + Nomen<Suf>s</Suf></td><td>einer</td><td>keiner</td></tr>
             </tbody>
           </table>
-          <p className="tbl-cap">Same endings as the der-table, minus the stem — except <b>three naked cells</b> (highlighted) where <span className="mono">ein</span> carries no ending at all. Those three are the entire reason adjective endings exist. See §4.</p>
+          <p className="tbl-cap">Same endings as the der-table, minus the stem — except <b>three naked cells</b> (highlighted) where <span className="mono">ein</span> carries no ending at all. Those three are the entire reason adjective endings exist. See §4. The noun-side endings (<span className="nsuf">dashed</span>) are unchanged from the der-table: the article word never switches that rule off.</p>
         </div>
 
         <div className="law">
           <span className="eyebrow">Regel 3.1 — the ending is the type tag</span>
-          <p><span className="mono">-r</span> ≈ masc.NOM / fem.DAT+GEN · <span className="mono">-n</span> ≈ masc.AKK / plural.DAT · <span className="mono">-m</span> ≈ DAT masc+neut · <span className="mono">-s</span> ≈ GEN masc+neut. The same four signals ride on <span className="mono">der-</span>, <span className="mono">ein-</span>, and adjectives alike.</p>
+          <p><span className="mono">-r</span> ≈ masc.NOM / fem.DAT+GEN / plural.GEN · <span className="mono">-n</span> ≈ masc.AKK / plural.DAT · <span className="mono">-m</span> ≈ DAT masc+neut · <span className="mono">-s</span> ≈ GEN masc+neut. The same four signals ride on <span className="mono">der-</span>, <span className="mono">ein-</span>, and adjectives alike. (Careful with <span className="mono">das</span>: that <span className="mono">-s</span> is part of the stem, not a Genitiv tag.)</p>
         </div>
       </section>
 
@@ -754,7 +812,7 @@ export default function Spec() {
         <pre className="code" aria-label="Adjective ending algorithm">
           <span className="kw">function</span> adjektivEndung(artikel, genus, kasus) {"{\n"}
           {"  "}<span className="cm">{"// does the article already show the case+gender signal?"}</span>{"\n"}
-          {"  "}<span className="kw">if</span> (!artikel){"                 "}<span className="kw">return</span> <b className="c-gen">STARK</b>[genus][kasus];{"   "}<span className="cm">{"// nothing there → adjective takes over"}</span>{"\n"}
+          {"  "}<span className="kw">if</span> (!artikel){"                 "}<span className="kw">return</span> <b className="c-akk">STARK</b>[genus][kasus];{"   "}<span className="cm">{"// nothing there → adjective takes over"}</span>{"\n"}
           {"  "}<span className="kw">if</span> (artikel.endung === <b>&quot;&quot;</b>){"   "}<span className="kw">return</span> <b className="c-akk">STARK</b>[genus][kasus];{"   "}<span className="cm">{'// naked "ein" → adjective covers'}</span>{"\n"}
           {"  "}<span className="kw">return</span>{"                        "}<b className="c-nom">SCHWACH</b>[genus][kasus];{" "}<span className="cm">{"// signal already given → -e / -en"}</span>{"\n"}
           {"}"}
@@ -768,8 +826,8 @@ export default function Spec() {
               <tr><th scope="col"></th><th scope="col">Mask</th><th scope="col">Neut</th><th scope="col">Fem</th><th scope="col">Plural</th></tr>
             </thead>
             <tbody>
-              <tr><th scope="row" className="c-nom">NOM</th><td className="hot">-e</td><td className="hot">-e</td><td className="hot">-e</td><td>-en</td></tr>
-              <tr><th scope="row" className="c-akk">AKK</th><td>-en</td><td className="hot">-e</td><td className="hot">-e</td><td>-en</td></tr>
+              <tr><th scope="row" className="c-nom">NOM</th><td className="hot c-nom">-e<Mark note="gehört zum -e-Block" /></td><td className="hot c-nom">-e<Mark note="gehört zum -e-Block" /></td><td className="hot c-nom">-e<Mark note="gehört zum -e-Block" /></td><td>-en</td></tr>
+              <tr><th scope="row" className="c-akk">AKK</th><td>-en</td><td className="hot c-akk">-e<Mark note="gehört zum -e-Block" /></td><td className="hot c-akk">-e<Mark note="gehört zum -e-Block" /></td><td>-en</td></tr>
               <tr><th scope="row" className="c-dat">DAT</th><td>-en</td><td>-en</td><td>-en</td><td>-en</td></tr>
               <tr><th scope="row" className="c-gen">GEN</th><td>-en</td><td>-en</td><td>-en</td><td>-en</td></tr>
             </tbody>
@@ -784,8 +842,8 @@ export default function Spec() {
               <tr><th scope="col"></th><th scope="col">Mask</th><th scope="col">Neut</th><th scope="col">Fem</th><th scope="col">Plural</th></tr>
             </thead>
             <tbody>
-              <tr><th scope="row" className="c-nom">NOM</th><td className="hot">-er</td><td className="hot">-es</td><td>-e</td><td>-en</td></tr>
-              <tr><th scope="row" className="c-akk">AKK</th><td>-en</td><td className="hot">-es</td><td>-e</td><td>-en</td></tr>
+              <tr><th scope="row" className="c-nom">NOM</th><td className="hot c-nom">-er<Mark note="weicht von SCHWACH ab" /></td><td className="hot c-nom">-es<Mark note="weicht von SCHWACH ab" /></td><td>-e</td><td>-en</td></tr>
+              <tr><th scope="row" className="c-akk">AKK</th><td>-en</td><td className="hot c-akk">-es<Mark note="weicht von SCHWACH ab" /></td><td>-e</td><td>-en</td></tr>
               <tr><th scope="row" className="c-dat">DAT</th><td>-en</td><td>-en</td><td>-en</td><td>-en</td></tr>
               <tr><th scope="row" className="c-gen">GEN</th><td>-en</td><td>-en</td><td>-en</td><td>-en</td></tr>
             </tbody>
@@ -803,7 +861,7 @@ export default function Spec() {
               <tr><th scope="row" className="c-nom">NOM</th><td>-er</td><td>-es</td><td>-e</td><td>-e</td></tr>
               <tr><th scope="row" className="c-akk">AKK</th><td>-en</td><td>-es</td><td>-e</td><td>-e</td></tr>
               <tr><th scope="row" className="c-dat">DAT</th><td>-em</td><td>-em</td><td>-er</td><td>-en</td></tr>
-              <tr><th scope="row" className="c-gen">GEN</th><td className="hot">-en</td><td className="hot">-en</td><td>-er</td><td>-er</td></tr>
+              <tr><th scope="row" className="c-gen">GEN</th><td className="hot c-gen">-en<Mark note="bricht das Muster der der-Tabelle" /></td><td className="hot c-gen">-en<Mark note="bricht das Muster der der-Tabelle" /></td><td>-er</td><td>-er</td></tr>
             </tbody>
           </table>
           <p className="tbl-cap">The der-table with the stems removed: d<b>er</b>→-er, d<b>as</b>→-es, de<b>m</b>→-em. Only Genitiv masc/neut breaks the pattern (<span className="mono">-en</span>) because the noun already carries the <span className="mono">-s</span>.</p>
@@ -821,14 +879,17 @@ export default function Spec() {
           sub="Most prepositions hard-code their case — no thinking required once memorised. Nine of them take a boolean argument."
         />
         <pre className="code" aria-label="Preposition case table">
-          <b className="c-akk">const AKKUSATIV</b> = [ durch, für, gegen, ohne, um, bis, entlang ];{"\n"}
-          <span className="cm">{"// mnemonic: DOGFUB — durch ohne gegen für um bis"}</span>{"\n\n"}
-          <b className="c-dat">const DATIV</b>{"     "}= [ aus, außer, bei, mit, nach, seit, von, zu, gegenüber ];{"\n"}
+          <span className="kw">const</span> <b className="c-akk">AKKUSATIV</b> = [ durch, für, gegen, ohne, um, bis ];{"\n"}
+          <span className="cm">{"// mnemonic: DOGFUB — durch ohne gegen für um bis"}</span>{"\n"}
+          <b className="c-akk">AKKUSATIV</b>.postposition = [ entlang ];{"  "}<span className="cm">{"// nachgestellt: die Straße entlang"}</span>{"\n\n"}
+          <span className="kw">const</span> <b className="c-dat">DATIV</b>{"     "}= [ aus, außer, bei, mit, nach, seit, von, zu, gegenüber ];{"\n"}
           <span className="cm">{"// the nine highest-frequency prepositions — learn these first"}</span>{"\n\n"}
-          <b className="c-gen">const GENITIV</b>{"   "}= [ wegen, während, trotz, statt, innerhalb, außerhalb ];{"\n"}
+          <span className="kw">const</span> <b className="c-gen">GENITIV</b>{"   "}= [ wegen, während, trotz, statt, innerhalb, außerhalb ];{"\n"}
           <span className="cm">{'// in speech these often take Dativ: "wegen dem Wetter"'}</span>{"\n\n"}
-          <span className="kw">function</span> <b className="c-dat">WECHSEL</b>(prep, bewegung) {"{"}   <span className="cm">{"// an auf hinter in neben über unter vor zwischen"}</span>{"\n"}
-          {"  "}<span className="kw">return</span> bewegung ? <b className="c-akk">AKKUSATIV</b> : <b className="c-dat">DATIV</b>;{"\n"}
+          <span className="cm">{"// an auf hinter in neben über unter vor zwischen — these nine take a case"}</span>{"\n"}
+          <span className="cm">{"// argument instead of hard-coding one:"}</span>{"\n"}
+          <span className="kw">function</span> kasusVon(<b className="c-dat">wechselprep</b>, bewegung) {"{\n"}
+          {"  "}<span className="kw">return</span> bewegung ? <b className="c-akk">AKK</b> : <b className="c-dat">DAT</b>;{"\n"}
           {"}"}
         </pre>
 
@@ -895,16 +956,29 @@ export default function Spec() {
           title="Word order: open a bracket, close a bracket"
           sub="German syntax has one governing shape. Once you see it, sentence-final verbs stop feeling random."
         />
-        <pre className="code" aria-label="Word order rules">
+        <pre className="code" aria-label="Bracket shape in main and subordinate clauses">
           <span className="cm">{"// MAIN CLAUSE — the finite verb is locked to position 2"}</span>{"\n"}
           [ any one element ] [ <b className="c-nom">finites Verb</b> ] [ … Mittelfeld … ] [ <b className="c-akk">Rest des Verbs</b> ]{"\n"}
           {"   ↑ subject, time, place, object — your choice, but exactly ONE\n\n"}
-          <span className="cm">{"// SUBORDINATE CLAUSE — the conjunction takes slot 2, verb pushed to the end"}</span>{"\n"}
-          [ <span className="kw">weil / dass / ob / wenn / obwohl</span> ] [ … ] [ <b className="c-akk">Rest</b> ] [ <b className="c-nom">finites Verb</b> ]{"\n\n"}
+          <span className="cm">{"// SUBORDINATE CLAUSE — the conjunction fills the slot the finite verb"}</span>{"\n"}
+          <span className="cm">{"// held above, so the verb is pushed out to the far end"}</span>{"\n"}
+          [ <span className="kw">weil / dass / ob / wenn / obwohl</span> ] [ … ] [ <b className="c-akk">Rest</b> ] [ <b className="c-nom">finites Verb</b> ]
+        </pre>
+
+        {/* Separate block: the four field colours below are NOT case colours, and
+            keeping them out of the case examples stops the two from being read
+            as one palette. */}
+        <pre className="code" aria-label="Mittelfeld ordering">
           <span className="cm">{"// Mittelfeld ordering, when nothing is emphasised:"}</span>{"\n"}
-          {"TE-KA-MO-LO  =  "}<b>Te</b>mporal → <b>Ka</b>usal → <b>Mo</b>dal → <b>Lo</b>kal{"\n"}
-          {"               (wann?)     (warum?)   (wie?)     (wo/wohin?)\n"}
-          Ich fahre <b>heute</b> <b>wegen der Arbeit</b> <b>mit dem Zug</b> <b>nach Köln</b>.{"\n\n"}
+          {"TE-KA-MO-LO  =  "}
+          <b className="fld-te">Temporal</b> (wann?) → <b className="fld-ka">Kausal</b> (warum?) →{" "}
+          <b className="fld-mo">Modal</b> (wie?) → <b className="fld-lo">Lokal</b> (wo/wohin?){"\n\n"}
+          {"Ich fahre "}<b className="fld-te">heute</b>{" "}<b className="fld-ka">wegen der Arbeit</b>{" "}
+          <b className="fld-mo">mit dem Zug</b>{" "}<b className="fld-lo">nach Köln</b>.{"\n"}
+          <span className="cm">{'// "wegen der Arbeit" is Genitiv here — fem. GEN is also "der". See §5.'}</span>
+        </pre>
+
+        <pre className="code" aria-label="Object order">
           <span className="cm">{"// two objects: DATIV before AKKUSATIV — unless the accusative is a pronoun"}</span>{"\n"}
           Ich gebe <b className="c-dat">dem Kind</b> <b className="c-akk">das Buch</b>.{"\n"}
           Ich gebe <b className="c-akk">es</b> <b className="c-dat">dem Kind</b>.{"      "}<span className="cm">{"// pronoun jumps the queue"}</span>

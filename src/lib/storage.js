@@ -39,7 +39,7 @@ export function emptyProgress() {
     challenges: [],     // Claude-generated question sets
     chatSessions: [],   // { id, startedAt, title, task, targetLevel, messages }
     read: {},           // moduleId -> true
-    settings: { model: "claude-haiku-4-5-20251001", mode: "api", focusLevel: "auto", suggestions: true },
+    settings: { model: "claude-sonnet-5", mode: "api", focusLevel: "auto", suggestions: true },
   };
 }
 

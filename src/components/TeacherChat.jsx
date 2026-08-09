@@ -72,9 +72,9 @@ export default function TeacherChat({ apiKey, model, mode, currentText, task, ta
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, busy]);
 
-  async function send(userMessage, baseMessages = messages) {
+  async function send(userMessage, baseMessages = messages, metadata = {}) {
     if (!userMessage.trim()) return;
-    const userMsg      = { role: "user", content: userMessage.trim() };
+    const userMsg      = { role: "user", content: userMessage.trim(), ...metadata };
     const nextMessages = [...baseMessages, userMsg];
     setMessages(nextMessages);
     setInput("");
@@ -122,6 +122,12 @@ export default function TeacherChat({ apiKey, model, mode, currentText, task, ta
   const hasText  = currentText.trim().length > 0;
   const noKey    = mode === "api" && !apiKey;
   const totalTok = tokens.in + tokens.out;
+  const lastMessage = messages.at(-1);
+  const previousMessage = messages.at(-2);
+  const canBuildVisualResults = lastMessage?.role === "assistant" && !lastMessage.corrections?.length &&
+    previousMessage?.role === "user" && (
+      previousMessage.exerciseSubmission === true || /^I completed the exercise\b/i.test(previousMessage.content || "")
+    );
   const startTime = React.useMemo(
     () => new Date(sessionStartedAt.current).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
     [] // eslint-disable-line react-hooks/exhaustive-deps
@@ -202,7 +208,7 @@ export default function TeacherChat({ apiKey, model, mode, currentText, task, ta
                       const withSubmitted = messages.map((message, messageIndex) => messageIndex === i
                         ? { ...message, submittedExercises: [...(message.submittedExercises || []), exerciseIndex] }
                         : message);
-                      send(answer, withSubmitted);
+                      send(answer, withSubmitted, { exerciseSubmission: true });
                     }}
                   />
                 ))}
@@ -233,6 +239,12 @@ export default function TeacherChat({ apiKey, model, mode, currentText, task, ta
 
       {panel === "chat" && !busy && !noKey && (
         <div className="tc-quick">
+          {canBuildVisualResults && (
+            <button className="tc-chip tc-chip-results" type="button"
+              onClick={() => send("Show my last exercise correction as visual results.", messages, { exerciseSubmission: true })}>
+              Show visual results
+            </button>
+          )}
           <button className="tc-chip tc-chip-practice" type="button" onClick={() => { setInput("Give me a short interactive exercise about "); inputRef.current?.focus(); }}>Interactive exercise</button>
           {hasText && <>
             <button className="tc-chip" type="button" onClick={() => { setInput("Quick feedback on my text?"); inputRef.current?.focus(); }}>Review text</button>

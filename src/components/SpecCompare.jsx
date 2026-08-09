@@ -78,11 +78,23 @@ const GENDER_CMP = [
     de: { art: "das", g: "n", w: "Auto" }, es: { art: "el", g: "m", w: "coche" }, pt: { art: "o", g: "m", w: "carro" } },
 ];
 
+// German is compared against each Romance language separately: it can agree
+// with one and not the other, and the old version collapsed every such case
+// into "all three differ" (wrong for e.g. Milch de/es and Brücke de/pt).
+// A German neuter has no counterpart at all, so it can never "agree".
 function genderVerdict(e) {
-  const simpleDe = e.de.g === "n" ? null : e.de.g;
-  if (simpleDe === e.es.g && e.es.g === e.pt.g) return "Alle drei stimmen überein.";
-  if (e.es.g === e.pt.g) return "Spanisch und Portugiesisch stimmen überein — Deutsch weicht ab.";
-  return "Alle drei weichen sogar untereinander ab.";
+  const de = e.de.g === "n" ? null : e.de.g;
+  const romanceAgree = e.es.g === e.pt.g;
+
+  if (romanceAgree) {
+    if (de === e.es.g) return "Alle drei stimmen überein.";
+    return de
+      ? "Spanisch und Portugiesisch stimmen überein — Deutsch weicht ab."
+      : "Spanisch und Portugiesisch stimmen überein — das deutsche Neutrum hat dort kein Gegenstück.";
+  }
+  if (de && de === e.es.g) return "Deutsch und Spanisch stimmen überein — Portugiesisch weicht ab.";
+  if (de && de === e.pt.g) return "Deutsch und Portugiesisch stimmen überein — Spanisch weicht ab.";
+  return "Alle drei weichen untereinander ab.";
 }
 
 function GenderCompare() {
@@ -255,18 +267,22 @@ function ObjectCompare() {
 const WORDORDER_CMP = {
   main: {
     label: "Hauptsatz",
-    de: ["Er ", { t: "hat" }, " gestern einen Brief ", { t: "geschrieben" }, "."],
-    es: ["Ayer ", { t: "escribió" }, " una carta."],
-    pt: ["Ontem ele ", { t: "escreveu" }, " uma carta."],
+    // All three front the time adverbial, so the rows are actually comparable;
+    // the German subject slides behind the finite verb, which is the point.
+    de: ["Gestern ", { t: "hat", c: "nom" }, " er einen Brief ", { t: "geschrieben", c: "akk" }, "."],
+    es: ["Ayer él ", { t: "escribió", c: "nom" }, " una carta."],
+    pt: ["Ontem ele ", { t: "escreveu", c: "nom" }, " uma carta."],
     same: "Grundwortstellung ist in allen drei Sprachen Subjekt–Verb–Objekt, und „gestern/ayer/ontem“ darf in allen dreien ganz vorne stehen.",
     diff: "Deutsch teilt das Verb in zwei Teile: das konjugierte Hilfsverb steht auf Position 2, der Rest (hier das Partizip) wandert ans Satzende. Spanisch und Portugiesisch halten das Verb immer zusammen.",
     watch: "Im Hauptsatz ist die Lücke noch harmlos — aber gewöhne dir das Muster schon hier an, denn im Nebensatz wird sie zur Falle (siehe rechts).",
   },
   sub: {
     label: "Nebensatz",
-    de: ["…, weil er gestern einen Brief geschrieben ", { t: "hat" }, "."],
-    es: ["…, porque ", { t: "escribió" }, " una carta ayer."],
-    pt: ["…, porque ele ", { t: "escreveu" }, " uma carta ontem."],
+    // The participle stays marked here too — otherwise you cannot see that it
+    // held still while the finite verb travelled past it to the end.
+    de: ["…, weil er gestern einen Brief ", { t: "geschrieben", c: "akk" }, " ", { t: "hat", c: "nom" }, "."],
+    es: ["…, porque él ", { t: "escribió", c: "nom" }, " una carta ayer."],
+    pt: ["…, porque ele ", { t: "escreveu", c: "nom" }, " uma carta ontem."],
     same: "weil/porque/porque leiten in allen drei Sprachen einen Nebensatz ein, ohne die Wortstellung großartig zu verändern.",
     diff: "Im deutschen Nebensatz rutscht auch das konjugierte Verb ans Ende, hinter das Partizip. Spanisch und Portugiesisch ändern nach porque praktisch nichts.",
     watch: "Das ist die eigentliche Falle: rom. Sprachgefühl will das Verb früh aussprechen. Im deutschen Nebensatz muss der ganze Satz im Kopf fertig sein, bevor das letzte Verb kommt — sonst fehlt am Ende die Zeitform.",
@@ -293,7 +309,9 @@ function WordOrderCompare() {
           <div className="cmp-row cmp-pt"><span className="cmp-tag">PT</span><span className="cmp-sent"><Toks toks={w.pt} /></span></div>
         </div>
         <p className="cmp-aside" style={{ marginTop: "var(--s3)" }}>
-          <b>fett</b> markiert das finite Verb (Deutsch) bzw. das einzige Verb (Spanisch/Portugiesisch). Wechsel zwischen Haupt- und Nebensatz und beobachte, was bei Deutsch wandert — und was bei den anderen beiden liegen bleibt.
+          <b className="c-nom">blau</b> = finites Verb · <b className="c-akk">orange</b> = Partizip, also der nicht-finite Rest — dieselbe Zuordnung wie in §6 und §7.
+          Spanisch und Portugiesisch haben hier nur ein Verb, deshalb nur eine Farbe. Wechsel zwischen Haupt- und Nebensatz: im Deutschen bleibt{" "}
+          <b className="c-akk">orange</b> stehen und <b className="c-nom">blau</b> wandert daran vorbei ans Satzende — bei den anderen beiden bewegt sich nichts.
         </p>
 
         <Note kind="same">{w.same}</Note>
@@ -347,10 +365,12 @@ function PerfectAuxCompare() {
           </div>
           <div className="cmp-col cmp-pt">
             <div className="cmp-col-head"><span className="cmp-tag">Português</span></div>
-            <div className="cmp-phrase">(eu) <b>{v.pt}</b></div>
+            <div className="cmp-phrase">(eu) <b className="c-nom">{v.pt}</b></div>
           </div>
         </div>
         <p className="cmp-aside">
+          Hier bedeutet <b className="c-nom">blau</b> Hilfsverb bzw. finites Verb und <b className="c-akk">orange</b> Partizip —{" "}
+          <em>nicht</em> Dativ/Akkusativ wie im Tool oben. Verbteile und Kasus teilen sich die Palette, aber nie innerhalb desselben Beispiels.
           Portugiesisch nutzt hier die einfache Vergangenheit, nicht die Konstruktion mit <span className="mono">ter</span> — siehe Achtung unten.
         </p>
 

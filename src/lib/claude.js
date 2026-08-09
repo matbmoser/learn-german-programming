@@ -26,7 +26,7 @@
 //               paste the JSON answer back. No key anywhere.
 // ============================================================================
 
-export const MODEL = "claude-haiku-4-5-20251001";
+export const MODEL = "claude-sonnet-5";
 
 // The SDK is only needed once the user actually calls the API, so it is loaded
 // on demand and kept out of the initial bundle.
@@ -558,6 +558,7 @@ const TEACHER_CORRECTION_TOOL = {
       correct_items: { type: "integer", minimum: 0 },
       items: {
         type: "array",
+        minItems: 1,
         items: {
           type: "object",
           properties: {
@@ -646,12 +647,20 @@ function normalizeTeacherCorrection(input, index) {
 
 export async function chatWithTeacher({ apiKey, model = MODEL, messages, currentText = "", task = null, targetLevel = "C1" }) {
   const system = buildChatSystem({ targetLevel, task, currentText });
+  const lastMessage = messages.at(-1);
+  const lastContent = String(lastMessage?.modelContent || lastMessage?.content || "");
+  const isExerciseSubmission = lastMessage?.role === "user" && (
+    lastMessage.exerciseSubmission === true || /^I completed the exercise\b/i.test(lastContent.trim())
+  );
   try {
     const response = await (await client(apiKey)).messages.create({
       model,
       max_tokens: 2048,
       system,
       tools: [TEACHER_EXERCISE_TOOL, TEACHER_CORRECTION_TOOL],
+      ...(isExerciseSubmission
+        ? { tool_choice: { type: "tool", name: TEACHER_CORRECTION_TOOL.name, disable_parallel_tool_use: true } }
+        : {}),
       messages: messages.map((message) => ({
         role: message.role,
         content: message.modelContent || message.content,
@@ -668,6 +677,9 @@ export async function chatWithTeacher({ apiKey, model = MODEL, messages, current
     const corrections = response.content
       .filter((block) => block.type === "tool_use" && block.name === TEACHER_CORRECTION_TOOL.name)
       .map((block, index) => normalizeTeacherCorrection(block.input, index));
+    if (isExerciseSubmission && !corrections.length) {
+      throw new Error("Frau Müller could not build the visual correction results. Please submit the exercise again.");
+    }
     if (!reply && !exercises.length && !corrections.length) throw new Error("Empty response from Frau Müller.");
     return {
       reply: reply || (corrections.length ? "Let’s look at your results." : "Here is a little exercise for you."),

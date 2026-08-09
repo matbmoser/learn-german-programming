@@ -259,6 +259,17 @@ pre.code b { font-weight: 600; }
 .c-dat { color: var(--dat); }
 .c-gen { color: var(--gen); }
 
+/* a separable prefix is not a case and must not wear a case colour — it gets
+   its own neutral mark instead. */
+.c-sep { color: var(--ink-2); border-bottom: 2px dotted currentColor; }
+
+/* Mittelfeld fields (TE-KA-MO-LO). Deliberately named after the fields rather
+   than reusing .c-* so nobody reads "temporal" as "nominative". */
+.fld-te { color: var(--nom); font-weight: 600; }
+.fld-ka { color: var(--akk); font-weight: 600; }
+.fld-mo { color: var(--dat); font-weight: 600; }
+.fld-lo { color: var(--gen); font-weight: 600; }
+
 .tbl-wrap {
   overflow-x: auto; margin-top: var(--s3);
   border: 1px solid var(--rule); border-radius: 4px; background: var(--surface);
@@ -298,7 +309,7 @@ pre.code b { font-weight: 600; }
 
 /* "the noun takes an ending here too" — a different phenomenon from an
    exception cell, so it gets its own mark rather than a second fill colour. */
-.grid-tbl .nsuf {
+.spec .nsuf, .grid-tbl .nsuf {
   font-weight: 700; color: var(--ink);
   border-bottom: 2px dashed currentColor; padding-bottom: 1px;
 }
@@ -1338,6 +1349,8 @@ pre.code b { font-weight: 600; }
 }
 .tc-chip:hover { border-color: var(--nom); color: var(--nom); background: color-mix(in srgb, var(--nom) 8%, var(--surface)); }
 .tc-chip-practice { border-color: color-mix(in srgb, var(--nom) 48%, var(--rule)); color: var(--nom); }
+.tc-chip-results { border-color: color-mix(in srgb, var(--ok) 55%, var(--rule)); color: var(--ok); background: var(--ok-bg); }
+.tc-chip-results:hover { border-color: var(--ok); color: var(--ok); background: color-mix(in srgb, var(--ok) 16%, var(--surface)); }
 
 /* input row */
 .tc-input-row {
@@ -1423,8 +1436,12 @@ pre.code b { font-weight: 600; }
   font-family: var(--f-mono); font-size: 0.5em; letter-spacing: 0.08em;
   text-transform: uppercase; color: var(--ink-3); white-space: nowrap;
 }
-.k-verb { color: var(--nom); font-weight: 600; }
-.k-verb .k-tag { color: var(--nom); }
+/* same split as §7: finite verb in the NOM hue, the non-finite rest in the AKK
+   hue, so the hero bracket and the word-order diagram agree with each other. */
+.k-fin { color: var(--nom); font-weight: 600; }
+.k-fin .k-tag { color: var(--nom); }
+.k-inf { color: var(--akk); font-weight: 600; }
+.k-inf .k-tag { color: var(--akk); }
 .k-kw { color: var(--dat); font-weight: 600; }
 .k-kw .k-tag { color: var(--dat); }
 .k-span {
@@ -1480,7 +1497,11 @@ pre.code b { font-weight: 600; }
 .role .ex { margin-top: var(--s2); padding-top: var(--s2); border-top: 1px solid var(--rule-2); font-size: 0.9rem; }
 
 /* ---- table extras ---- */
-.spec .grid-tbl td.warm { background: color-mix(in srgb, var(--nom) 14%, transparent); color: var(--nom); font-weight: 600; }
+/* the row the rest of the table is measured against */
+.spec .grid-tbl tr.ref-row td, .spec .grid-tbl tr.ref-row th { background: color-mix(in srgb, var(--ink-2) 5%, transparent); }
+.spec .grid-tbl tr.ref-row th[scope="row"]::after {
+  content: " ▸"; color: var(--ink-3); font-weight: 400;
+}
 .spec .badge {
   display: inline-block; font-family: var(--f-mono); font-size: 0.72em;
   color: var(--ink-3); border: 1px solid var(--rule); border-radius: 2px; padding: 0 0.3em;
@@ -1558,6 +1579,9 @@ pre.code b { font-weight: 600; }
 .spec .g-m { color: var(--nom); }
 .spec .g-f { color: var(--akk); }
 .spec .g-n { color: var(--dat); }
+/* plural is deliberately colourless: in the plural there is no gender left to
+   show, so it must not borrow the feminine hue just because the article is "die". */
+.spec .g-p { color: var(--ink-2); }
 
 /* three columns of signals, one shared readout below */
 .genus-cols { display: grid; gap: var(--s3); grid-template-columns: 1fr; }
@@ -1608,6 +1632,7 @@ pre.code b { font-weight: 600; }
 .genus-ex button:hover { border-color: var(--ink-3); }
 .genus-ex .en { font-family: var(--f-mono); font-size: 0.66rem; color: var(--ink-3); }
 .genus-ex .blank { color: var(--ink-3); border-bottom: 1px dashed var(--ink-3); }
+.spec-tool .out .blank { color: var(--ink-3); }
 .genus-ex-hint { font-family: var(--f-mono); font-size: 0.66rem; color: var(--ink-3); }
 
 /* Kompositum-Kette — the equation with the winning part marked */

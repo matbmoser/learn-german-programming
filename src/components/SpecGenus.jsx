@@ -328,7 +328,11 @@ function Signale() {
 
         <div className="out" style={{ marginTop: "var(--s4)" }}>
           <div className="out-phrase">
-            <span className={gen.cls}>{gen.art} </span>
+            {/* the readout must respect "Artikel verstecken" too — otherwise it
+                prints the answer directly above the blanked-out examples */}
+            {hide && !shown[s.ex[0][0]]
+              ? <span className="blank">___ </span>
+              : <span className={gen.cls}>{gen.art} </span>}
             <span>{s.ex[0][0]}</span>
             <span className="out-en"> · {s.ex[0][1]}</span>
           </div>
@@ -341,7 +345,9 @@ function Signale() {
             <span className="step">
               <span className="lbl">Genus</span>
               <span className="arrow">→ </span>
-              <b className={gen.cls}>{gen.art}</b> · {gen.label}
+              {hide && !shown[s.ex[0][0]]
+                ? <span className="blank">___</span>
+                : <><b className={gen.cls}>{gen.art}</b> · {gen.label}</>}
             </span>
             <span className={"step " + gen.cls}>
               <span className="lbl" style={{ color: "var(--ink-3)" }}>Sicherheit</span>
@@ -577,11 +583,11 @@ export default function GenusSection() {
         {"  "}<span className="cm">{"// 1. Kompositum?  nur der letzte Teil zählt — die Hand + der Schuh → der Handschuh"}</span>{"\n"}
         {"  "}<span className="kw">if</span> (istKompositum(nomen)){"     "}<span className="kw">return</span> genus(letzterTeil);{"\n\n"}
         {"  "}<span className="cm">{"// 2. Endung bekannt?  -ung → die · -chen → das · -ling → der"}</span>{"\n"}
-        {"  "}<span className="kw">if</span> (SUFFIX[endung(nomen)]){"    "}<span className="kw">return</span> <b className="g-f">SUFFIX</b>[endung(nomen)];{"\n\n"}
+        {"  "}<span className="kw">if</span> (SUFFIX[endung(nomen)]){"    "}<span className="kw">return</span> <b>SUFFIX</b>[endung(nomen)];{"\n\n"}
         {"  "}<span className="cm">{"// 3. Bedeutungsgruppe?  Wochentag → der · Metall → das · Blume → die"}</span>{"\n"}
-        {"  "}<span className="kw">if</span> (GRUPPE[bedeutung(nomen)]) <span className="kw">return</span> <b className="g-n">GRUPPE</b>[bedeutung(nomen)];{"\n\n"}
+        {"  "}<span className="kw">if</span> (GRUPPE[bedeutung(nomen)]) <span className="kw">return</span> <b>GRUPPE</b>[bedeutung(nomen)];{"\n\n"}
         {"  "}<span className="cm">{"// 4. Rest — mit Artikel auswendig lernen, es gibt keine Regel mehr"}</span>{"\n"}
-        {"  "}<span className="kw">return</span> <b className="g-m">auswendig</b>(nomen);{"\n"}
+        {"  "}<span className="kw">return</span> <b>auswendig</b>(nomen);{"\n"}
         {"}"}
       </pre>
       <p className="body-copy">
@@ -608,9 +614,10 @@ export default function GenusSection() {
         <span className="eyebrow">Regel 2.2 — the plural erases gender</span>
         <p>
           <b className="g-m">der</b> Mann · <b className="g-f">die</b> Frau · <b className="g-n">das</b> Kind →{" "}
-          <b className="g-f">die</b> Männer, <b className="g-f">die</b> Frauen, <b className="g-f">die</b> Kinder.
-          One form for all three, in every case except the Dativ (<span className="mono">den Kindern</span>).
-          Gender is a singular-only problem.
+          <b className="g-p">die</b> Männer, <b className="g-p">die</b> Frauen, <b className="g-p">die</b> Kinder.
+          One form for all three, in every case except the Dativ (<span className="mono">den Kinder<b className="nsuf">n</b></span>).
+          Gender is a singular-only problem — which is why the plural <b className="g-p">die</b> above is
+          colourless: it is not the feminine <b className="g-f">die</b>, it is the absence of gender.
         </p>
       </div>
 
