@@ -738,6 +738,7 @@ pre.code b { font-weight: 600; }
   margin-top: var(--s5); padding-top: var(--s4); border-top: 1px solid var(--rule);
 }
 .path-stage-action p { color: var(--ink-2); }
+.path-stage-nav-actions { flex: none; margin-top: 0; justify-content: flex-end; }
 .path-stage-heading { display: flex; justify-content: space-between; gap: var(--s4); align-items: flex-start; }
 .path-checkpoint-intro { margin: var(--s3) 0 var(--s4); max-width: 68ch; }
 .path-review-button {

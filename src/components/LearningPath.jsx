@@ -157,7 +157,12 @@ export default function LearningPath({
 
         {savedIndex >= 1 && (
           <div hidden={step !== "learn"}>
-            <Lesson module={mod} support={aiSupport} onContinue={() => continueTo("practice")} />
+            <Lesson
+              module={mod}
+              support={aiSupport}
+              onBack={() => openReachedStep("intro")}
+              onContinue={() => continueTo("practice")}
+            />
           </div>
         )}
 
@@ -324,7 +329,7 @@ function AILearningCoach({ module, profile, support, apiKey, model, mode, onSave
   );
 }
 
-function Lesson({ module, support, onContinue }) {
+function Lesson({ module, support, onBack, onContinue }) {
   return (
     <div className="path-stage path-stage-lesson">
       {support && (
@@ -350,7 +355,10 @@ function Lesson({ module, support, onContinue }) {
       </article>
       <div className="path-stage-action">
         <p><b>Als Nächstes:</b> Die App prüft genau dieses Thema mit vorbereiteten Aufgaben.</p>
-        <button className="btn" type="button" onClick={onContinue}>Jetzt üben</button>
+        <div className="actions path-stage-nav-actions">
+          <button className="btn btn-ghost" type="button" onClick={onBack}>← Zurück zur Einführung</button>
+          <button className="btn" type="button" onClick={onContinue}>Jetzt üben</button>
+        </div>
       </div>
     </div>
   );
