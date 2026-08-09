@@ -200,7 +200,13 @@ export default function TeacherChat({ apiKey, model, mode, currentText, task, ta
             <div key={i} className={"tc-msg " + (m.role === "user" ? "tc-user" : "tc-teacher")}>
               {m.role === "assistant" && <span className="tc-msg-avatar" aria-hidden="true"><IconTeacher /></span>}
               <div className="tc-msg-content">
-                <div className="tc-bubble"><MessageText text={m.role === "assistant" ? withoutInternalContext(m.content) : m.content} /></div>
+                <div className="tc-bubble"><MessageText text={m.role === "assistant" ? visibleTeacherText(m) : m.content} /></div>
+                {m.role === "assistant" && m.corrections?.map((correction, correctionIndex) => (
+                  <TeacherCorrection
+                    key={`${correctionIndex}-${correction.id || "correction"}`}
+                    correction={correction}
+                  />
+                ))}
                 {m.role === "assistant" && m.exercises?.map((exercise, exerciseIndex) => (
                   <TeacherExercise
                     key={`${exerciseIndex}-${exercise.id || "exercise"}`}
@@ -213,12 +219,6 @@ export default function TeacherChat({ apiKey, model, mode, currentText, task, ta
                         : message);
                       send(answer, withSubmitted, { exerciseSubmission: true });
                     }}
-                  />
-                ))}
-                {m.role === "assistant" && m.corrections?.map((correction, correctionIndex) => (
-                  <TeacherCorrection
-                    key={`${correctionIndex}-${correction.id || "correction"}`}
-                    correction={correction}
                   />
                 ))}
               </div>
@@ -335,6 +335,17 @@ function withoutInternalContext(text) {
   return String(text || "")
     .replace(/\n*\[(?:Exercises shown to the student|Correction results shown to the student)\][\s\S]*$/i, "")
     .trim();
+}
+
+function visibleTeacherText(message) {
+  const text = withoutInternalContext(message.content);
+  if (text) return text;
+  if (message.corrections?.length && message.exercises?.length) {
+    return "Let’s look at your results. I also made a short follow-up exercise for you below.";
+  }
+  if (message.corrections?.length) return "Let’s look at your results.";
+  if (message.exercises?.length) return "Here is a little exercise for you.";
+  return "I’m here whenever you’re ready.";
 }
 
 function isTableRow(line) {

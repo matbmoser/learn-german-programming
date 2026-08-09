@@ -717,7 +717,7 @@ const TEACHER_EXERCISE_TOOL = {
 const TEACHER_CORRECTION_TOOL = {
   name: "present_correction",
   description:
-    "Show a structured visual correction after the learner submits an exercise or writing task. Include score statistics and a clear comparison of their answer with the correct or improved answer, plus a short reason.",
+    "Show a structured visual correction after the learner submits an exercise or writing task. Include score statistics and a clear comparison of their answer with the correct or improved answer, plus a short reason. When immediate practice would help, follow this tool call with present_exercise in the same response.",
   input_schema: {
     type: "object",
     properties: {
@@ -874,11 +874,11 @@ export async function chatWithTeacher({ apiKey, model = MODEL, messages, current
   try {
     const response = await createDirectMessage(apiKey, {
       model,
-      max_tokens: 2048,
+      max_tokens: 4096,
       system,
       tools: [TEACHER_EXERCISE_TOOL, TEACHER_CORRECTION_TOOL],
       ...(forcedTool
-        ? { tool_choice: { type: "tool", name: forcedTool, disable_parallel_tool_use: isExerciseSubmission } }
+        ? { tool_choice: { type: "tool", name: forcedTool, disable_parallel_tool_use: false } }
         : {}),
       messages: messages.map((message) => ({
         role: message.role,
@@ -903,8 +903,13 @@ export async function chatWithTeacher({ apiKey, model = MODEL, messages, current
       throw new Error("Frau Müller could not build the interactive exercise. Please ask again.");
     }
     if (!reply && !exercises.length && !corrections.length) throw new Error("Empty response from Frau Müller.");
+    const fallbackReply = corrections.length && exercises.length
+      ? "Let’s look at your results. I also made a short follow-up exercise for you below."
+      : corrections.length
+        ? "Let’s look at your results."
+        : "Here is a little exercise for you.";
     return {
-      reply: reply || (corrections.length ? "Let’s look at your results." : "Here is a little exercise for you."),
+      reply: reply || fallbackReply,
       exercises,
       corrections,
       usage: response.usage,
