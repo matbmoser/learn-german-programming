@@ -294,16 +294,12 @@ pre.code b { font-weight: 600; }
   font-family: var(--f-display); font-size: 0.75rem; letter-spacing: 0.05em;
   text-transform: uppercase; color: var(--ink-2); font-weight: 600;
 }
-/* Exception mark — deliberately colourless. It used to be painted in the
-   Akkusativ hue, which made NOM and GEN exception cells look accusative.
-   Tinting each cell to its own row's case was no better: the highlighted
-   cells in a table are one *group* (the three naked ein-cells, the -e block),
-   and per-case colours split the group apart. The row header already carries
-   the case, so the mark only has to say "this cell is the exception". */
+/* Learning-pattern highlight. Keep one warm accent across each marked shape
+   so related cells read as a group and stand out from the neutral table. */
 .grid-tbl td.hot {
-  background: color-mix(in srgb, var(--ink-2) 14%, transparent);
-  color: var(--ink); font-weight: 600;
-  box-shadow: inset 2px 0 0 var(--ink-2);
+  background: color-mix(in srgb, var(--akk) 13%, transparent);
+  color: var(--akk); font-weight: 600;
+  box-shadow: inset 2px 0 0 var(--akk);
 }
 
 /* "the noun takes an ending here too" — a different phenomenon from an

@@ -3,27 +3,6 @@
 
 import React from "react";
 
-export function correctionContext(corrections) {
-  return corrections.map((correction, index) => {
-    const lines = [
-      `Correction ${index + 1}: ${correction.title}`,
-      `Result: ${correction.correct_items}/${correction.total_items} correct (${correction.score_percent}%)`,
-      `Summary: ${correction.summary}`,
-    ];
-    correction.items?.forEach((item, itemIndex) => {
-      lines.push(
-        `${itemIndex + 1}. ${item.label}: ${item.is_correct ? "correct" : "needs work"}`,
-        `Student: ${item.student_answer}`,
-        `Correct/improved: ${item.correct_answer}`,
-        `Why: ${item.why}`
-      );
-    });
-    if (correction.strengths?.length) lines.push(`Strengths: ${correction.strengths.join("; ")}`);
-    if (correction.next_step) lines.push(`Next step: ${correction.next_step}`);
-    return lines.join("\n");
-  }).join("\n\n");
-}
-
 export default function TeacherCorrection({ correction }) {
   const score = Math.min(100, Math.max(0, Number(correction.score_percent) || 0));
   const items = Array.isArray(correction.items) ? correction.items : [];

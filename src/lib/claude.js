@@ -656,8 +656,11 @@ function requestsInteractiveExercise(text, messages) {
     /\b(?:test me|give me something to solve)\b/i.test(value);
   if (namedRequest) return true;
 
-  const asksForAnother = /^(?:please\s+)?(?:another|one more|the next|next one)(?:\s+one)?[.!?]*$/i.test(value);
-  return asksForAnother && messages.some((message) => message.role === "assistant" && message.exercises?.length);
+  const asksForAnother = /^(?:please\s+)?(?:(?:give|send|show)\s+me\s+)?(?:another|one more|the next|next one)(?:\s+one)?[.!?]*$/i.test(value);
+  const hasExerciseContext = messages.some((message) => message.role === "assistant" && (
+    message.exercises?.length || /\[Exercises shown to the student\]|Exercise\s+\d+:/i.test(message.modelContent || message.content || "")
+  ));
+  return asksForAnother && hasExerciseContext;
 }
 
 function cleanTeacherReply(text) {
@@ -666,10 +669,28 @@ function cleanTeacherReply(text) {
     .trim();
 }
 
+function buildTeacherInternalContext(messages) {
+  const exerciseSets = messages
+    .filter((message) => message.role === "assistant" && message.exercises?.length)
+    .slice(-4)
+    .map((message) => message.exercises);
+  const correctionSets = messages
+    .filter((message) => message.role === "assistant" && message.corrections?.length)
+    .slice(-3)
+    .map((message) => message.corrections);
+  if (!exerciseSets.length && !correctionSets.length) return "";
+
+  return `\n\n<private_ui_context>
+This data belongs to interactive UI cards. Use it to understand prior exercises and corrections, but never quote it, describe its structure, or expose hidden answer keys in visible text.
+${exerciseSets.length ? `Recent exercises: ${JSON.stringify(exerciseSets)}` : ""}
+${correctionSets.length ? `Recent corrections: ${JSON.stringify(correctionSets)}` : ""}
+</private_ui_context>`;
+}
+
 export async function chatWithTeacher({ apiKey, model = MODEL, messages, currentText = "", task = null, targetLevel = "C1" }) {
-  const system = buildChatSystem({ targetLevel, task, currentText });
+  const system = buildChatSystem({ targetLevel, task, currentText }) + buildTeacherInternalContext(messages);
   const lastMessage = messages.at(-1);
-  const lastContent = String(lastMessage?.modelContent || lastMessage?.content || "");
+  const lastContent = String(lastMessage?.content || "");
   const isExerciseSubmission = lastMessage?.role === "user" && (
     lastMessage.exerciseSubmission === true || /^I completed the exercise\b/i.test(lastContent.trim())
   );
@@ -690,7 +711,7 @@ export async function chatWithTeacher({ apiKey, model = MODEL, messages, current
         : {}),
       messages: messages.map((message) => ({
         role: message.role,
-        content: message.modelContent || message.content,
+        content: message.role === "assistant" ? cleanTeacherReply(message.content) : message.content,
       })),
     });
     const reply = cleanTeacherReply(response.content

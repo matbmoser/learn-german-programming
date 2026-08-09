@@ -141,6 +141,22 @@ export const SOURCES = {
     org: "ids", label: "Präposition",
     url: "https://grammis.ids-mannheim.de/sgt/2212",
   },
+  "ids-negation": {
+    org: "ids", label: "Negationspartikel",
+    url: "https://grammis.ids-mannheim.de/systematische-grammatik/563",
+  },
+  "ids-negation-stellung": {
+    org: "ids", label: "Stellung des Negationssupplements",
+    url: "https://grammis.ids-mannheim.de/systematische-grammatik/788",
+  },
+  "ids-reflexiv": {
+    org: "ids", label: "Reflexiv-Pronomen",
+    url: "https://grammis.ids-mannheim.de/systematische-grammatik/403",
+  },
+  "ids-abtoenung": {
+    org: "ids", label: "Abtönungspartikeln (Modalpartikeln)",
+    url: "https://grammis.ids-mannheim.de/systematische-grammatik/2701",
+  },
 
   // -------------------------------------------------------------- Duden ----
   "duden-steigerung": {
@@ -209,6 +225,7 @@ export const RULE_SOURCES = {
   "R-034": ["ids-modalverb"],
   "R-035": ["ids-modalverb", "ids-ersatzinfinitiv"],
   "R-036": ["rdr-regelwerk"],
+  "R-040": ["ids-reflexiv", "ids-kasus"],
   "R-037": ["ids-adjflex"],
   "R-038": ["ids-inf-zu", "duden-lehren", "duden-inf-komma"],
   "R-039": ["ids-ersatzinfinitiv", "ids-inf-zu", "duden-lehren"],
@@ -223,6 +240,8 @@ export const RULE_SOURCES = {
   "R-063": ["ids-satzklammer", "ids-klammer-progr"],
   "R-064": ["ids-satzklammer"],
   "R-065": ["ids-satzklammer"],
+  "R-066": ["ids-negation", "ids-negation-stellung"],
+  "R-067": ["ids-negation"],
   "R-068": ["ids-konnektoren", "ids-verbstellung-weil"],
   "R-069": ["ids-konnektoren"],
   "R-070": ["ids-konnektoren", "ids-verbstellung-weil"],
@@ -251,6 +270,7 @@ export const RULE_SOURCES = {
   "R-097": ["ids-passivfaehigkeit"],
   // Register
   "R-101": ["ids-adjflex"],
+  "R-102": ["ids-abtoenung"],
   "R-103": ["ids-konnektoren"],
   "R-104": ["ids-konnektoren"],
   "R-105": ["ids-inf-zu", "ids-konnektoren"],
@@ -264,7 +284,7 @@ export const MODULE_SOURCES = {
   wortstellung: ["ids-satzklammer", "ids-klammer-progr"],
   zeiten: ["ids-verbalkomplex", "rdr-regelwerk"],
   modalverben: ["ids-modalverb", "ids-ersatzinfinitiv"],
-  reflexiv: ["ids-kasus"],
+  reflexiv: ["ids-reflexiv", "ids-kasus"],
   komparativ: ["duden-steigerung", "ids-steigerung"],
   genitiv: ["duden-genitivpraep", "ids-kasus"],
   nebensatz: ["ids-konnektoren", "ids-verbstellung-weil", "duden-als"],
@@ -287,7 +307,7 @@ export const MODULE_SOURCES = {
   "konjunktiv2-vergangenheit": ["ids-konjunktiv", "ids-verbalkomplex"],
   "erweitertes-attribut": ["ids-adjflex", "ids-relativ"],
   "konnektoren-c1": ["ids-konnektoren"],
-  modalpartikeln: ["dwds"],
+  modalpartikeln: ["ids-abtoenung", "dwds"],
   "schreiben-c1": ["rdr-regelwerk"],
 };
 

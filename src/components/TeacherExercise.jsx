@@ -22,28 +22,6 @@ function asStrings(value) {
   return Array.isArray(value) ? value.map(String).filter(Boolean) : [];
 }
 
-export function exerciseContext(exercises) {
-  return exercises.map((exercise, index) => {
-    const lines = [
-      `Exercise ${index + 1}: ${exercise.title}`,
-      `Type: ${exercise.type}`,
-      `Instructions: ${exercise.instructions}`,
-    ];
-    if (exercise.prompt) lines.push(`Prompt: ${exercise.prompt}`);
-    if (exercise.options?.length) lines.push(`Options: ${exercise.options.join(" | ")}`);
-    if (exercise.fields?.length) lines.push(`Fields: ${exercise.fields.map((field) => field.label).join(" | ")}`);
-    if (exercise.matches?.length) {
-      lines.push(`Matching rows: ${exercise.matches.map((row) => `${row.prompt} -> [${row.options.join(" | ")}]`).join("; ")}`);
-    }
-    if (exercise.items?.length) lines.push(`Items to reorder: ${exercise.items.join(" | ")}`);
-    if (exercise.topic) lines.push(`Writing topic: ${exercise.topic}`);
-    if (exercise.minimum_words) lines.push(`Minimum words: ${exercise.minimum_words}`);
-    if (exercise.requirements?.length) lines.push(`Requirements: ${exercise.requirements.join("; ")}`);
-    if (exercise.answer_key?.length) lines.push(`Hidden answer key (not shown to the student): ${exercise.answer_key.join(" | ")}`);
-    return lines.join("\n");
-  }).join("\n\n");
-}
-
 export default function TeacherExercise({ exercise, onSubmit, disabled = false, wasSubmitted = false }) {
   const type = TYPE_LABELS[exercise.type] ? exercise.type : "short_answer";
   const options = asStrings(exercise.options);
