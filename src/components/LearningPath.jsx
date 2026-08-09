@@ -48,7 +48,9 @@ export default function LearningPath({
   const path = progress.learningPath;
   const stats = learningPathStats(path);
   const mod = stats.current;
-  const step = learningStep(path, mod.id);
+  const savedStep = learningStep(path, mod.id);
+  const [viewStep, setViewStep] = React.useState(null);
+  const step = viewStep || savedStep;
   const checkpoint = path.checkpoints?.[mod.id] || { recent: [] };
   const application = path.applications?.[mod.id] || { text: "" };
   const aiSupport = path.aiSupport?.[mod.id] || null;
@@ -58,7 +60,32 @@ export default function LearningPath({
     if (step === "learn") onRead(mod.id);
   }, [mod.id, onRead, step]);
 
+  React.useEffect(() => { setViewStep(null); }, [mod.id]);
+
+  const savedIndex = savedStep === "complete" ? STEPS.length : STEPS.findIndex((item) => item.id === savedStep);
   const activeIndex = step === "complete" ? STEPS.length : STEPS.findIndex((item) => item.id === step);
+
+  function openReachedStep(nextStep) {
+    const nextIndex = STEPS.findIndex((item) => item.id === nextStep);
+    if (savedStep === "complete" || nextIndex <= savedIndex) {
+      setViewStep(nextStep === savedStep ? null : nextStep);
+    }
+  }
+
+  function continueTo(nextStep) {
+    const nextIndex = STEPS.findIndex((item) => item.id === nextStep);
+    if (savedStep === "complete" || nextIndex < savedIndex) setViewStep(nextStep);
+    else if (nextIndex === savedIndex) setViewStep(null);
+    else {
+      setViewStep(null);
+      onStep(mod.id, nextStep);
+    }
+  }
+
+  function finishApplication() {
+    if (savedStep === "complete") setViewStep(null);
+    else onComplete(mod.id);
+  }
 
   return (
     <section className="card path-window" aria-labelledby="path-window-title">
@@ -79,16 +106,42 @@ export default function LearningPath({
       </header>
 
       <ol className="path-window-steps" aria-label="Ablauf dieses Kapitels">
-        {STEPS.map((item, index) => (
-          <li key={item.id} className={(index === activeIndex ? "is-current" : "") + (index < activeIndex ? " is-done" : "")}>
-            <span>{index < activeIndex ? "✓" : index + 1}</span>
-            {item.label}
-          </li>
-        ))}
+        {STEPS.map((item, index) => {
+          const unlocked = savedStep === "complete" || index <= savedIndex;
+          const completed = savedStep === "complete" || index < savedIndex;
+          const current = index === activeIndex;
+          const className = (current ? "is-current" : "")
+            + (completed && !current ? " is-done" : "")
+            + (index === savedIndex && !current && savedStep !== "complete" ? " is-reached" : "");
+          return (
+            <li key={item.id} className={className}>
+              <button
+                type="button"
+                disabled={!unlocked}
+                aria-current={current ? "step" : undefined}
+                title={unlocked && !current ? `Zu „${item.label}“ zurückgehen` : undefined}
+                onClick={() => openReachedStep(item.id)}
+              >
+                <span>{completed ? "✓" : index + 1}</span>
+                {item.label}
+              </button>
+            </li>
+          );
+        })}
       </ol>
 
       <div className="path-window-body">
-        {step === "intro" && (
+        {activeIndex > 0 && (
+          <button
+            className="path-back-button"
+            type="button"
+            onClick={() => openReachedStep(STEPS[activeIndex - 1].id)}
+          >
+            ← Zurück zu {STEPS[activeIndex - 1].label}
+          </button>
+        )}
+
+        <div hidden={step !== "intro"}>
           <Introduction
             module={mod}
             profile={profile}
@@ -98,34 +151,41 @@ export default function LearningPath({
             mode={mode}
             onSaveSupport={(support) => onSaveAISupport(mod.id, support)}
             onOpenSettings={onOpenSettings}
-            onContinue={() => onStep(mod.id, "learn")}
+            onContinue={() => continueTo("learn")}
           />
+        </div>
+
+        {savedIndex >= 1 && (
+          <div hidden={step !== "learn"}>
+            <Lesson module={mod} support={aiSupport} onContinue={() => continueTo("practice")} />
+          </div>
         )}
 
-        {step === "learn" && (
-          <Lesson module={mod} support={aiSupport} onContinue={() => onStep(mod.id, "practice")} />
+        {savedIndex >= 2 && (
+          <div hidden={step !== "practice"}>
+            <PathCheckpoint
+              key={mod.id}
+              module={mod}
+              checkpoint={checkpoint}
+              passed={checkpointPassed(checkpoint)}
+              support={aiSupport}
+              onAnswer={(ruleId, correct) => onCheckpointAnswer(mod.id, ruleId, correct)}
+              onReview={() => openReachedStep("learn")}
+              onContinue={() => continueTo("apply")}
+            />
+          </div>
         )}
 
-        {step === "practice" && (
-          <PathCheckpoint
-            key={mod.id}
-            module={mod}
-            checkpoint={checkpoint}
-            passed={checkpointPassed(checkpoint)}
-            support={aiSupport}
-            onAnswer={(ruleId, correct) => onCheckpointAnswer(mod.id, ruleId, correct)}
-            onContinue={() => onStep(mod.id, "apply")}
-          />
-        )}
-
-        {step === "apply" && (
-          <Application
-            module={mod}
-            support={aiSupport}
-            value={application.text || ""}
-            onChange={(text) => onSaveApplication(mod.id, text)}
-            onComplete={() => onComplete(mod.id)}
-          />
+        {savedIndex >= 3 && (
+          <div hidden={step !== "apply"}>
+            <Application
+              module={mod}
+              support={aiSupport}
+              value={application.text || ""}
+              onChange={(text) => onSaveApplication(mod.id, text)}
+              onComplete={finishApplication}
+            />
+          </div>
         )}
 
         {step === "complete" && (
@@ -313,7 +373,7 @@ function personalizedQuestion(item, module) {
   };
 }
 
-function PathCheckpoint({ module, checkpoint, passed, support, onAnswer, onContinue }) {
+function PathCheckpoint({ module, checkpoint, passed, support, onAnswer, onReview, onContinue }) {
   const rules = checkpointRules(module);
   const personalized = React.useMemo(
     () => (support?.items || []).map((item) => personalizedQuestion(item, module)),
@@ -362,7 +422,10 @@ function PathCheckpoint({ module, checkpoint, passed, support, onAnswer, onConti
         <span className="eyebrow">Übung bestanden</span>
         <h2>Die Regel sitzt. Jetzt setzt du sie selbst ein.</h2>
         <p className="muted">Die nächste Aufgabe ist bereits vorbereitet und erscheint hier im selben Lernfenster.</p>
-        <div className="actions"><button className="btn" type="button" onClick={onContinue}>Zur Schreibaufgabe</button></div>
+        <div className="actions">
+          <button className="btn" type="button" onClick={onContinue}>Zur Schreibaufgabe</button>
+          <button className="btn btn-ghost" type="button" onClick={onReview}>Regel noch einmal ansehen</button>
+        </div>
       </div>
     );
   }
@@ -385,6 +448,7 @@ function PathCheckpoint({ module, checkpoint, passed, support, onAnswer, onConti
           ? "Diese persönliche Aufwärmaufgabe zählt nicht für das Bestehen. Danach prüft der eingebaute Grammatik-Generator unabhängig von der KI."
           : `Ziel: ${CHECKPOINT_CORRECT} der letzten ${CHECKPOINT_WINDOW} Aufgaben richtig. Diese Bewertung kommt ausschließlich aus dem eingebauten Grammatik-Generator.`}
       </p>
+      <button className="path-review-button" type="button" onClick={onReview}>← Verstehen: Regel und Beispiele nachsehen</button>
       <span className="q-kind">{q.kind}</span>
       <div className="q-prompt"><LevelTag level={module.level} /> <Prompt text={q.prompt} /></div>
       {q.hint && <p className="q-hint">{q.hint}</p>}

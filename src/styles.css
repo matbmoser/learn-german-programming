@@ -658,20 +658,32 @@ pre.code b { font-weight: 600; }
   list-style: none; border-bottom: 1px solid var(--rule); background: var(--surface);
 }
 .path-window-steps li {
-  display: flex; align-items: center; justify-content: center; gap: var(--s2);
-  padding: .8em .5em; border-right: 1px solid var(--rule);
+  border-right: 1px solid var(--rule);
   color: var(--ink-3); font-family: var(--f-display); font-size: .76rem;
 }
 .path-window-steps li:last-child { border-right: 0; }
-.path-window-steps li > span {
+.path-window-steps li > button {
+  display: flex; align-items: center; justify-content: center; gap: var(--s2);
+  width: 100%; min-height: 100%; padding: .8em .5em; color: inherit;
+}
+.path-window-steps li > button:not(:disabled):hover { background: var(--raised-2); color: var(--ink); }
+.path-window-steps li > button:disabled { cursor: default; }
+.path-window-steps li > button > span {
   display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px;
   border: 1px solid var(--rule); border-radius: 50%; font-family: var(--f-mono); font-size: .64rem;
 }
 .path-window-steps li.is-current { color: var(--ink); background: var(--raised); }
-.path-window-steps li.is-current > span { border-color: var(--nom); color: var(--nom); }
+.path-window-steps li.is-current > button > span { border-color: var(--nom); color: var(--nom); }
 .path-window-steps li.is-done { color: var(--ok); }
-.path-window-steps li.is-done > span { border-color: var(--ok); background: var(--ok-bg); }
+.path-window-steps li.is-done > button > span { border-color: var(--ok); background: var(--ok-bg); }
+.path-window-steps li.is-reached { color: var(--nom); }
+.path-window-steps li.is-reached > button > span { border-color: var(--nom); color: var(--nom); }
 .path-window-body { padding: clamp(20px, 5vw, 48px); min-height: 430px; }
+.path-back-button {
+  display: block; margin: 0 0 var(--s4); color: var(--ink-3);
+  font-family: var(--f-display); font-size: .75rem;
+}
+.path-back-button:hover { color: var(--nom); }
 .path-stage { max-width: 740px; margin-inline: auto; }
 .path-stage h2 { font-size: clamp(1.45rem, 3.5vw, 2rem); margin-top: var(--s2); }
 .path-stage-lede { color: var(--ink-2); margin-top: var(--s3); font-size: 1.03rem; }
@@ -728,6 +740,12 @@ pre.code b { font-weight: 600; }
 .path-stage-action p { color: var(--ink-2); }
 .path-stage-heading { display: flex; justify-content: space-between; gap: var(--s4); align-items: flex-start; }
 .path-checkpoint-intro { margin: var(--s3) 0 var(--s4); max-width: 68ch; }
+.path-review-button {
+  display: block; margin: calc(var(--s2) * -1) 0 var(--s4); color: var(--nom);
+  font-family: var(--f-display); font-size: .76rem; text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.path-review-button:hover { color: var(--ink); }
 .path-stage-success { text-align: center; padding-block: var(--s5); }
 .path-stage-success .actions { justify-content: center; }
 .path-success-mark { display: block; color: var(--ok); font-size: 3rem; line-height: 1; margin-bottom: var(--s3); }
@@ -760,7 +778,8 @@ pre.code b { font-weight: 600; }
   .learning-activity-chart { gap: 5px; }
   .path-window-head { grid-template-columns: 1fr; gap: var(--s3); }
   .path-window-progress { text-align: left; }
-  .path-window-steps li { flex-direction: column; gap: 3px; font-size: .65rem; padding-inline: 2px; }
+  .path-window-steps li { font-size: .65rem; }
+  .path-window-steps li > button { flex-direction: column; gap: 3px; padding-inline: 2px; }
   .path-window-body { padding: 20px 16px; min-height: 360px; }
   .path-ai-head, .path-ai-empty, .path-ai-result { padding: 12px; }
   .path-ai-examples { grid-template-columns: 1fr; }
