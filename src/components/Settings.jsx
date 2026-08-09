@@ -20,12 +20,12 @@ import React from "react";
 import { downloadProgress, importProgress } from "../lib/storage.js";
 import { testKey, MODEL } from "../lib/claude.js";
 import { Callout, Spinner } from "./ui.jsx";
-import { LEVELS } from "../data/curriculum.js";
+import { LEVELS, MODULES } from "../data/curriculum.js";
 import { learningPathStats } from "../lib/learningPath.js";
 
 export default function Settings({
   progress, apiKey, onApiKey, onSettings, onReset, onImport,
-  learningPathEnabled, onPathLevel, onResetPath,
+  learningPathEnabled, onPathLevel, onPathModule, onOpenPath, onResetPath,
 }) {
   const [keyDraft, setKeyDraft] = React.useState(apiKey);
   const [showKey, setShowKey] = React.useState(false);
@@ -40,6 +40,7 @@ export default function Settings({
   const model = progress.settings.model || MODEL;
   const experienceMode = learningPathEnabled && progress.settings.experienceMode !== "free" ? "learning" : "free";
   const pathStats = learningPathStats(progress.learningPath);
+  const levelModules = MODULES.filter((module) => module.level === pathStats.current.level);
 
   async function runTest() {
     setTesting(true); setTestResult(null);
@@ -84,7 +85,7 @@ export default function Settings({
             </div>
             <p className="help" style={{ marginTop: "var(--s3)" }}>
               {experienceMode === "learning"
-                ? "Ein Kapitel nach dem anderen. Der nächste Schritt wird nach einem bestandenen Checkpoint freigegeben."
+                ? "Ein Lernfenster führt durch Erklärung, vorbereitete Übungen und eine kurze Anwendung—ohne Wechsel zwischen Regeln, Drill und Schreiben."
                 : "Alle Regeln, Drills, Prüfungen und Schreibaufgaben sind frei zugänglich — die bisherige Ansicht."}
             </p>
 
@@ -103,7 +104,27 @@ export default function Settings({
                     </button>
                   ))}
                 </div>
-                <p className="help">Hilfreich nach verlorenem Browser-Fortschritt. Frühere Kapitel werden dadurch nicht als abgeschlossen markiert.</p>
+                <label className="path-module-picker" htmlFor="path-module">
+                  <span>Kapitel in {pathStats.current.level}</span>
+                  <select
+                    id="path-module"
+                    className="input"
+                    value={pathStats.current.id}
+                    onChange={(event) => onPathModule(event.target.value)}
+                  >
+                    {levelModules.map((module, index) => (
+                      <option key={module.id} value={module.id}>
+                        {index + 1}. {module.title}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <p className="help">Wähle ein Niveau und danach ein bestimmtes Kapitel. Hilfreich nach verlorenem Browser-Fortschritt; frühere Kapitel werden dadurch nicht als abgeschlossen markiert.</p>
+                <div className="actions path-module-actions">
+                  <button className="btn btn-sm" type="button" onClick={onOpenPath}>
+                    Mit diesem Kapitel fortfahren
+                  </button>
+                </div>
               </div>
             </div>
 

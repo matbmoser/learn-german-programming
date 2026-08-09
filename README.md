@@ -1,9 +1,10 @@
 # Deutsch A2 → C1 — Sprachspezifikation
 
-German grammar taught as a type system. A static React app: a 32-module A2–C1
-reference, a drill engine that generates questions fresh and weights them toward
-your weak spots, an adaptive CEFR placement exam, and a writing trainer that
-sends your text to Claude for a graded, rule-by-rule correction.
+German grammar taught as a type system. A static React app with a focused,
+chapter-by-chapter Learning Mode and an unrestricted Free Mode: a 32-module
+A2–C1 reference, a drill engine that generates questions fresh and weights them
+toward your weak spots, an adaptive CEFR placement exam, and a writing trainer
+that sends your text to Claude for a graded, rule-by-rule correction.
 
 No backend. Everything runs in the browser and progress stays in `localStorage`.
 
@@ -40,6 +41,13 @@ The output lands in `dist/`. `vite.config.js` sets `base: "./"`, so the same
 build works at `username.github.io`, at `username.github.io/repo/`, and from the
 local filesystem — no path configuration needed.
 
+Learning Mode is enabled by default. To build the original Free Mode only and
+hide all learning-path controls:
+
+```bash
+VITE_LEARNING_PATH_ENABLED=false npm run build
+```
+
 ## Deploy to GitHub Pages
 
 `.github/workflows/deploy.yml` builds and publishes on every push to `main`.
@@ -59,6 +67,7 @@ git push -u origin main
 
 | Bereich | Was es tut |
 |---|---|
+| **§0 Lernpfad** | One guided learning window from A1/A2 foundations to C1. It sequences explanation, preconfigured exercises, and a short writing application without sending the learner to other tools. |
 | **§1 Regeln** | 32 modules A2→C1. Each one: the rule as code, the table it collapses to, real examples, and the mistakes that cost marks in an exam. |
 | **§2 Drill** | 21 generators produce questions on demand. Every answer — right or wrong — prints the derivation that produced it. Weighted toward your weakest rules. |
 | **§3 Einstufung** | 30 adaptive questions. Climbs after three correct at a level, drops after two wrong. Returns a CEFR estimate, the gap to C1, and your weakest topics. |
@@ -149,10 +158,46 @@ Requests are billed to your own account.
 
 ---
 
+## Learning and Free modes
+
+**Learning Mode** deliberately shows one learning window plus Settings. Inside
+that window, the app reveals exactly one next action: introduction, explanation,
+preconfigured exercises, then a short level-appropriate writing application.
+There is no need to navigate between Regeln, Drill, and Schreiben. A rolling
+checkpoint requires 3 correct answers out of the latest 4, and the chapter is
+completed after the writing application. The header reports the current CEFR
+level and total path progress. In Settings, the learner can jump directly to
+A1/A2, B1, B2, or C1 if browser progress was lost; jumping does not falsely
+mark earlier chapters complete.
+
+**Free Mode** is the original unrestricted interface. Every reference, drill,
+exam, and writing tool remains available. Users can switch modes in Settings
+without losing either kind of progress.
+
+### AI learning coach
+
+Every Learning Mode chapter includes an optional, clearly labelled
+**KI-Lernbegleiter**. It builds a compact anonymous profile from rule accuracy,
+recent checkpoint results, completed chapters, the last placement level, and
+error-category metadata from prior corrections. Raw learner writing is not sent
+when creating this profile.
+
+The model returns a structured personalization pack for the current chapter:
+an individual focus with evidence, an adapted explanation and memory hook,
+targeted examples, four warm-up exercises, and a tailored writing application.
+The pack is cached in browser progress, so it does not need to be regenerated
+on every visit. API-key and manual copy/paste modes are both supported.
+
+AI output cannot change the CEFR sequence or pass a learner. AI exercises are
+explicitly treated as warm-up material; only the built-in grammar generator and
+its fixed 3-of-4 checkpoint update mastery and unlock progression. The complete
+built-in lesson remains available when AI is disabled or unavailable.
+
 ## Progress
 
-Stored in `localStorage` under `dc1:progress`: per-rule mastery, streaks, daily
-counts, exam history, and every submitted text with its correction.
+Stored in `localStorage` under `dc1:progress`: learning-path chapter/checkpoint
+state, cached AI personalization packs, per-rule mastery, streaks, daily counts,
+exam history, and every submitted text with its correction.
 
 - **Export / Import** — JSON, in §5. Use it to move between browsers or to keep
   a backup, since clearing site data wipes the store.

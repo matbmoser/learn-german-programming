@@ -27,8 +27,10 @@ import Settings from "./components/Settings.jsx";
 import TeacherChat from "./components/TeacherChat.jsx";
 import Dictionary from "./components/Dictionary.jsx";
 import LearningPath from "./components/LearningPath.jsx";
+import LearningHome from "./components/LearningHome.jsx";
 import { IconBook, IconClose, IconGitHub, IconTeacher } from "./components/icons.jsx";
 import Rulebook from "./components/Rulebook.jsx";
+import { MODULES } from "./data/curriculum.js";
 import {
   loadProgress, saveProgress, resetProgress, recordAnswer,
   loadApiKey, saveApiKey, saveChatSession,
@@ -37,15 +39,21 @@ import { MODEL } from "./lib/claude.js";
 import { LEARNING_PATH_ENABLED } from "./config.js";
 import {
   advanceLearningPath,
+  completeLearningModule,
   emptyLearningPath,
   jumpToLevel,
+  jumpToModule,
+  learningStep,
   learningPathStats,
   recordCheckpoint,
+  saveLearningApplication,
+  saveLearningAISupport,
+  setLearningStep,
 } from "./lib/learningPath.js";
 
 const VIEWS = [
-  { id: "path", num: "§0", label: "Lernpfad" },
   { id: "home", num: "§0", label: "Übersicht" },
+  { id: "path", num: "§1", label: "Lernpfad" },
   { id: "learn", num: "§1", label: "Regeln" },
   { id: "rulebook", num: "§2", label: "Regelwerk" },
   { id: "drill", num: "§3", label: "Drill" },
@@ -54,6 +62,13 @@ const VIEWS = [
   { id: "spec", num: "§6", label: "Spezifikation" },
   { id: "settings", num: "§7", label: "Einstellungen" },
 ];
+
+const PATH_STEPS = {
+  intro: { label: "Einführung", next: "Verstehen · Die Regel an Beispielen durcharbeiten" },
+  learn: { label: "Verstehen", next: "Üben · Den Checkpoint mit 3 von 4 richtigen Antworten bestehen" },
+  practice: { label: "Üben", next: "Anwenden · Die Regel in einem kurzen Text selbst benutzen" },
+  apply: { label: "Anwenden", next: "Kapitel abschließen und zur nächsten Lektion wechseln" },
+};
 
 function readRoute(fallback = "home") {
   const [rawView, ...rawSection] = window.location.hash.replace(/^#/, "").split("/");
@@ -70,7 +85,7 @@ export default function App() {
   const [progress, setProgress] = React.useState(loadProgress);
   const learningMode = LEARNING_PATH_ENABLED && progress.settings.experienceMode !== "free";
   const [apiKey, setApiKey] = React.useState(loadApiKey);
-  const [route, setRoute] = React.useState(() => readRoute(learningMode ? "path" : "home"));
+  const [route, setRoute] = React.useState(() => readRoute("home"));
   const [drillTopic, setDrillTopic] = React.useState(null);
   const [chatOpen, setChatOpen] = React.useState(false);
   const [teacherDraft, setTeacherDraft] = React.useState(null);
@@ -112,6 +127,24 @@ export default function App() {
     window.scrollTo?.(0, 0);
   }, []);
 
+  const onLearningStep = React.useCallback((moduleId, step) => {
+    setProgress((p) => ({ ...p, learningPath: setLearningStep(p.learningPath, moduleId, step) }));
+    window.scrollTo?.(0, 0);
+  }, []);
+
+  const onSaveLearningApplication = React.useCallback((moduleId, text) => {
+    setProgress((p) => ({ ...p, learningPath: saveLearningApplication(p.learningPath, moduleId, text) }));
+  }, []);
+
+  const onCompleteLearningModule = React.useCallback((moduleId) => {
+    setProgress((p) => ({ ...p, learningPath: completeLearningModule(p.learningPath, moduleId) }));
+    window.scrollTo?.(0, 0);
+  }, []);
+
+  const onSaveLearningAISupport = React.useCallback((moduleId, support) => {
+    setProgress((p) => ({ ...p, learningPath: saveLearningAISupport(p.learningPath, moduleId, support) }));
+  }, []);
+
   const onRead = React.useCallback((moduleId) => {
     setProgress((p) => (p.read?.[moduleId] ? p : { ...p, read: { ...p.read, [moduleId]: true } }));
   }, []);
@@ -142,7 +175,7 @@ export default function App() {
   }, []);
 
   React.useEffect(() => {
-    const syncRoute = () => setRoute(readRoute(learningMode ? "path" : "home"));
+    const syncRoute = () => setRoute(readRoute("home"));
     window.addEventListener("hashchange", syncRoute);
     window.addEventListener("popstate", syncRoute);
     return () => {
@@ -152,7 +185,7 @@ export default function App() {
   }, [learningMode]);
 
   React.useEffect(() => {
-    if (learningMode && !["path", "settings"].includes(view)) goto("path");
+    if (learningMode && !["home", "path", "settings"].includes(view)) goto("home");
     if (!learningMode && view === "path") goto("home");
   }, [learningMode, view, goto]);
 
@@ -183,8 +216,10 @@ export default function App() {
   const mode = progress.settings.mode || "api";
   const model = progress.settings.model || MODEL;
   const pathStats = learningPathStats(progress.learningPath);
+  const pathStep = learningStep(progress.learningPath, pathStats.current.id);
+  const nextModule = MODULES[pathStats.currentIndex + 1] || null;
   const visibleViews = learningMode
-    ? VIEWS.filter((item) => item.id === "path" || item.id === "settings")
+    ? VIEWS.filter((item) => ["home", "path", "settings"].includes(item.id))
     : VIEWS.filter((item) => item.id !== "path");
 
   return (
@@ -228,14 +263,18 @@ export default function App() {
             >
               <IconBook />
             </button>
-            <button
-              className="level-chip"
-              type="button"
-              title={learningMode ? "Zum Lernpfad" : "Letzte Einstufung"}
-              onClick={() => learningMode && goto("path")}
-            >
-              {learningMode ? `${pathStats.current.level} · ${pathStats.percent}%` : (lastExam ? lastExam.level : "kein Test")}
-            </button>
+            {learningMode ? (
+              <CourseProgress
+                stats={pathStats}
+                step={pathStep}
+                nextModule={nextModule}
+                onClick={() => goto("path")}
+              />
+            ) : (
+              <button className="level-chip" type="button" title="Letzte Einstufung">
+                {lastExam ? lastExam.level : "kein Test"}
+              </button>
+            )}
           </div>
         </div>
         {learningMode && (
@@ -265,13 +304,31 @@ export default function App() {
             {view === "path" && learningMode && (
               <LearningPath
                 progress={progress}
+                apiKey={apiKey}
+                model={model}
+                mode={mode}
                 onRead={onRead}
                 onCheckpointAnswer={onCheckpointAnswer}
+                onStep={onLearningStep}
+                onSaveApplication={onSaveLearningApplication}
+                onSaveAISupport={onSaveLearningAISupport}
+                onComplete={onCompleteLearningModule}
                 onAdvance={onAdvancePath}
                 onOpenSettings={() => goto("settings")}
               />
             )}
-            {view === "home" && (
+            {view === "home" && learningMode && (
+              <LearningHome
+                progress={progress}
+                onContinue={() => {
+                  if (pathStep === "complete" && nextModule) {
+                    setProgress((p) => ({ ...p, learningPath: advanceLearningPath(p.learningPath) }));
+                  }
+                  goto("path");
+                }}
+              />
+            )}
+            {view === "home" && !learningMode && (
               <Dashboard progress={progress} onGo={goto} onDrillTopic={drillOn} />
             )}
             {view === "learn" && (
@@ -315,8 +372,11 @@ export default function App() {
                 learningPathEnabled={LEARNING_PATH_ENABLED}
                 onPathLevel={(level) => {
                   setProgress((p) => ({ ...p, learningPath: jumpToLevel(p.learningPath, level) }));
-                  goto("path");
                 }}
+                onPathModule={(moduleId) => {
+                  setProgress((p) => ({ ...p, learningPath: jumpToModule(p.learningPath, moduleId) }));
+                }}
+                onOpenPath={() => goto("path")}
                 onResetPath={() => {
                   setProgress((p) => ({ ...p, learningPath: emptyLearningPath() }));
                   goto("path");
@@ -367,6 +427,64 @@ export default function App() {
         setQuery={setDictQuery}
         trigger={dictTrigger}
       />
+    </div>
+  );
+}
+
+function CourseProgress({ stats, step, nextModule, onClick }) {
+  const currentStep = PATH_STEPS[step];
+  const nextText = step === "complete"
+    ? (nextModule ? `${nextModule.level} · ${nextModule.title}` : "Kurs abgeschlossen")
+    : currentStep.next;
+
+  return (
+    <div className="course-progress">
+      <button
+        className="level-chip course-progress-trigger"
+        type="button"
+        aria-label={`Kursfortschritt: ${stats.percent} Prozent. Details anzeigen.`}
+        aria-describedby="course-progress-summary"
+        onClick={onClick}
+      >
+        <span className="course-progress-label">
+          <span>{stats.current.level}</span>
+          <span>{stats.percent}%</span>
+        </span>
+        <span
+          className="course-progress-track"
+          role="progressbar"
+          aria-label="Gesamter Kurs"
+          aria-valuemin="0"
+          aria-valuemax="100"
+          aria-valuenow={stats.percent}
+        >
+          <i style={{ width: `${stats.percent}%` }} />
+        </span>
+      </button>
+
+      <div className="course-progress-popover" id="course-progress-summary" role="tooltip">
+        <div className="course-progress-popover-head">
+          <span className="eyebrow">Dein Kursfortschritt</span>
+          <strong>{stats.percent}%</strong>
+        </div>
+        <div className="course-progress-popover-bar" aria-hidden="true">
+          <i style={{ width: `${stats.percent}%` }} />
+        </div>
+        <dl>
+          <div>
+            <dt>Jetzt</dt>
+            <dd>
+              <b>{stats.current.level} · {stats.current.title}</b>
+              <span>Kapitel {stats.currentIndex + 1} von {stats.total} · {currentStep?.label || "Abgeschlossen"}</span>
+            </dd>
+          </div>
+          <div>
+            <dt>Danach</dt>
+            <dd>{nextText}</dd>
+          </div>
+        </dl>
+        <small>{stats.completedCount} von {stats.total} Kapiteln abgeschlossen</small>
+      </div>
     </div>
   );
 }

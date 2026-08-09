@@ -382,6 +382,175 @@ ${JSON.stringify(CHALLENGE_SCHEMA, null, 2)}
 ${challengeUser(weakList, level, count)}`;
 }
 
+// ---------------------------------------------------------------------------
+//  3 · Personalized support inside Learning Mode
+// ---------------------------------------------------------------------------
+
+function learningSupportSchema(allowedRules) {
+  return {
+    type: "object",
+    properties: {
+      coach_note: { type: "string" },
+      focus: { type: "string" },
+      focus_reason: { type: "string" },
+      explanation: { type: "string" },
+      memory_hook: { type: "string" },
+      goals: { type: "array", items: { type: "string" } },
+      examples: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            german: { type: "string" },
+            english: { type: "string" },
+            why: { type: "string" },
+          },
+          required: ["german", "english", "why"],
+          additionalProperties: false,
+        },
+      },
+      items: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            rule: { type: "string", enum: allowedRules },
+            kind: { type: "string" },
+            prompt: { type: "string" },
+            options: { type: "array", items: { type: "string" } },
+            answer: { type: "string" },
+            why: { type: "string" },
+          },
+          required: ["rule", "kind", "prompt", "options", "answer", "why"],
+          additionalProperties: false,
+        },
+      },
+      application: {
+        type: "object",
+        properties: {
+          title: { type: "string" },
+          prompt: { type: "string" },
+          instruction: { type: "string" },
+          min_words: { type: "integer" },
+          targets: { type: "array", items: { type: "string" } },
+        },
+        required: ["title", "prompt", "instruction", "min_words", "targets"],
+        additionalProperties: false,
+      },
+    },
+    required: [
+      "coach_note", "focus", "focus_reason", "explanation", "memory_hook",
+      "goals", "examples", "items", "application",
+    ],
+    additionalProperties: false,
+  };
+}
+
+function learningSupportSystem(level, allowedRules) {
+  return `You are the AI learning coach inside a structured German course. The current level is ${level}.
+
+Your role is to PERSONALIZE the current chapter, not to replace the curriculum, change the CEFR level, skip chapters, or decide whether the learner passes. The app owns progression and assessment.
+
+LANGUAGE POLICY:
+- Write coaching, reasons, explanations, goals, memory hooks, and instructions in clear ENGLISH.
+- Keep German examples, exercise prompts, options, answers, and the writing prompt in GERMAN.
+- Adapt explanation length and exercise difficulty to the evidence in the supplied learning profile.
+- Refer to concrete evidence such as accuracy, recent answer pattern, placement, or error categories. If there is not enough history, say that the focus is a sensible starting hypothesis—never invent student weaknesses.
+- Be supportive but specific; no generic praise or motivational filler.
+
+EXERCISES:
+- Return exactly 4 multiple-choice items targeting only these rule IDs: ${allowedRules.join(", ")}.
+- Each German prompt has exactly one blank marked "___".
+- Each item has exactly 4 distinct options, and "answer" is verbatim one option.
+- Wrong options should reflect likely mistakes suggested by the profile.
+- "why" explains the forcing rule in English.
+
+APPLICATION:
+- Adapt the supplied baseline writing task to the current weakness without making it substantially longer.
+- Keep min_words realistic for a focused single-session task.
+- Targets must be observable things the learner can check in their own text.`;
+}
+
+function learningSupportUser({ module, profile, baselineTask }) {
+  const curriculum = {
+    id: module.id,
+    level: module.level,
+    title: module.title,
+    summary: module.summary,
+    pitfalls: module.pitfalls || [],
+    examples: (module.examples || []).slice(0, 4),
+  };
+  return `CURRENT CURRICULUM CHAPTER:
+${JSON.stringify(curriculum, null, 2)}
+
+ANONYMOUS LEARNING PROFILE (no raw learner writing):
+${JSON.stringify(profile, null, 2)}
+
+BASELINE APPLICATION TASK:
+${JSON.stringify(baselineTask, null, 2)}
+
+Create one personalization pack for this chapter. Keep all content faithful to the supplied curriculum.`;
+}
+
+export function normalizeLearningSupport(data, allowedRules = []) {
+  if (!data || typeof data !== "object") throw new Error("Die KI-Antwort enthält kein Lernpaket.");
+  const allowed = new Set(allowedRules);
+  const items = (data.items || []).filter((item) =>
+    allowed.has(item?.rule) &&
+    typeof item.prompt === "string" && item.prompt.split("___").length === 2 &&
+    Array.isArray(item.options) && item.options.length === 4 &&
+    new Set(item.options).size === 4 && item.options.includes(item.answer)
+  ).slice(0, 4);
+  if (!data.focus || !data.explanation || !data.application || items.length === 0) {
+    throw new Error("Die KI-Antwort ist unvollständig oder enthält keine gültigen Übungen.");
+  }
+  return {
+    coach_note: String(data.coach_note || ""),
+    focus: String(data.focus),
+    focus_reason: String(data.focus_reason || ""),
+    explanation: String(data.explanation),
+    memory_hook: String(data.memory_hook || ""),
+    goals: (data.goals || []).map(String).slice(0, 4),
+    examples: (data.examples || []).filter((example) => example?.german).slice(0, 4),
+    items,
+    application: {
+      title: String(data.application.title || "Personalized application"),
+      prompt: String(data.application.prompt || ""),
+      instruction: String(data.application.instruction || ""),
+      min_words: Math.max(20, Math.min(180, Number(data.application.min_words) || 40)),
+      targets: (data.application.targets || []).map(String).slice(0, 5),
+    },
+  };
+}
+
+export async function generateLearningSupport({ apiKey, model = MODEL, module, profile, baselineTask, allowedRules }) {
+  try {
+    const schema = learningSupportSchema(allowedRules);
+    const response = await createMessage(apiKey, {
+      model,
+      max_tokens: 8000,
+      output_config: { format: { type: "json_schema", schema } },
+      system: [{ type: "text", text: learningSupportSystem(module.level, allowedRules), cache_control: { type: "ephemeral" } }],
+      messages: [{ role: "user", content: learningSupportUser({ module, profile, baselineTask }) }],
+    });
+    return normalizeLearningSupport(parseJsonResponse(response), allowedRules);
+  } catch (err) {
+    throw new Error(friendlyError(err));
+  }
+}
+
+export function manualLearningSupportPrompt({ module, profile, baselineTask, allowedRules }) {
+  return `${learningSupportSystem(module.level, allowedRules)}
+
+Return ONLY one JSON object matching this schema:
+
+${JSON.stringify(learningSupportSchema(allowedRules), null, 2)}
+
+---
+
+${learningSupportUser({ module, profile, baselineTask })}`;
+}
+
 /**
  * A prompt targeted at ONE recurring mistake. Paste it into claude.ai to get
  * exercises that train exactly this weakness so the student stops repeating it.
@@ -405,7 +574,7 @@ ${user}`;
 }
 
 // ---------------------------------------------------------------------------
-//  3 · Explain a mistake
+//  4 · Explain a mistake
 // ---------------------------------------------------------------------------
 
 const EXPLAIN_SCHEMA = {
