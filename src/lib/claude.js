@@ -477,18 +477,130 @@ export async function testKey({ apiKey, model = MODEL }) {
 
 import { buildChatSystem } from "./teacherAgent.js";
 
+const TEACHER_EXERCISE_TOOL = {
+  name: "present_exercise",
+  description:
+    "Present an interactive German-learning exercise or structured answer form in the chat. Use it when practice would help, the learner asks for an exercise, or your question is best answered with choices or several fields. Call it more than once for a short exercise set.",
+  input_schema: {
+    type: "object",
+    properties: {
+      id: { type: "string", description: "Short unique ID, for example adjective-ending-1." },
+      type: {
+        type: "string",
+        enum: ["multiple_choice", "multiple_select", "fill_blanks", "matching", "reorder", "short_answer", "form", "writing"],
+      },
+      title: { type: "string", description: "A short, friendly exercise title." },
+      instructions: { type: "string", description: "One clear sentence in English explaining what to do." },
+      prompt: { type: "string", description: "The German question, sentence, or transformation prompt." },
+      options: {
+        type: "array",
+        items: { type: "string" },
+        description: "Choices for multiple_choice or multiple_select.",
+      },
+      fields: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            id: { type: "string" },
+            label: { type: "string" },
+            placeholder: { type: "string" },
+          },
+          required: ["id", "label"],
+          additionalProperties: false,
+        },
+        description: "Named answer fields for fill_blanks or a form. Refer to each field naturally in the prompt.",
+      },
+      matches: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            prompt: { type: "string" },
+            options: { type: "array", items: { type: "string" } },
+          },
+          required: ["prompt", "options"],
+          additionalProperties: false,
+        },
+        description: "Rows for matching; the learner chooses one option for every prompt.",
+      },
+      items: {
+        type: "array",
+        items: { type: "string" },
+        description: "Shuffled words or sentence parts for a reorder exercise.",
+      },
+      topic: { type: "string", description: "A custom writing topic or situation." },
+      minimum_words: { type: "integer", minimum: 10, maximum: 500 },
+      requirements: { type: "array", items: { type: "string" } },
+      answer_key: {
+        type: "array",
+        items: { type: "string" },
+        description: "Hidden solutions used for later feedback. For choices list the correct option(s); for fields or matching use display order; for reorder use the correct item order; for short answer give one or more accepted examples. Omit for open forms and writing.",
+      },
+    },
+    required: ["id", "type", "title", "instructions"],
+    additionalProperties: false,
+  },
+};
+
+function normalizeTeacherExercise(input, index) {
+  const exercise = input && typeof input === "object" ? { ...input } : {};
+  const options = Array.isArray(exercise.options) ? exercise.options.filter(Boolean).map(String) : [];
+  const fields = Array.isArray(exercise.fields) ? exercise.fields.filter((field) => field?.id && field?.label) : [];
+  const matches = Array.isArray(exercise.matches)
+    ? exercise.matches.filter((row) => row?.prompt && Array.isArray(row.options) && row.options.length)
+    : [];
+  const items = Array.isArray(exercise.items) ? exercise.items.filter(Boolean).map(String) : [];
+  const answerKey = Array.isArray(exercise.answer_key) ? exercise.answer_key.filter(Boolean).map(String) : [];
+
+  if (["multiple_choice", "multiple_select"].includes(exercise.type) && options.length < 2) exercise.type = "short_answer";
+  if (["fill_blanks", "form"].includes(exercise.type) && !fields.length) exercise.type = "short_answer";
+  if (exercise.type === "matching" && !matches.length) exercise.type = "short_answer";
+  if (exercise.type === "reorder" && items.length < 2) exercise.type = "short_answer";
+
+  return {
+    ...exercise,
+    id: exercise.id || `exercise-${Date.now()}-${index}`,
+    type: ["multiple_choice", "multiple_select", "fill_blanks", "matching", "reorder", "short_answer", "form", "writing"].includes(exercise.type)
+      ? exercise.type
+      : "short_answer",
+    title: exercise.title || "Quick practice",
+    instructions: exercise.instructions || "Write your answer and send it to Frau Müller.",
+    options,
+    fields,
+    matches,
+    items,
+    answer_key: answerKey,
+  };
+}
+
 export async function chatWithTeacher({ apiKey, model = MODEL, messages, currentText = "", task = null, targetLevel = "C1" }) {
   const system = buildChatSystem({ targetLevel, task, currentText });
   try {
     const response = await (await client(apiKey)).messages.create({
       model,
-      max_tokens: 1024,
+      max_tokens: 2048,
       system,
-      messages,
+      tools: [TEACHER_EXERCISE_TOOL],
+      messages: messages.map((message) => ({
+        role: message.role,
+        content: message.modelContent || message.content,
+      })),
     });
-    const block = response.content.find((b) => b.type === "text");
-    if (!block) throw new Error("Empty response from Frau Müller.");
-    return { reply: block.text, usage: response.usage };
+    const reply = response.content
+      .filter((block) => block.type === "text")
+      .map((block) => block.text)
+      .join("\n\n")
+      .trim();
+    const exercises = response.content
+      .filter((block) => block.type === "tool_use" && block.name === TEACHER_EXERCISE_TOOL.name)
+      .map((block, index) => normalizeTeacherExercise(block.input, index));
+    if (!reply && !exercises.length) throw new Error("Empty response from Frau Müller.");
+    return {
+      reply: reply || "Here is a little exercise for you.",
+      exercises,
+      usage: response.usage,
+    };
   } catch (err) {
     throw new Error(friendlyError(err));
   }

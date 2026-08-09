@@ -20,12 +20,13 @@ import React from "react";
 import { chatWithTeacher } from "../lib/claude.js";
 import { AGENT } from "../lib/teacherAgent.js";
 import { Spinner } from "./ui.jsx";
+import TeacherExercise, { exerciseContext } from "./TeacherExercise.jsx";
 import {
   IconArrowDown, IconArrowUp, IconClose, IconFullscreen, IconFullscreenExit,
   IconHistory, IconInfo, IconTeacher,
 } from "./icons.jsx";
 
-const GREETING = "Hallo! Ich bin Frau Müller. Ask me anything — grammar, vocabulary, how to say something — or paste your text and I will give you feedback!";
+const GREETING = "Hallo! Ich bin Frau Müller. Ask me anything — grammar, vocabulary, how to say something — or paste your text and I will give you feedback. I can also make an interactive exercise just for you!";
 
 function sessionTitle(messages) {
   const first = messages.find((m) => m.role === "user");
@@ -70,10 +71,10 @@ export default function TeacherChat({ apiKey, model, mode, currentText, task, ta
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, busy]);
 
-  async function send(userMessage) {
+  async function send(userMessage, baseMessages = messages) {
     if (!userMessage.trim()) return;
     const userMsg      = { role: "user", content: userMessage.trim() };
-    const nextMessages = [...messages, userMsg];
+    const nextMessages = [...baseMessages, userMsg];
     setMessages(nextMessages);
     setInput("");
     setBusy(true);
@@ -82,8 +83,11 @@ export default function TeacherChat({ apiKey, model, mode, currentText, task, ta
 
     const history = nextMessages.filter((m) => !(m.role === "assistant" && m.content === GREETING));
     try {
-      const { reply, usage } = await chatWithTeacher({ apiKey, model, messages: history, currentText, task, targetLevel });
-      setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
+      const { reply, exercises = [], usage } = await chatWithTeacher({ apiKey, model, messages: history, currentText, task, targetLevel });
+      const modelContent = exercises.length
+        ? `${reply}\n\n[Exercises shown to the student]\n${exerciseContext(exercises)}`
+        : reply;
+      setMessages((prev) => [...prev, { role: "assistant", content: reply, modelContent, exercises }]);
       if (usage) setTokens((t) => ({ in: t.in + (usage.input_tokens || 0), out: t.out + (usage.output_tokens || 0) }));
     } catch (e) {
       setError(e.message);
@@ -184,7 +188,23 @@ export default function TeacherChat({ apiKey, model, mode, currentText, task, ta
           {messages.map((m, i) => (
             <div key={i} className={"tc-msg " + (m.role === "user" ? "tc-user" : "tc-teacher")}>
               {m.role === "assistant" && <span className="tc-msg-avatar" aria-hidden="true"><IconTeacher /></span>}
-              <div className="tc-bubble"><MessageText text={m.content} /></div>
+              <div className="tc-msg-content">
+                <div className="tc-bubble"><MessageText text={m.content} /></div>
+                {m.role === "assistant" && m.exercises?.map((exercise, exerciseIndex) => (
+                  <TeacherExercise
+                    key={`${exerciseIndex}-${exercise.id || "exercise"}`}
+                    exercise={exercise}
+                    disabled={busy}
+                    wasSubmitted={m.submittedExercises?.includes(exerciseIndex)}
+                    onSubmit={(answer) => {
+                      const withSubmitted = messages.map((message, messageIndex) => messageIndex === i
+                        ? { ...message, submittedExercises: [...(message.submittedExercises || []), exerciseIndex] }
+                        : message);
+                      send(answer, withSubmitted);
+                    }}
+                  />
+                ))}
+              </div>
             </div>
           ))}
           {busy && (
@@ -203,11 +223,14 @@ export default function TeacherChat({ apiKey, model, mode, currentText, task, ta
         </div>
       )}
 
-      {panel === "chat" && hasText && !busy && (
+      {panel === "chat" && !busy && !noKey && (
         <div className="tc-quick">
-          <button className="tc-chip" type="button" onClick={() => { setInput("Quick feedback on my text?"); inputRef.current?.focus(); }}>Review text</button>
-          <button className="tc-chip" type="button" onClick={() => { setInput("What are my main grammar mistakes?"); inputRef.current?.focus(); }}>Grammar</button>
-          <button className="tc-chip" type="button" onClick={() => { setInput("How can I improve my vocabulary?"); inputRef.current?.focus(); }}>Vocabulary</button>
+          <button className="tc-chip tc-chip-practice" type="button" onClick={() => { setInput("Give me a short interactive exercise about "); inputRef.current?.focus(); }}>Interactive exercise</button>
+          {hasText && <>
+            <button className="tc-chip" type="button" onClick={() => { setInput("Quick feedback on my text?"); inputRef.current?.focus(); }}>Review text</button>
+            <button className="tc-chip" type="button" onClick={() => { setInput("What are my main grammar mistakes?"); inputRef.current?.focus(); }}>Grammar</button>
+            <button className="tc-chip" type="button" onClick={() => { setInput("How can I improve my vocabulary?"); inputRef.current?.focus(); }}>Vocabulary</button>
+          </>}
         </div>
       )}
 
