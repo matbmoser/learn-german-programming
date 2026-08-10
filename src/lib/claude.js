@@ -209,11 +209,27 @@ const CORRECTION_SCHEMA = {
         additionalProperties: false,
       },
     },
+    retry_tasks: {
+      type: "array",
+      maxItems: 2,
+      items: {
+        type: "object",
+        properties: {
+          title: { type: "string" },
+          prompt: { type: "string" },
+          instruction: { type: "string" },
+          min_words: { type: "integer" },
+          targets: { type: "array", items: { type: "string" } },
+        },
+        required: ["title", "prompt", "instruction", "min_words", "targets"],
+        additionalProperties: false,
+      },
+    },
   },
   required: [
     "cefr_estimate", "cefr_reasoning", "word_count", "task_met", "approved", "approval_reason",
     "scores", "corrections", "upgrades", "improved_version", "strengths", "next_steps",
-    "error_patterns", "study_plan", "exercise_prompt", "exercises",
+    "error_patterns", "study_plan", "exercise_prompt", "exercises", "retry_tasks",
   ],
   additionalProperties: false,
 };
@@ -222,8 +238,8 @@ function correctionSystem(targetLevel) {
   return `You are an examiner and writing coach for German as a foreign language, grading against CEFR criteria (Goethe/telc). The learner is working towards ${targetLevel}.
 
 LANGUAGE POLICY — this is critical:
-- Write EVERY explanation, comment, reasoning, label and instruction in ENGLISH, so a student who does not yet read German can understand it.
-- Keep in GERMAN only the learner's actual language material: the "original" passage, its "corrected" form, the "improved_version", the quoted "evidence", and every exercise "prompt", "options" and "answer".
+- Write EVERY explanation, comment, reasoning, label and instruction in ENGLISH, so a student who does not yet read German can understand it, except for the German fields inside "retry_tasks".
+- Keep in GERMAN only the learner's actual language material: the "original" passage, its "corrected" form, the "improved_version", the quoted "evidence", every exercise "prompt", "options" and "answer", and all fields of each "retry_tasks" writing challenge.
 - When you name a German word or form inside an English explanation, quote it in German (e.g. use the dative "dem Mann" because …).
 
 Procedure:
@@ -266,6 +282,11 @@ Procedure:
    - Set "approved" to true when the task is fulfilled and the requested structures are used well enough for the stated level. Minor mistakes are allowed; do not demand a perfect text.
    - Set it to false when the task is not fulfilled, a requested structure is missing or fundamentally wrong, or a high-severity error prevents the text from demonstrating the chapter goal.
    - In "approval_reason", give one short, concrete ENGLISH sentence explaining the decision.
+14. "retry_tasks": if "approved" is false, create EXACTLY TWO fresh writing challenges in GERMAN for the same CEFR level. If "approved" is true, return an empty array.
+   - Both challenges must use a genuinely different topic from the submitted task and from each other. Do not ask the learner to rewrite the same scenario.
+   - Personalize each challenge from this correction's most important error patterns and missing requested structures, but use NEW observable targets and new wording.
+   - "instruction" tells the learner what kind of text to write and what success looks like. "targets" contains 3–5 concise, checkable challenge points.
+   - Keep "min_words" close to the current task so retrying is not a punishment.
 
 Be precise and direct. Do not invent mistakes; if a passage is correct, leave it alone. Remember the language policy: all explanations in English, all German material kept in German.`;
 }
@@ -865,8 +886,8 @@ ${correctionSets.length ? `Recent corrections: ${JSON.stringify(correctionSets)}
 </private_ui_context>`;
 }
 
-export async function chatWithTeacher({ apiKey, model = MODEL, messages, currentText = "", task = null, targetLevel = "C1" }) {
-  const system = buildChatSystem({ targetLevel, task, currentText }) + buildTeacherInternalContext(messages);
+export async function chatWithTeacher({ apiKey, model = MODEL, messages, currentText = "", task = null, viewContext = null, targetLevel = "C1" }) {
+  const system = buildChatSystem({ targetLevel, task, currentText, viewContext }) + buildTeacherInternalContext(messages);
   const lastMessage = messages.at(-1);
   const lastContent = String(lastMessage?.content || "");
   const isExerciseSubmission = lastMessage?.role === "user" && (

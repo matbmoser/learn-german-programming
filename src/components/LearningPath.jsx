@@ -7,6 +7,7 @@ import { answersMatch } from "../engine/grammar.js";
 import {
   CHECKPOINT_CORRECT,
   CHECKPOINT_WINDOW,
+  applicationFallbackTasks,
   applicationTask,
   checkpointPassed,
   checkpointRules,
@@ -44,6 +45,7 @@ export default function LearningPath({
   onStep,
   onSaveApplication,
   onSaveApplicationReview,
+  onSelectApplicationTask,
   onSaveAISupport,
   onComplete,
   onAdvance,
@@ -193,11 +195,13 @@ export default function LearningPath({
               value={application.text || ""}
               review={application.review || null}
               reviewedText={application.reviewedText || ""}
+              selectedTask={application.task || null}
               apiKey={apiKey}
               model={model}
               mode={mode}
               onChange={(text) => onSaveApplication(mod.id, text)}
               onReview={(text, review) => onSaveApplicationReview(mod.id, text, review)}
+              onSelectTask={(task, previousTask) => onSelectApplicationTask(mod.id, task, previousTask)}
               onComplete={finishApplication}
               onOpenSettings={onOpenSettings}
             />
@@ -509,16 +513,20 @@ function PathCheckpoint({ module, checkpoint, passed, support, onAnswer, onRevie
 }
 
 function Application({
-  module, support, value, review, reviewedText, apiKey, model, mode,
-  onChange, onReview, onComplete, onOpenSettings,
+  module, support, value, review, reviewedText, selectedTask, apiKey, model, mode,
+  onChange, onReview, onSelectTask, onComplete, onOpenSettings,
 }) {
-  const baseline = applicationTask(module);
-  const task = support?.application ? {
-    ...baseline,
-    ...support.application,
-    minWords: Math.max(baseline.minWords, support.application.min_words),
-    targets: [...new Set([module.title, ...(support.application.targets || [])])],
-  } : baseline;
+  const baseline = React.useMemo(() => applicationTask(module), [module]);
+  const task = React.useMemo(() => {
+    if (selectedTask) return selectedTask;
+    return support?.application ? {
+      ...baseline,
+      ...support.application,
+      source: "ai-support",
+      minWords: Math.max(baseline.minWords, support.application.min_words),
+      targets: [...new Set([module.title, ...(support.application.targets || [])])],
+    } : baseline;
+  }, [baseline, module.title, selectedTask, support]);
   const words = value.trim() ? value.trim().split(/\s+/).length : 0;
   const ready = words >= task.minWords;
   const [busy, setBusy] = React.useState(false);
@@ -528,6 +536,11 @@ function Application({
   const [activeError, setActiveError] = React.useState(null);
   const stale = Boolean(review && reviewedText !== value);
   const approved = Boolean(review?.approved && !stale);
+  const failed = Boolean(review && review.approved === false);
+  const retryChoices = React.useMemo(
+    () => buildRetryChoices({ module, task, review: failed ? review : null }),
+    [failed, module, review, task]
+  );
   const correctionTask = React.useMemo(() => ({
     ...task,
     type: "Geführte Schreibanwendung",
@@ -574,9 +587,25 @@ function Application({
     }
   }
 
+  function selectRetryTask(nextTask) {
+    onSelectTask(nextTask, task);
+    setActiveError(null);
+    setError("");
+    setManualOpen(false);
+    setManualPaste("");
+  }
+
+  const taskLabel = task.source === "ai-retry"
+    ? "KI-personalisierte Challenge"
+    : task.source === "fallback"
+      ? "Vorbereitete Challenge"
+      : task.source === "ai-support" || support
+        ? "KI-personalisierte Schreibaufgabe"
+        : "Vorbereitete Schreibaufgabe";
+
   return (
     <div className="path-stage path-stage-application">
-      <span className="eyebrow">{support ? "KI-personalisierte" : "Vorbereitete"} Schreibaufgabe · {module.level}</span>
+      <span className="eyebrow">{taskLabel} · {module.level}</span>
       <h2>{task.title}</h2>
       <p className="path-stage-lede">{task.prompt}</p>
       <Callout kind="info">{task.instruction}</Callout>
@@ -605,12 +634,25 @@ function Application({
           onSelectError={setActiveError}
         />
       )}
+      {failed && (
+        <RetryChallenges
+          choices={retryChoices}
+          onSelect={selectRetryTask}
+        />
+      )}
       {error && <Callout kind="bad">{error}</Callout>}
       {mode === "api" && !apiKey && (
         <Callout kind="bad">
           Verbinde zuerst die KI in den Einstellungen, damit Frau Müller deinen Text prüfen kann.
           <button className="btn btn-ghost btn-sm" type="button" onClick={onOpenSettings}>Einstellungen öffnen</button>
         </Callout>
+      )}
+      {mode === "api" && !apiKey && !failed && !value.trim() && (
+        <RetryChallenges
+          choices={applicationFallbackTasks(module, task, 2)}
+          onSelect={selectRetryTask}
+          offline
+        />
       )}
       {mode === "manual" && manualOpen && (
         <div className="path-application-manual">
@@ -624,9 +666,11 @@ function Application({
       <div className="actions">
         {approved ? (
           <button className="btn" type="button" onClick={onComplete}>Kapitel abschließen</button>
+        ) : failed && !stale ? (
+          <span className="dim">Wähle oben eine neue Challenge—oder ändere deinen Text, wenn du dieses Thema weiter bearbeiten möchtest.</span>
         ) : mode === "api" ? (
           <button className="btn" type="button" disabled={!ready || busy || !apiKey} onClick={submitForReview}>
-            {busy ? <><Spinner /> Frau Müller korrigiert …</> : review && !stale ? "Noch einmal prüfen lassen" : "Von Frau Müller prüfen lassen"}
+            {busy ? <><Spinner /> Frau Müller korrigiert …</> : stale ? "Überarbeitete Fassung prüfen lassen" : "Von Frau Müller prüfen lassen"}
           </button>
         ) : (
           <button className="btn" type="button" disabled={!ready} onClick={() => setManualOpen((open) => !open)}>
@@ -641,6 +685,77 @@ function Application({
         {stale && <span className="dim">Der Text wurde seit der Korrektur geändert und muss erneut geprüft werden.</span>}
       </div>
     </div>
+  );
+}
+
+function normalizeAIRetryTask(item, index, module, currentTask) {
+  if (!item?.title || !item?.prompt || !Array.isArray(item.targets) || !item.targets.length) return null;
+  const minWords = Math.max(20, Math.min(180, Number(item.min_words) || currentTask.minWords));
+  return {
+    id: `${module.id}:ai-retry:${Date.now()}:${index}`,
+    source: "ai-retry",
+    title: String(item.title),
+    prompt: String(item.prompt),
+    instruction: String(item.instruction || "Bearbeite die neue Challenge und erfülle alle genannten Punkte."),
+    minWords,
+    targets: [...new Set([module.title, ...item.targets.map(String)])].slice(0, 6),
+  };
+}
+
+function buildRetryChoices({ module, task, review }) {
+  const choices = (review?.retry_tasks || [])
+    .map((item, index) => normalizeAIRetryTask(item, index, module, task))
+    .filter(Boolean)
+    .filter((item, index, all) => item.title !== task.title && all.findIndex((other) => other.title === item.title) === index)
+    .slice(0, 2);
+  const usedTitles = new Set([task.title, ...choices.map((item) => item.title)]);
+  for (const fallback of applicationFallbackTasks(module, task, 3)) {
+    if (choices.length >= 2) break;
+    if (!usedTitles.has(fallback.title)) {
+      choices.push(fallback);
+      usedTitles.add(fallback.title);
+    }
+  }
+  return choices.slice(0, 2);
+}
+
+function RetryChallenges({ choices, onSelect, offline = false }) {
+  if (!choices.length) return null;
+  const personalized = choices.some((choice) => choice.source === "ai-retry");
+  return (
+    <section className="path-retry-challenges" aria-label="Neue Schreib-Challenges">
+      <div className="path-retry-heading">
+        <div>
+          <span className="eyebrow">{offline ? "Ohne KI verfügbar" : "Nächster Versuch"}</span>
+          <h3>{offline ? "Wähle ein vorbereitetes anderes Thema" : "Wähle eine neue Challenge"}</h3>
+        </div>
+        <span className={personalized ? "path-retry-source is-ai" : "path-retry-source"}>
+          {personalized ? "KI-personalisiert" : "vorbereitet"}
+        </span>
+      </div>
+      <p>
+        {offline
+          ? "Diese Themen funktionieren ohne KI-Verbindung und haben andere Challenge-Punkte."
+          : personalized
+            ? "Frau Müller hat aus deiner Korrektur zwei neue Themen mit neuen, persönlichen Challenge-Punkten erstellt. Dein bisheriger Versuch bleibt gespeichert."
+            : "Die KI hat keine neuen Themen geliefert. Deshalb stehen dir zwei vorbereitete Alternativen mit anderen Challenge-Punkten zur Verfügung; dein bisheriger Versuch bleibt gespeichert."}
+      </p>
+      <div className="path-retry-grid">
+        {choices.map((choice, index) => (
+          <article key={choice.id || `${choice.title}-${index}`} className={choice.source === "ai-retry" ? "is-ai" : ""}>
+            <span className="eyebrow">{choice.source === "ai-retry" ? "KI-personalisierte" : "Vorbereitete"} Challenge · Option {index + 1}</span>
+            <h4>{choice.title}</h4>
+            <p>{choice.prompt}</p>
+            <span className="path-retry-expectation">Das wird erwartet</span>
+            <ul>{choice.targets.map((target) => <li key={target}>{target}</li>)}</ul>
+            <div className="path-retry-footer">
+              <span>{choice.minWords}+ Wörter</span>
+              <button className="btn btn-sm" type="button" onClick={() => onSelect(choice)}>Diese Challenge starten</button>
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
   );
 }
 

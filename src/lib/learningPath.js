@@ -115,6 +115,36 @@ export function saveLearningApplicationReview(pathValue, moduleId, text, review)
   };
 }
 
+export function saveLearningApplicationTask(pathValue, moduleId, task, previousTask = null) {
+  const path = normalizeLearningPath(pathValue);
+  const previous = path.applications[moduleId] || {};
+  const hasAttempt = Boolean(previous.text?.trim() || previous.review);
+  const attempts = hasAttempt
+    ? [...(previous.attempts || []), {
+        task: previousTask || previous.task || null,
+        text: previous.text || "",
+        review: previous.review || null,
+        reviewedText: previous.reviewedText || "",
+        savedAt: Date.now(),
+      }].slice(-10)
+    : (previous.attempts || []);
+  return {
+    ...path,
+    applications: {
+      ...path.applications,
+      [moduleId]: {
+        ...previous,
+        task,
+        text: "",
+        review: null,
+        reviewedText: "",
+        attempts,
+        updatedAt: Date.now(),
+      },
+    },
+  };
+}
+
 export function completeLearningModule(pathValue, moduleId) {
   const path = normalizeLearningPath(pathValue);
   const application = path.applications[moduleId] || {};
@@ -227,6 +257,106 @@ export function applicationTask(module) {
     minWords: isWritingCapstone ? Math.min(source?.minWords || 150, 180) : baseMinimum,
     targets: [module.title, ...(source?.targets || []).slice(0, 2)],
   };
+}
+
+const APPLICATION_FALLBACKS = {
+  A2: [
+    {
+      id: "einladung-absagen",
+      title: "Eine Einladung absagen",
+      prompt: "Ihre Freundin Mia hat Sie zu einer Geburtstagsfeier eingeladen. Schreiben Sie ihr: Warum können Sie nicht kommen? Was haben Sie an diesem Tag vor? Schlagen Sie ein anderes Treffen vor.",
+      targets: ["eine Begründung mit weil", "eine Zeitangabe", "ein konkreter Gegenvorschlag"],
+    },
+    {
+      id: "lieblingsort",
+      title: "Mein Lieblingsort",
+      prompt: "Beschreiben Sie einen Ort, an dem Sie gern Zeit verbringen. Wo ist er? Was machen Sie dort? Warum gefällt er Ihnen besonders?",
+      targets: ["Ortsangaben", "mindestens drei passende Adjektive", "eine Begründung mit weil"],
+    },
+    {
+      id: "alltagsproblem",
+      title: "Ein Problem im Alltag",
+      prompt: "Schreiben Sie eine kurze Nachricht an Ihren Nachbarn. Erklären Sie ein Problem im Haus, beschreiben Sie, was passiert ist, und bitten Sie um Hilfe.",
+      targets: ["Perfekt", "eine höfliche Bitte", "Akkusativ- und Dativobjekte"],
+    },
+  ],
+  B1: [
+    {
+      id: "kurswechsel",
+      title: "Bitte um einen Kurswechsel",
+      prompt: "Sie besuchen einen Sprachkurs, aber die Kurszeit passt nicht mehr. Schreiben Sie an die Sprachschule: Erklären Sie Ihre Situation, nennen Sie eine passende Alternative und bitten Sie um eine schnelle Antwort.",
+      targets: ["formelle Anrede und Grußformel", "eine höfliche Bitte", "eine Begründung und ein Lösungsvorschlag"],
+    },
+    {
+      id: "stadt-land",
+      title: "Lieber in der Stadt oder auf dem Land?",
+      prompt: "Schreiben Sie einen Forumsbeitrag über das Leben in der Stadt und auf dem Land. Nennen Sie je einen Vorteil, geben Sie ein persönliches Beispiel und formulieren Sie Ihre Meinung.",
+      targets: ["klare eigene Position", "zwei unterschiedliche Konnektoren", "ein persönliches Beispiel"],
+    },
+    {
+      id: "missverstaendnis",
+      title: "Ein Missverständnis",
+      prompt: "Erzählen Sie von einem Missverständnis im Alltag. Wie ist es entstanden, wie haben die Beteiligten reagiert und wie wurde es gelöst?",
+      targets: ["chronologische Reihenfolge", "Perfekt und Präteritum", "ein Nebensatz mit als oder nachdem"],
+    },
+  ],
+  B2: [
+    {
+      id: "digitale-termine",
+      title: "Nur noch digitale Behördentermine?",
+      prompt: "Viele Behörden bieten Dienstleistungen zunehmend nur online an. Erörtern Sie Vorteile und Nachteile, gehen Sie auf Menschen mit wenig digitaler Erfahrung ein und formulieren Sie einen Lösungsvorschlag.",
+      targets: ["ein ernsthaft behandelter Einwand", "mindestens vier verschiedene Konnektoren", "ein begründeter Lösungsvorschlag"],
+    },
+    {
+      id: "weiterbildung",
+      title: "Weiterbildung während der Arbeitszeit",
+      prompt: "Sollten Beschäftigte einen festen Teil ihrer Arbeitszeit für Weiterbildung nutzen dürfen? Nehmen Sie Stellung, begründen Sie Ihre Position und berücksichtigen Sie die Perspektive der Unternehmen.",
+      targets: ["klarer argumentativer Aufbau", "Vorteil und möglicher Nachteil", "formelles Register"],
+    },
+    {
+      id: "bibliothek",
+      title: "Die Bibliothek der Zukunft",
+      prompt: "Ihre Stadt plant eine neue Bibliothek. Schreiben Sie eine Stellungnahme: Welche Aufgaben sollte sie übernehmen, welche Angebote sind besonders wichtig und wie sollte sie finanziert werden?",
+      targets: ["konkrete Vorschläge", "Passiv oder Passiversatz", "ein begründetes Fazit"],
+    },
+  ],
+  C1: [
+    {
+      id: "recht-auf-reparatur",
+      title: "Ein verpflichtendes Recht auf Reparatur",
+      prompt: "Erörtern Sie, ob Hersteller gesetzlich verpflichtet werden sollten, Produkte länger reparierbar zu machen. Berücksichtigen Sie ökologische und wirtschaftliche Folgen und entkräften Sie einen ernstzunehmenden Einwand.",
+      targets: ["differenzierte These", "ein entkräfteter Gegeneinwand", "formelle Konnektoren und Nominalstil"],
+    },
+    {
+      id: "arbeitszeit-modelle",
+      title: "Flexible Arbeitszeit als neuer Standard",
+      prompt: "Nehmen Sie dazu Stellung, ob Beschäftigte ihre Arbeitszeit grundsätzlich frei einteilen sollten. Analysieren Sie Folgen für Produktivität, Zusammenarbeit und soziale Gerechtigkeit und formulieren Sie ein abgewogenes Fazit.",
+      targets: ["klar gegliederte Argumentation", "mehrere Perspektiven", "präzises formelles Register"],
+    },
+    {
+      id: "kulturfoerderung",
+      title: "Öffentliche Förderung für Kultur",
+      prompt: "Verfassen Sie eine Erörterung zur Frage, nach welchen Kriterien öffentliche Kulturförderung vergeben werden sollte. Entwickeln Sie zwei Kriterien, prüfen Sie einen möglichen Zielkonflikt und begründen Sie Ihre Position.",
+      targets: ["zwei tragende Kriterien", "ein analysierter Zielkonflikt", "Funktionsverbgefüge oder Passiversatz"],
+    },
+  ],
+};
+
+export function applicationFallbackTasks(module, currentTask = null, count = 2) {
+  const minWords = { A2: 25, B1: 40, B2: 55, C1: 70 }[module?.level] || 35;
+  return (APPLICATION_FALLBACKS[module?.level] || APPLICATION_FALLBACKS.B1)
+    .filter((item) => item.id !== currentTask?.fallbackId && item.title !== currentTask?.title)
+    .slice(0, Math.max(2, count))
+    .map((item) => ({
+      id: `${module.id}:fallback:${item.id}`,
+      fallbackId: item.id,
+      source: "fallback",
+      title: item.title,
+      prompt: item.prompt,
+      instruction: `Bearbeite ein neues Thema und zeige dabei „${module.title}“ sichtbar. Die Challenge-Punkte sind anders als in deinem letzten Versuch.`,
+      minWords,
+      targets: [module.title, ...item.targets],
+    }));
 }
 
 export function advanceLearningPath(pathValue) {

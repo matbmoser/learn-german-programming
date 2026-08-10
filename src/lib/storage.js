@@ -27,7 +27,7 @@ import { emptyLearningPath, normalizeLearningPath } from "./learningPath.js";
 const PROGRESS_KEY = "dc1:progress";
 const API_KEY = "dc1:apikey";
 const WELCOME_TUTORIAL_KEY = "dc1:welcome-tutorial:v1";
-const SCHEMA_VERSION = 2;
+const SCHEMA_VERSION = 3;
 
 export function hasSeenWelcomeTutorial() {
   try { return localStorage.getItem(WELCOME_TUTORIAL_KEY) === "seen"; }
@@ -48,6 +48,7 @@ export function emptyProgress() {
     days: {},           // "YYYY-MM-DD" -> answered count
     exams: [],          // estimate objects, newest last
     writings: [],       // { id, taskId, level, title, text, words, at, feedback }
+    mistakeAttempts: [],// attempts on exercises derived from saved writing corrections
     challenges: [],     // Claude-generated question sets
     chatSessions: [],   // { id, startedAt, title, task, targetLevel, messages }
     read: {},           // moduleId -> true
@@ -72,6 +73,7 @@ function migrate(p) {
   merged.days = p.days || {};
   merged.exams = p.exams || [];
   merged.writings = p.writings || [];
+  merged.mistakeAttempts = p.mistakeAttempts || [];
   merged.challenges = p.challenges || [];
   merged.chatSessions = p.chatSessions || [];
   merged.read = p.read || {};
@@ -160,6 +162,18 @@ export function recordAnswer(p, ruleId, correct) {
   const k = todayKey();
   next.days = { ...p.days, [k]: (p.days[k] || 0) + 1 };
   return next;
+}
+
+/** Record proof that a learner revisited an error from one of their texts. */
+export function recordMistakeAttempt(p, attempt) {
+  const withMastery = recordAnswer(p, attempt.ruleId, attempt.correct);
+  return {
+    ...withMastery,
+    mistakeAttempts: [
+      ...(p.mistakeAttempts || []),
+      { ...attempt, at: attempt.at || Date.now() },
+    ].slice(-1000),
+  };
 }
 
 export function masteryOf(p, ruleId) {

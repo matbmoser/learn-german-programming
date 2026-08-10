@@ -40,7 +40,7 @@ function fmtTokens(n) {
   return n >= 1000 ? (n / 1000).toFixed(1) + "k" : String(n);
 }
 
-export default function TeacherChat({ apiKey, model, mode, currentText, task, targetLevel, sessions = [], draftRequest, onSaveSession, onClose }) {
+export default function TeacherChat({ apiKey, model, mode, currentText, task, viewContext, targetLevel, sessions = [], draftRequest, onSaveSession, onClose }) {
   const sessionId        = React.useRef("cs_" + Date.now());
   const sessionStartedAt = React.useRef(Date.now());
 
@@ -54,12 +54,18 @@ export default function TeacherChat({ apiKey, model, mode, currentText, task, ta
 
   const bottomRef = React.useRef(null);
   const inputRef  = React.useRef(null);
+  const handledDraftRef = React.useRef(null);
 
   React.useEffect(() => {
-    if (!draftRequest?.text) return;
+    if (!draftRequest?.text || handledDraftRef.current === draftRequest.id) return;
+    handledDraftRef.current = draftRequest.id;
     setPanel("chat");
-    setInput(draftRequest.text);
-    window.requestAnimationFrame(() => inputRef.current?.focus());
+    if (draftRequest.autoSend) {
+      send(draftRequest.text);
+    } else {
+      setInput(draftRequest.text);
+      window.requestAnimationFrame(() => inputRef.current?.focus());
+    }
   }, [draftRequest]);
 
   React.useEffect(() => {
@@ -92,7 +98,7 @@ export default function TeacherChat({ apiKey, model, mode, currentText, task, ta
 
     const history = nextMessages.filter((m) => !(m.role === "assistant" && m.content === GREETING));
     try {
-      const { reply, exercises = [], corrections = [], usage } = await chatWithTeacher({ apiKey, model, messages: history, currentText, task, targetLevel });
+      const { reply, exercises = [], corrections = [], usage } = await chatWithTeacher({ apiKey, model, messages: history, currentText, task, viewContext, targetLevel });
       setMessages((prev) => [...prev, { role: "assistant", content: reply, exercises, corrections }]);
       if (usage) setTokens((t) => ({ in: t.in + (usage.input_tokens || 0), out: t.out + (usage.output_tokens || 0) }));
     } catch (e) {
@@ -181,7 +187,9 @@ export default function TeacherChat({ apiKey, model, mode, currentText, task, ta
             <span>Model</span>   <span className="mono">{model || "default"}</span>
             <span>Level</span>   <span>Target <strong>{targetLevel}</strong></span>
             {task && <><span>Task</span> <span>{task.title}</span></>}
-            <span>Context</span> <span>{hasText ? currentText.trim().split(/\s+/).length + " words" : "—"}</span>
+            <span>Current view</span> <span>{viewContext?.viewLabel || viewContext?.view || "—"}{viewContext?.section ? ` · ${viewContext.section}` : ""}</span>
+            <span>Context</span> <span>{hasText ? currentText.trim().split(/\s+/).length + " words" : viewContext?.phase || "—"}</span>
+            {viewContext?.correction && <><span>Correction</span><span>{viewContext.correction.corrections?.length || 0} errors · {viewContext.correction.cefrEstimate || "—"}</span></>}
             <span>Started</span> <span>{startTime}</span>
             {totalTok > 0 && (
               <><span>Tokens</span>

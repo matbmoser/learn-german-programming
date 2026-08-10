@@ -26,6 +26,7 @@ import Write from "./components/Write.jsx";
 import Spec from "./components/Spec.jsx";
 import Settings from "./components/Settings.jsx";
 import TeacherChat from "./components/TeacherChat.jsx";
+import MistakePractice from "./components/MistakePractice.jsx";
 import Dictionary from "./components/Dictionary.jsx";
 import LearningPath from "./components/LearningPath.jsx";
 import LearningHome from "./components/LearningHome.jsx";
@@ -35,7 +36,7 @@ import Rulebook from "./components/Rulebook.jsx";
 import CheatSheet from "./components/CheatSheet.jsx";
 import { MODULES } from "./data/curriculum.js";
 import {
-  loadProgress, saveProgress, resetProgress, recordAnswer,
+  loadProgress, saveProgress, resetProgress, recordAnswer, recordMistakeAttempt,
   loadApiKey, saveApiKey, saveChatSession,
   hasSeenWelcomeTutorial, markWelcomeTutorialSeen,
 } from "./lib/storage.js";
@@ -59,6 +60,7 @@ import {
   recordCheckpoint,
   saveLearningApplication,
   saveLearningApplicationReview,
+  saveLearningApplicationTask,
   saveLearningAISupport,
   setLearningStep,
 } from "./lib/learningPath.js";
@@ -72,8 +74,9 @@ const VIEWS = [
   { id: "exam", num: "§4", label: "Einstufung" },
   { id: "cheat", num: "§5", label: "Spickzettel" },
   { id: "write", num: "§6", label: "Schreiben" },
-  { id: "spec", num: "§7", label: "Spezifikation" },
-  { id: "settings", num: "§8", label: "Einstellungen" },
+  { id: "mistakes", num: "§7", label: "Fehlertraining" },
+  { id: "spec", num: "§8", label: "Spezifikation" },
+  { id: "settings", num: "§9", label: "Einstellungen" },
 ];
 
 /** Views that stay reachable in guided learning mode. */
@@ -137,8 +140,8 @@ export default function App() {
     setDictOpen(true);
   }, []);
 
-  const askTeacher = React.useCallback((text) => {
-    setTeacherDraft({ id: Date.now(), text });
+  const askTeacher = React.useCallback((text, options = {}) => {
+    setTeacherDraft({ id: Date.now(), text, autoSend: Boolean(options.autoSend) });
     setChatOpen(true);
   }, []);
 
@@ -188,6 +191,13 @@ export default function App() {
     setProgress((p) => ({ ...p, learningPath: saveLearningApplicationReview(p.learningPath, moduleId, text, review) }));
   }, []);
 
+  const onSelectLearningApplicationTask = React.useCallback((moduleId, task, previousTask) => {
+    setProgress((p) => ({
+      ...p,
+      learningPath: saveLearningApplicationTask(p.learningPath, moduleId, task, previousTask),
+    }));
+  }, []);
+
   const onCompleteLearningModule = React.useCallback((moduleId) => {
     setProgress((p) => ({ ...p, learningPath: completeLearningModule(p.learningPath, moduleId) }));
     window.scrollTo?.(0, 0);
@@ -206,7 +216,11 @@ export default function App() {
   }, []);
 
   const onSaveWriting = React.useCallback((w) => {
-    setProgress((p) => ({ ...p, writings: [...p.writings, w].slice(-40) }));
+    setProgress((p) => ({ ...p, writings: [...p.writings, w].slice(-100) }));
+  }, []);
+
+  const onMistakeAttempt = React.useCallback((attempt) => {
+    setProgress((p) => recordMistakeAttempt(p, attempt));
   }, []);
 
   const onSaveChatSession = React.useCallback((session) => {
@@ -377,6 +391,7 @@ export default function App() {
                 onStep={onLearningStep}
                 onSaveApplication={onSaveLearningApplication}
                 onSaveApplicationReview={onSaveLearningApplicationReview}
+                onSelectApplicationTask={onSelectLearningApplicationTask}
                 onSaveAISupport={onSaveLearningAISupport}
                 onComplete={onCompleteLearningModule}
                 onAdvance={onAdvancePath}
@@ -433,6 +448,9 @@ export default function App() {
             )}
             {view === "exam" && (
               <Exam progress={progress} onAnswer={onAnswer} onFinish={onFinishExam} />
+            )}
+            {view === "mistakes" && (
+              <MistakePractice progress={progress} onAttempt={onMistakeAttempt} onAskTeacher={askTeacher} />
             )}
             {view === "spec" && <Spec />}
             {view === "settings" && (
@@ -554,8 +572,27 @@ export default function App() {
           apiKey={apiKey}
           model={model}
           mode={mode}
-          currentText={writeContext.text}
-          task={writeContext.task}
+          currentText={view === "write" ? writeContext.text : ""}
+          task={view === "write" ? writeContext.task : null}
+          viewContext={{
+            view,
+            viewLabel: VIEWS.find((item) => item.id === view)?.label || view,
+            section: routeSection,
+            ...(view === "write" ? writeContext : {}),
+            ...(view === "mistakes" ? {
+              phase: "reviewing saved errors and demonstrating learning",
+              correctionHistory: progress.writings.slice(-12).flatMap((writing) =>
+                (writing.feedback?.corrections || []).map((correction) => ({
+                  title: writing.title,
+                  original: correction.original,
+                  corrected: correction.corrected,
+                  rule: correction.rule,
+                  why: correction.why,
+                }))
+              ).slice(-40),
+              practiceAttempts: (progress.mistakeAttempts || []).slice(-60),
+            } : {}),
+          }}
           targetLevel={targetLevel}
           sessions={progress.chatSessions || []}
           draftRequest={teacherDraft}

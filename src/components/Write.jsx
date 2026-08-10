@@ -60,6 +60,7 @@ export default function Write({ progress, apiKey, model, mode, targetLevel, sett
 
   const [taskOpen, setTaskOpen] = React.useState(true);
   const [resultsFull, setResultsFull] = React.useState(false);
+  const [resultsWidth, setResultsWidth] = React.useState(420);
   const [mobilePane, setMobilePane] = React.useState("editor");
   const [tab, setTab] = React.useState("overview");
   const [activeError, setActiveError] = React.useState(null);
@@ -94,8 +95,30 @@ export default function Write({ progress, apiKey, model, mode, targetLevel, sett
     [freeTopic, taskId]
   );
 
-  // keep parent informed so the global teacher chat can see current text/task
-  React.useEffect(() => { onWriteContext?.({ text, task }); }, [text, task, onWriteContext]);
+  // Keep Frau Müller informed about both the text and the correction the
+  // student is currently looking at. Only the useful learning evidence is
+  // exposed here; display-only chart data stays local to the writing view.
+  React.useEffect(() => {
+    const correction = feedback ? {
+      cefrEstimate: feedback.cefr_estimate,
+      taskMet: feedback.task_met,
+      approvalReason: feedback.approval_reason,
+      corrections: (feedback.corrections || []).map(({ original, corrected, type, rule, why, severity }) => (
+        { original, corrected, type, rule, why, severity }
+      )),
+      errorPatterns: feedback.error_patterns || [],
+      nextSteps: feedback.next_steps || [],
+      activeError: activeError == null ? null : feedback.corrections?.[activeError] || null,
+    } : null;
+    onWriteContext?.({
+      text,
+      task,
+      phase: busy ? "correction in progress" : feedback ? "reviewing correction" : text.trim() ? "writing draft" : "choosing a task",
+      activePanel: feedback ? tab : "editor",
+      wordCount: countWords(text),
+      correction,
+    });
+  }, [text, task, feedback, activeError, tab, busy, onWriteContext]);
   const words = countWords(text);
   const enough = words >= task.minWords;
 
@@ -216,6 +239,32 @@ export default function Write({ progress, apiKey, model, mode, targetLevel, sett
     setMobilePane("editor");
   }
 
+  function startResultsResize(event) {
+    if (resultsFull || window.matchMedia("(max-width: 980px)").matches) return;
+    event.preventDefault();
+    const startX = event.clientX;
+    const startWidth = resultsWidth;
+    const move = (e) => {
+      const max = Math.max(360, Math.min(760, window.innerWidth * 0.62));
+      setResultsWidth(Math.round(Math.max(340, Math.min(max, startWidth + startX - e.clientX))));
+    };
+    const stop = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", stop);
+      document.body.classList.remove("is-resizing-results");
+    };
+    document.body.classList.add("is-resizing-results");
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", stop, { once: true });
+  }
+
+  function requestPersonalizedExercise() {
+    onAskTeacher?.(
+      "Please create a short interactive exercise personalized from the mistakes in my current writing correction. Use my exact error patterns and wording where helpful, focus on the two most important weaknesses, and do not ask me to paste my text again.",
+      { autoSend: true }
+    );
+  }
+
   // Replace one error's original text with the corrected version.
   function acceptCorrection(index) {
     if (!feedback) return;
@@ -254,7 +303,7 @@ export default function Write({ progress, apiKey, model, mode, targetLevel, sett
   if (resultsFull) cls.push("results-full");
 
   return (
-    <div className={cls.join(" ")}>
+    <div className={cls.join(" ")} style={{ "--ide-results-width": `${resultsWidth}px` }}>
       <div className="ide-mobile-nav" role="tablist" aria-label="Bereiche des Schreibtrainers">
         <button
           type="button"
@@ -556,6 +605,15 @@ export default function Write({ progress, apiKey, model, mode, targetLevel, sett
 
       {/* ========================================================= results === */}
       <aside className="ide-results">
+        <div
+          className="ide-results-resizer"
+          role="separator"
+          aria-label="Breite der Korrektur-Seitenleiste ändern"
+          aria-orientation="vertical"
+          aria-valuenow={resultsWidth}
+          tabIndex={-1}
+          onPointerDown={startResultsResize}
+        />
         <div className="ide-panel-head ide-results-head">
           <div className="ide-tabs" role="tablist">
             {TABS.map((t) => (
@@ -612,6 +670,17 @@ export default function Write({ progress, apiKey, model, mode, targetLevel, sett
             />
           )}
         </div>
+        {feedback && !manualActive && (
+          <div className="ide-practice-cta">
+            <div>
+              <strong>Aus deinen Fehlern lernen</strong>
+              <span>Frau Müller erstellt eine kurze persönliche Übung aus diesem Text.</span>
+            </div>
+            <button className="btn btn-sm" type="button" onClick={requestPersonalizedExercise} disabled={!apiKey}>
+              <IconTeacher /> Persönliche Übung
+            </button>
+          </div>
+        )}
       </aside>
 
     </div>
@@ -910,6 +979,21 @@ function HighlightedEditor({ value, onChange, onSetValue, task, words, enough, e
     if (word) onLookupWord?.(word);
   }
 
+  function showErrorTip(mark, index) {
+    if (!mark || !mainRef.current) return;
+    const r = mark.getBoundingClientRect();
+    const container = mainRef.current.getBoundingClientRect();
+    const flip = r.bottom - container.top + 190 > container.height && r.top - container.top > 190;
+    keepTip();
+    setHoveredError({
+      index,
+      top: (flip ? r.top : r.bottom) - container.top,
+      left: Math.max(0, Math.min(r.left - container.left, container.width - 340)),
+      above: flip,
+    });
+    onHoverError?.(index);
+  }
+
   // Find which error mark (if any) is under the mouse by comparing coordinates
   // to the bounding rects of marks in the (non-interactive) pre overlay.
   function handleMouseMove(e) {
@@ -918,6 +1002,7 @@ function HighlightedEditor({ value, onChange, onSetValue, task, words, enough, e
     const marks = hlRef.current.querySelectorAll(".hl-err");
     const container = mainRef.current.getBoundingClientRect();
     let found = null;
+    let foundMark = null;
     for (const mark of marks) {
       const r = mark.getBoundingClientRect();
       if (e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom) {
@@ -932,13 +1017,12 @@ function HighlightedEditor({ value, onChange, onSetValue, task, words, enough, e
           left: Math.max(0, Math.min(r.left - container.left, container.width - 340)),
           above: flip,
         };
+        foundMark = mark;
         break;
       }
     }
     if (found) {
-      keepTip();
-      setHoveredError(found);
-      onHoverError?.(found.index);
+      showErrorTip(foundMark, found.index);
     } else {
       scheduleHideTip();
     }
@@ -980,7 +1064,11 @@ function HighlightedEditor({ value, onChange, onSetValue, task, words, enough, e
           <pre className="ide-highlight" ref={hlRef} aria-hidden="false">
             {lines.map((segs, i) => (
               <div className="hl-line" key={i}>
-                {segs.length ? renderSegments(segs) : "​"}
+                {segs.length ? renderSegments(
+                  segs,
+                  (event, index) => showErrorTip(event.currentTarget, index),
+                  scheduleHideTip
+                ) : "​"}
               </div>
             ))}
           </pre>
@@ -1081,11 +1169,17 @@ function segmentsToLines(segs) {
   return lines;
 }
 
-function renderSegments(segs) {
+function renderSegments(segs, onErrorEnter, onErrorLeave) {
   return segs.map((s, i) => {
     if (s.error) {
       return (
-        <mark key={i} className={"hl-err sev-" + s.severity + (s.active ? " is-active" : "")} data-idx={s.index}>
+        <mark
+          key={i}
+          className={"hl-err sev-" + s.severity + (s.active ? " is-active" : "")}
+          data-idx={s.index}
+          onPointerEnter={(event) => onErrorEnter?.(event, s.index)}
+          onPointerLeave={onErrorLeave}
+        >
           {s.children.map((c, j) =>
             c.cls ? <span key={j} className={c.cls}>{c.text}</span> : <React.Fragment key={j}>{c.text}</React.Fragment>
           )}

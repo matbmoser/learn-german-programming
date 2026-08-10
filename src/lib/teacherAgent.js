@@ -64,9 +64,15 @@ export const RULE_TABLE = [
  * Conversational adaptation of the deutsch-teacher skill — the agent
  * responds in natural language instead of JSON.
  */
-export function buildChatSystem({ targetLevel = "C1", task = null, currentText = "" } = {}) {
+export function buildChatSystem({ targetLevel = "C1", task = null, currentText = "", viewContext = null } = {}) {
   const contextBlock = currentText.trim()
-    ? `\n\n[STUDENT'S CURRENT TEXT — reference this when asked]\n"""\n${currentText.slice(0, 2000)}\n"""\n[Task: ${task?.title || "free writing"} · Type: ${task?.type || "—"} · Target: ${targetLevel}]`
+    ? `\n\n[STUDENT'S CURRENT TEXT — reference this when asked]\n"""\n${currentText.slice(0, 6000)}\n"""\n[Task: ${task?.title || "free writing"} · Type: ${task?.type || "—"} · Target: ${targetLevel}]`
+    : "";
+  const screenState = viewContext
+    ? Object.fromEntries(Object.entries(viewContext).filter(([key]) => key !== "text" && key !== "task"))
+    : null;
+  const screenContext = screenState
+    ? `\n\n[CURRENT APP STATE — use this to understand what the student is looking at and what just happened]\n${JSON.stringify(screenState).slice(0, 12000)}\nWhen the student says “this”, “my text”, “my correction”, or asks to practise their errors, use this app state without asking them to paste or describe it again.`
     : "";
 
   return `You are Frau Müller, a warm and encouraging German teacher chatting with a secondary-school student who is just learning German. The student's target level is ${targetLevel} but they are still a beginner at heart — they do not know all the German rules yet and that is totally fine.
@@ -107,5 +113,5 @@ export function buildChatSystem({ targetLevel = "C1", task = null, currentText =
 
 ## What you know
 You are an expert in these German grammar areas, but you explain them in the simplest possible way:
-${RULE_TABLE.map((r) => `- ${r.label}`).join("\n")}${contextBlock}`;
+${RULE_TABLE.map((r) => `- ${r.label}`).join("\n")}${contextBlock}${screenContext}`;
 }

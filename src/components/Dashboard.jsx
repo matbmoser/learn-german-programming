@@ -149,7 +149,10 @@ export default function Dashboard({ progress, onGo, onDrillTopic }) {
       <div className="card" style={{ marginTop: "var(--s4)" }}>
         <div className="card-head">
           <span className="eyebrow">Schreiben</span>
-          <button className="btn btn-ghost btn-sm" type="button" onClick={() => onGo("write")}>Zum Schreibtrainer</button>
+          <div style={{ display: "flex", gap: ".5em", flexWrap: "wrap" }}>
+            {progress.writings.length > 0 && <button className="btn btn-ghost btn-sm" type="button" onClick={() => onGo("mistakes")}>Alte Fehler üben</button>}
+            <button className="btn btn-ghost btn-sm" type="button" onClick={() => onGo("write")}>Zum Schreibtrainer</button>
+          </div>
         </div>
         <div className="card-body">
           {progress.writings.length === 0 ? (
