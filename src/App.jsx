@@ -116,6 +116,8 @@ export default function App() {
   const [welcomeOpen, setWelcomeOpen] = React.useState(() => !hasSeenWelcomeTutorial());
   const [disclaimerOpen, setDisclaimerOpen] = React.useState(false);
   const [aboutOpen, setAboutOpen] = React.useState(false);
+  const appRef = React.useRef(null);
+  const topbarRef = React.useRef(null);
   const navRef = React.useRef(null);
   const { view, section: routeSection } = route;
 
@@ -276,6 +278,35 @@ export default function App() {
       ?.scrollIntoView({ block: "nearest", inline: "center" });
   }, [view]);
 
+  React.useEffect(() => {
+    let frame = 0;
+    const updateHeaderOffset = () => {
+      frame = 0;
+      if (!appRef.current || !topbarRef.current) return;
+      const { bottom } = topbarRef.current.getBoundingClientRect();
+      const visibleHeight = Math.max(0, Math.min(window.innerHeight, bottom));
+      appRef.current.style.setProperty("--app-header-offset", `${visibleHeight}px`);
+    };
+    const scheduleUpdate = () => {
+      if (!frame) frame = window.requestAnimationFrame(updateHeaderOffset);
+    };
+
+    updateHeaderOffset();
+    window.addEventListener("scroll", scheduleUpdate, { passive: true });
+    window.addEventListener("resize", scheduleUpdate);
+    window.visualViewport?.addEventListener("resize", scheduleUpdate);
+    const observer = new ResizeObserver(scheduleUpdate);
+    observer.observe(topbarRef.current);
+
+    return () => {
+      if (frame) window.cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", scheduleUpdate);
+      window.removeEventListener("resize", scheduleUpdate);
+      window.visualViewport?.removeEventListener("resize", scheduleUpdate);
+      observer.disconnect();
+    };
+  }, []);
+
   const drillOn = React.useCallback((ruleId) => {
     setDrillTopic(ruleId);
     goto("drill");
@@ -295,8 +326,8 @@ export default function App() {
     : VIEWS.filter((item) => item.id !== "path");
 
   return (
-    <div className="app">
-      <header className="topbar">
+    <div ref={appRef} className="app">
+      <header ref={topbarRef} className="topbar">
         <div className="topbar-in">
           <div className="brand">
             <b>Deutsch</b> A2 → C1

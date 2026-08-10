@@ -33,6 +33,7 @@ import {
   IconClose,
   IconFullscreen,
   IconFullscreenExit,
+  IconWarning,
 } from "./icons.jsx";
 
 const STEPS = [
@@ -606,6 +607,7 @@ function Application({
   const [reviewWidth, setReviewWidth] = React.useState(460);
   const [reviewPanelView, setReviewPanelView] = React.useState("review");
   const resizeCleanupRef = React.useRef(null);
+  const retryRef = React.useRef(null);
   const stale = Boolean(review && reviewedText !== value);
   const approved = Boolean(review?.approved && !stale);
   const failed = Boolean(review && review.approved === false);
@@ -771,8 +773,9 @@ function Application({
           onSelectError={setActiveError}
         />
       )}
-      {failed && (
+      {failed && !stale && (
         <RetryChallenges
+          sectionRef={retryRef}
           choices={retryChoices}
           onSelect={selectRetryTask}
         />
@@ -800,27 +803,37 @@ function Application({
           <button className="btn btn-sm" type="button" disabled={!manualPaste.trim()} onClick={acceptManualReview}>Korrektur übernehmen</button>
         </div>
       )}
-      <div className="actions">
-        {approved ? (
-          <button className="btn" type="button" onClick={onComplete}>Kapitel abschließen</button>
-        ) : failed && !stale ? (
-          <span className="dim">Wähle oben eine neue Challenge—oder ändere deinen Text, wenn du dieses Thema weiter bearbeiten möchtest.</span>
-        ) : mode === "api" ? (
+      {!review && <div className="actions">
+        {mode === "api" ? (
           <button className="btn" type="button" disabled={!ready || busy || !apiKey} onClick={submitForReview}>
-            {busy ? <><Spinner /> Frau Müller korrigiert …</> : stale ? "Überarbeitete Fassung prüfen lassen" : "Von Frau Müller prüfen lassen"}
+            {busy ? <><Spinner /> Frau Müller korrigiert …</> : "Von Frau Müller prüfen lassen"}
           </button>
         ) : (
           <button className="btn" type="button" disabled={!ready} onClick={() => setManualOpen((open) => !open)}>
             {manualOpen ? "Prompt schließen" : "KI-Korrektur starten"}
           </button>
         )}
-        {approved && mode === "api" && (
-          <button className="btn btn-ghost" type="button" disabled={busy} onClick={submitForReview}>Erneut prüfen</button>
-        )}
         {!ready && <span className="dim">Noch {task.minWords - words} Wörter—bleib nur bei dieser Aufgabe.</span>}
-        {ready && !review && <span className="dim">Der Text muss vor dem Abschluss von der KI-Lehrerin freigegeben werden.</span>}
-        {stale && <span className="dim">Der Text wurde seit der Korrektur geändert und muss erneut geprüft werden.</span>}
-      </div>
+        {ready && <span className="dim">Der Text muss vor dem Abschluss von der KI-Lehrerin freigegeben werden.</span>}
+      </div>}
+      {review && (
+        <ApplicationOutcome
+          kind={stale ? "stale" : approved ? "passed" : "failed"}
+          review={review}
+          busy={busy}
+          primaryDisabled={stale && mode === "api" && (!ready || !apiKey)}
+          primaryLabel={stale
+            ? busy ? "Frau Müller korrigiert …" : mode === "api" ? "Neue Fassung prüfen lassen" : manualOpen ? "Prompt schließen" : "KI-Korrektur starten"
+            : approved ? "Kapitel abschließen und weiter" : "Neue Challenge wählen"}
+          onPrimary={stale
+            ? mode === "api" ? submitForReview : () => setManualOpen((open) => !open)
+            : approved ? onComplete : () => retryRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
+          secondaryLabel={stale || failed ? "Korrektur öffnen" : mode === "api" ? "Erneut prüfen" : null}
+          onSecondary={stale || failed
+            ? () => { setReviewPanelView("review"); setReviewOpen(true); }
+            : mode === "api" ? submitForReview : undefined}
+        />
+      )}
     </div>
   );
 }
@@ -856,11 +869,11 @@ function buildRetryChoices({ module, task, review }) {
   return choices.slice(0, 2);
 }
 
-function RetryChallenges({ choices, onSelect, offline = false }) {
+function RetryChallenges({ choices, onSelect, offline = false, sectionRef }) {
   if (!choices.length) return null;
   const personalized = choices.some((choice) => choice.source === "ai-retry");
   return (
-    <section className="path-retry-challenges" aria-label="Neue Schreib-Challenges">
+    <section className="path-retry-challenges" aria-label="Neue Schreib-Challenges" ref={sectionRef}>
       <div className="path-retry-heading">
         <div>
           <span className="eyebrow">{offline ? "Ohne KI verfügbar" : "Nächster Versuch"}</span>
@@ -874,8 +887,8 @@ function RetryChallenges({ choices, onSelect, offline = false }) {
         {offline
           ? "Diese Themen funktionieren ohne KI-Verbindung und haben andere Challenge-Punkte."
           : personalized
-            ? "Frau Müller hat aus deiner Korrektur zwei neue Themen mit neuen, persönlichen Challenge-Punkten erstellt. Dein bisheriger Versuch bleibt gespeichert."
-            : "Die KI hat keine neuen Themen geliefert. Deshalb stehen dir zwei vorbereitete Alternativen mit anderen Challenge-Punkten zur Verfügung; dein bisheriger Versuch bleibt gespeichert."}
+            ? "Die letzte Korrektur wurde nicht freigegeben. Frau Müller hat daraus zwei neue Themen erstellt, mit denen du die noch offenen Punkte gezielt übst. Dein bisheriger Versuch bleibt gespeichert."
+            : "Die letzte Korrektur wurde nicht freigegeben. Die KI hat keine neuen Themen geliefert, deshalb stehen dir zwei vorbereitete Alternativen zum erneuten Üben zur Verfügung. Dein bisheriger Versuch bleibt gespeichert."}
       </p>
       <div className="path-retry-grid">
         {choices.map((choice, index) => (
@@ -891,6 +904,57 @@ function RetryChallenges({ choices, onSelect, offline = false }) {
             </div>
           </article>
         ))}
+      </div>
+    </section>
+  );
+}
+
+function ApplicationOutcome({
+  kind,
+  review,
+  busy,
+  primaryDisabled,
+  primaryLabel,
+  onPrimary,
+  secondaryLabel,
+  onSecondary,
+}) {
+  const errors = review.corrections?.length || 0;
+  const copy = kind === "passed" ? {
+    kicker: "Aktueller Stand · bestanden",
+    title: "Bestanden! Bereit für das nächste Kapitel?",
+    description: "Die Korrektur hat deine Schreibanwendung freigegeben.",
+  } : kind === "stale" ? {
+    kicker: "Aktueller Stand · Prüfung offen",
+    title: "Deine neue Fassung muss noch geprüft werden",
+    description: "Du hast den Text nach der letzten Korrektur verändert. Die frühere Bewertung bleibt gespeichert, gilt aber nicht mehr für diese Fassung.",
+  } : {
+    kicker: "Aktueller Stand · neuer Versuch nötig",
+    title: "Noch nicht bestanden",
+    description: `Du sollst die Aufgabe wiederholen, weil die letzte Korrektur deinen Text nicht freigegeben hat${errors ? ` und ${errors} zu korrigierende ${errors === 1 ? "Stelle" : "Stellen"} gefunden wurden` : ""}.`,
+  };
+  const reason = kind !== "stale" && (review.approval_reason || review.cefr_reasoning);
+
+  return (
+    <section className={`path-application-outcome is-${kind}`} aria-live="polite">
+      <div className="path-outcome-icon">
+        {kind === "passed" ? <IconCheckCircle /> : kind === "stale" ? <IconWarning /> : <IconCancel />}
+      </div>
+      <div className="path-outcome-copy">
+        <span className="eyebrow">{copy.kicker}</span>
+        <h3>{copy.title}</h3>
+        <p>{copy.description}</p>
+        {reason && <p className="path-outcome-reason"><strong>Warum?</strong> {reason}</p>}
+        <div className="path-outcome-meta mono">
+          <span>Niveau {review.cefr_estimate || "—"}</span>
+          <span>{errors} {errors === 1 ? "Korrektur" : "Korrekturen"}</span>
+        </div>
+      </div>
+      <div className="path-outcome-actions">
+        <button className="btn" type="button" disabled={primaryDisabled || busy} onClick={onPrimary}>
+          {busy && kind === "stale" && <Spinner />} {primaryLabel}
+        </button>
+        {secondaryLabel && <button className="btn btn-ghost" type="button" disabled={busy} onClick={onSecondary}>{secondaryLabel}</button>}
       </div>
     </section>
   );
