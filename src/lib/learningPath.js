@@ -99,12 +99,22 @@ export function saveLearningApplication(pathValue, moduleId, text) {
 export function saveLearningApplicationReview(pathValue, moduleId, text, review) {
   const path = normalizeLearningPath(pathValue);
   const previous = path.applications[moduleId] || {};
+  const attempts = previous.review
+    ? [...(previous.attempts || []), {
+        task: previous.task || null,
+        text: previous.reviewedText || previous.text || "",
+        review: previous.review,
+        reviewedText: previous.reviewedText || "",
+        savedAt: previous.reviewedAt || Date.now(),
+      }].slice(-50)
+    : (previous.attempts || []);
   return {
     ...path,
     applications: {
       ...path.applications,
       [moduleId]: {
         ...previous,
+        attempts,
         text,
         review,
         reviewedText: text,

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 import React from "react";
-import { LEVEL_INFO } from "../data/curriculum.js";
+import { LEVEL_INFO, MODULES } from "../data/curriculum.js";
 import { generate } from "../engine/drills.js";
 import { answersMatch } from "../engine/grammar.js";
 import {
@@ -26,7 +26,14 @@ import {
 import { buildErrorRanges, buildSegments } from "../lib/highlight.js";
 import { ModuleContent } from "./Learn.jsx";
 import { Bar, Callout, CopyButton, LevelTag, Prompt, Spinner, Trace } from "./ui.jsx";
-import { IconCancel, IconCheckCircle } from "./icons.jsx";
+import {
+  IconArrowRight,
+  IconCancel,
+  IconCheckCircle,
+  IconClose,
+  IconFullscreen,
+  IconFullscreenExit,
+} from "./icons.jsx";
 
 const STEPS = [
   { id: "intro", label: "Einführung" },
@@ -34,6 +41,38 @@ const STEPS = [
   { id: "practice", label: "Üben" },
   { id: "apply", label: "Anwenden" },
 ];
+
+function buildLearningPathCorrectionHistory(path) {
+  return Object.entries(path.applications || {}).flatMap(([moduleId, application]) => {
+    const module = MODULES.find((item) => item.id === moduleId);
+    const shared = {
+      moduleId,
+      moduleTitle: module?.title || moduleId,
+      level: module?.level || "—",
+    };
+    const entries = (application.attempts || []).flatMap((attempt, index) => attempt.review ? [{
+      ...shared,
+      id: `${moduleId}:attempt:${attempt.savedAt || index}`,
+      kind: "attempt",
+      taskTitle: attempt.task?.title || module?.title || "Schreibanwendung",
+      text: attempt.text || "",
+      review: attempt.review,
+      at: attempt.savedAt || 0,
+    }] : []);
+    if (application.review) {
+      entries.push({
+        ...shared,
+        id: `${moduleId}:current:${application.reviewedAt || "saved"}`,
+        kind: "current",
+        taskTitle: application.task?.title || module?.title || "Schreibanwendung",
+        text: application.reviewedText || application.text || "",
+        review: application.review,
+        at: application.reviewedAt || application.updatedAt || 0,
+      });
+    }
+    return entries;
+  }).sort((left, right) => right.at - left.at);
+}
 
 export default function LearningPath({
   progress,
@@ -61,6 +100,7 @@ export default function LearningPath({
   const application = path.applications?.[mod.id] || { text: "" };
   const aiSupport = path.aiSupport?.[mod.id] || null;
   const profile = React.useMemo(() => learningProfile(progress, mod), [progress, mod]);
+  const correctionHistory = React.useMemo(() => buildLearningPathCorrectionHistory(path), [path]);
 
   React.useEffect(() => {
     if (step === "learn") onRead(mod.id);
@@ -195,6 +235,7 @@ export default function LearningPath({
               value={application.text || ""}
               review={application.review || null}
               reviewedText={application.reviewedText || ""}
+              correctionHistory={correctionHistory}
               selectedTask={application.task || null}
               apiKey={apiKey}
               model={model}
@@ -408,24 +449,44 @@ function PathCheckpoint({ module, checkpoint, passed, support, onAnswer, onRevie
   const [given, setGiven] = React.useState("");
   const [correct, setCorrect] = React.useState(false);
   const [typed, setTyped] = React.useState("");
+  const [repeating, setRepeating] = React.useState(false);
 
-  function next() {
-    const nextPersonalIndex = personalIndex + 1;
-    if (nextPersonalIndex < personalized.length) {
-      setPersonalIndex(nextPersonalIndex);
-      setQ(personalized[nextPersonalIndex]);
-    } else {
-      const ruleId = rules[Math.floor(Math.random() * rules.length)] || rules[0];
-      setQ(generate(ruleId));
-    }
+  function freshBuiltInQuestion() {
+    const ruleId = rules[Math.floor(Math.random() * rules.length)] || rules[0];
+    return generate(ruleId);
+  }
+
+  function resetAnswer(nextQuestion) {
+    setQ(nextQuestion);
     setAnswered(false);
     setGiven("");
     setCorrect(false);
     setTyped("");
   }
 
+  function next() {
+    const nextPersonalIndex = personalIndex + 1;
+    if (!repeating && nextPersonalIndex < personalized.length) {
+      setPersonalIndex(nextPersonalIndex);
+      resetAnswer(personalized[nextPersonalIndex]);
+    } else {
+      resetAnswer(freshBuiltInQuestion());
+    }
+  }
+
+  function startRepeat() {
+    setRepeating(true);
+    setPersonalIndex(personalized.length);
+    resetAnswer(freshBuiltInQuestion());
+  }
+
+  function continueAfterRepeat() {
+    setRepeating(false);
+    onContinue();
+  }
+
   function judge(value) {
-    if (answered || passed) return;
+    if (answered || (passed && !repeating)) return;
     const ok = q.type === "choice" ? value === q.answer : answersMatch(value, q.accept || [q.answer]);
     setAnswered(true);
     setGiven(value);
@@ -438,7 +499,7 @@ function PathCheckpoint({ module, checkpoint, passed, support, onAnswer, onRevie
   const recent = checkpoint.recent || [];
   const recentCorrect = recent.filter(Boolean).length;
 
-  if (passed) {
+  if (passed && !repeating) {
     return (
       <div className="path-stage path-stage-success">
         <span className="path-success-mark"><IconCheckCircle /></span>
@@ -447,6 +508,7 @@ function PathCheckpoint({ module, checkpoint, passed, support, onAnswer, onRevie
         <p className="muted">Die nächste Aufgabe ist bereits vorbereitet und erscheint hier im selben Lernfenster.</p>
         <div className="actions">
           <button className="btn" type="button" onClick={onContinue}>Zur Schreibaufgabe</button>
+          <button className="btn btn-ghost" type="button" onClick={startRepeat}>Übung wiederholen</button>
           <button className="btn btn-ghost" type="button" onClick={onReview}>Regel noch einmal ansehen</button>
         </div>
       </div>
@@ -461,13 +523,17 @@ function PathCheckpoint({ module, checkpoint, passed, support, onAnswer, onRevie
           <h2>Wähle oder tippe die richtige Lösung</h2>
         </div>
         <span className="mono dim">
-          {q.fromAI
+          {repeating
+            ? "Freiwillige Wiederholung"
+            : q.fromAI
             ? `KI-Warm-up ${personalIndex + 1}/${personalized.length}`
             : `${recentCorrect}/${CHECKPOINT_CORRECT} richtig · ${recent.length}/${CHECKPOINT_WINDOW}`}
         </span>
       </div>
       <p className="muted path-checkpoint-intro">
-        {q.fromAI
+        {repeating
+          ? "Du hast diese Übung bereits bestanden. Weitere Antworten festigen die Regel, ändern aber deinen Kapitel-Fortschritt nicht."
+          : q.fromAI
           ? "Diese persönliche Aufwärmaufgabe zählt nicht für das Bestehen. Danach prüft der eingebaute Grammatik-Generator unabhängig von der KI."
           : `Ziel: ${CHECKPOINT_CORRECT} der letzten ${CHECKPOINT_WINDOW} Aufgaben richtig. Diese Bewertung kommt ausschließlich aus dem eingebauten Grammatik-Generator.`}
       </p>
@@ -507,6 +573,7 @@ function PathCheckpoint({ module, checkpoint, passed, support, onAnswer, onRevie
       )}
       <div className="actions">
         {answered ? <button className="btn" type="button" onClick={next}>Nächste Aufgabe</button> : <button className="btn btn-ghost" type="button" onClick={() => judge("")}>Aufgeben</button>}
+        {repeating && <button className="btn btn-ghost" type="button" onClick={continueAfterRepeat}>Wiederholung beenden</button>}
       </div>
     </div>
   );
@@ -514,7 +581,7 @@ function PathCheckpoint({ module, checkpoint, passed, support, onAnswer, onRevie
 
 function Application({
   module, support, value, review, reviewedText, selectedTask, apiKey, model, mode,
-  onChange, onReview, onSelectTask, onComplete, onOpenSettings,
+  correctionHistory, onChange, onReview, onSelectTask, onComplete, onOpenSettings,
 }) {
   const baseline = React.useMemo(() => applicationTask(module), [module]);
   const task = React.useMemo(() => {
@@ -534,6 +601,11 @@ function Application({
   const [manualOpen, setManualOpen] = React.useState(false);
   const [manualPaste, setManualPaste] = React.useState("");
   const [activeError, setActiveError] = React.useState(null);
+  const [reviewOpen, setReviewOpen] = React.useState(Boolean(review));
+  const [reviewFullscreen, setReviewFullscreen] = React.useState(false);
+  const [reviewWidth, setReviewWidth] = React.useState(460);
+  const [reviewPanelView, setReviewPanelView] = React.useState("review");
+  const resizeCleanupRef = React.useRef(null);
   const stale = Boolean(review && reviewedText !== value);
   const approved = Boolean(review?.approved && !stale);
   const failed = Boolean(review && review.approved === false);
@@ -549,12 +621,32 @@ function Application({
   }), [module.level, task]);
   const manualPrompt = manualCorrectionPrompt({ task: correctionTask, text: value, targetLevel: module.level });
 
+  React.useEffect(() => () => resizeCleanupRef.current?.(), []);
+
+  React.useEffect(() => {
+    if (!reviewOpen) setReviewFullscreen(false);
+  }, [reviewOpen]);
+
+  React.useEffect(() => {
+    if (!reviewOpen) return undefined;
+    const onKeyDown = (event) => {
+      if (event.key !== "Escape") return;
+      if (reviewFullscreen) setReviewFullscreen(false);
+      else setReviewOpen(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [reviewFullscreen, reviewOpen]);
+
   function acceptReview(data) {
     if (!data || !Array.isArray(data.corrections) || typeof data.approved !== "boolean") {
       throw new Error("Die KI-Antwort enthält keine vollständige Korrektur oder Freigabe.");
     }
     onReview(value, data);
     setActiveError(null);
+    setReviewOpen(true);
+    setReviewFullscreen(false);
+    setReviewPanelView("review");
     setError("");
     setManualOpen(false);
   }
@@ -590,9 +682,32 @@ function Application({
   function selectRetryTask(nextTask) {
     onSelectTask(nextTask, task);
     setActiveError(null);
+    setReviewOpen(false);
     setError("");
     setManualOpen(false);
     setManualPaste("");
+  }
+
+  function startReviewResize(event) {
+    if (reviewFullscreen || window.matchMedia("(max-width: 800px)").matches) return;
+    event.preventDefault();
+    const startX = event.clientX;
+    const startWidth = reviewWidth;
+    const move = (moveEvent) => {
+      const max = Math.max(420, Math.min(820, window.innerWidth * 0.72));
+      setReviewWidth(Math.round(Math.max(360, Math.min(max, startWidth + startX - moveEvent.clientX))));
+    };
+    const stop = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", stop);
+      document.body.classList.remove("is-resizing-path-review");
+      resizeCleanupRef.current = null;
+    };
+    resizeCleanupRef.current?.();
+    resizeCleanupRef.current = stop;
+    document.body.classList.add("is-resizing-path-review");
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", stop, { once: true });
   }
 
   const taskLabel = task.source === "ai-retry"
@@ -619,6 +734,7 @@ function Application({
           value={value}
           corrections={review?.corrections || []}
           activeError={activeError}
+          onSelectError={setActiveError}
           onChange={(nextValue) => { onChange(nextValue); setActiveError(null); }}
         />
       </div>
@@ -626,11 +742,32 @@ function Application({
         <span className={ready ? "is-ready" : ""}>{words} / {task.minWords} Wörter</span>
         <Bar value={words / task.minWords} color={ready ? "var(--ok)" : `var(--${module.level.toLowerCase()})`} />
       </div>
-      {review && (
-        <ApplicationReview
+      {correctionHistory.length > 0 && !reviewOpen && (
+        <div className="path-review-launchers">
+          {review && (
+            <button className="path-review-reopen" type="button" onClick={() => { setReviewPanelView("review"); setReviewOpen(true); }}>
+              Korrektur anzeigen · {review.corrections?.length || 0} Fehler · {review.cefr_estimate || "—"}
+            </button>
+          )}
+          <button className="path-review-history-open" type="button" onClick={() => { setReviewPanelView("history"); setReviewOpen(true); }}>
+            Korrekturverlauf · {correctionHistory.length}
+          </button>
+        </div>
+      )}
+      {correctionHistory.length > 0 && reviewOpen && (
+        <ApplicationCorrectionDrawer
+          moduleId={module.id}
           review={review}
+          history={correctionHistory}
           stale={stale}
           activeError={activeError}
+          width={reviewWidth}
+          fullscreen={reviewFullscreen}
+          view={reviewPanelView}
+          onResizeStart={startReviewResize}
+          onToggleFullscreen={() => setReviewFullscreen((current) => !current)}
+          onClose={() => setReviewOpen(false)}
+          onView={setReviewPanelView}
           onSelectError={setActiveError}
         />
       )}
@@ -759,14 +896,37 @@ function RetryChallenges({ choices, onSelect, offline = false }) {
   );
 }
 
-function ApplicationEditor({ value, corrections, activeError, onChange }) {
+const APPLICATION_TIP_GRACE_MS = 260;
+
+function ApplicationErrorTooltip({ correction }) {
+  if (!correction) return null;
+  return (
+    <div className="err-tip path-error-tip" role="tooltip">
+      <div className="err-tip-row">
+        <span className="err-tip-sev" data-sev={correction.severity}>{correction.severity}</span>
+        <span className="err-tip-type">{correction.type}</span>
+      </div>
+      <div className="err-tip-diff">
+        <span className="err-tip-bad">{correction.original}</span>
+        <span className="err-tip-arrow"><IconArrowRight /></span>
+        <span className="err-tip-good">{correction.corrected}</span>
+      </div>
+      <p className="err-tip-why">{correction.why}</p>
+    </div>
+  );
+}
+
+function ApplicationEditor({ value, corrections, activeError, onSelectError, onChange }) {
   const textareaRef = React.useRef(null);
   const highlightRef = React.useRef(null);
   const gutterRef = React.useRef(null);
+  const mainRef = React.useRef(null);
+  const closeTipRef = React.useRef(0);
   const ranges = React.useMemo(() => buildErrorRanges(value, corrections), [value, corrections]);
   const segments = React.useMemo(() => buildSegments(value, ranges, activeError), [value, ranges, activeError]);
   const lines = React.useMemo(() => applicationSegmentsToLines(segments), [segments]);
   const [lineHeights, setLineHeights] = React.useState([]);
+  const [hoveredError, setHoveredError] = React.useState(null);
 
   React.useLayoutEffect(() => {
     const highlight = highlightRef.current;
@@ -792,7 +952,42 @@ function ApplicationEditor({ value, corrections, activeError, onChange }) {
       highlightRef.current.scrollLeft = textarea.scrollLeft;
     }
     if (gutterRef.current) gutterRef.current.scrollTop = textarea.scrollTop;
+    hideTip();
   }
+
+  function keepTip() {
+    window.clearTimeout(closeTipRef.current);
+  }
+
+  function hideTip() {
+    window.clearTimeout(closeTipRef.current);
+    setHoveredError(null);
+  }
+
+  function scheduleHideTip() {
+    window.clearTimeout(closeTipRef.current);
+    closeTipRef.current = window.setTimeout(() => setHoveredError(null), APPLICATION_TIP_GRACE_MS);
+  }
+
+  function showTip(mark, index) {
+    const main = mainRef.current;
+    if (!mark || !main) return;
+    const rect = mark.getBoundingClientRect();
+    const container = main.getBoundingClientRect();
+    const flip = rect.bottom - container.top + 180 > container.height && rect.top - container.top > 180;
+    keepTip();
+    setHoveredError({
+      index,
+      top: (flip ? rect.top : rect.bottom) - container.top,
+      left: Math.max(0, Math.min(rect.left - container.left, container.width - 340)),
+      above: flip,
+    });
+    onSelectError?.(index);
+  }
+
+  React.useEffect(() => () => window.clearTimeout(closeTipRef.current), []);
+
+  const hoveredCorrection = hoveredError ? corrections[hoveredError.index] : null;
 
   return (
     <div className="path-application-editor">
@@ -804,20 +999,39 @@ function ApplicationEditor({ value, corrections, activeError, onChange }) {
         <div className="path-application-gutter mono" ref={gutterRef} aria-hidden="true">
           {lines.map((_, index) => <span key={index} style={lineHeights[index] ? { height: lineHeights[index] } : undefined}>{index + 1}</span>)}
         </div>
-        <div className="path-application-code-main">
+        <div className="path-application-code-main" ref={mainRef} onMouseLeave={scheduleHideTip}>
           <pre className="path-application-highlight" ref={highlightRef} aria-hidden="true">
-            {lines.map((line, index) => <div className="hl-line" key={index}>{line.length ? renderApplicationSegments(line) : "​"}</div>)}
+            {lines.map((line, index) => (
+              <div className="hl-line" key={index}>
+                {line.length ? renderApplicationSegments(
+                  line,
+                  (event, errorIndex) => showTip(event.currentTarget, errorIndex),
+                  scheduleHideTip,
+                  (event, errorIndex) => { event.preventDefault(); showTip(event.currentTarget, errorIndex); }
+                ) : "​"}
+              </div>
+            ))}
           </pre>
           <textarea
             ref={textareaRef}
             className="path-application-input"
             value={value}
-            onChange={(event) => onChange(event.target.value)}
+            onChange={(event) => { hideTip(); onChange(event.target.value); }}
             onScroll={syncScroll}
             placeholder="// Schreibe hier auf Deutsch …"
             spellCheck="false"
             aria-label="Deine Antwort"
           />
+          {hoveredError && hoveredCorrection && (
+            <div
+              className={`err-tip-anchor path-error-tip-anchor${hoveredError.above ? " is-above" : ""}`}
+              style={{ top: hoveredError.top, left: hoveredError.left }}
+              onMouseEnter={keepTip}
+              onMouseLeave={scheduleHideTip}
+            >
+              <ApplicationErrorTooltip correction={hoveredCorrection} />
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -852,11 +1066,17 @@ function applicationSegmentsToLines(segments) {
   return lines;
 }
 
-function renderApplicationSegments(segments) {
+function renderApplicationSegments(segments, onErrorEnter, onErrorLeave, onErrorClick) {
   return segments.map((segment, index) => {
     if (segment.error) {
       return (
-        <mark key={index} className={`hl-err sev-${segment.severity}${segment.active ? " is-active" : ""}`}>
+        <mark
+          key={index}
+          className={`hl-err sev-${segment.severity}${segment.active ? " is-active" : ""}`}
+          onPointerEnter={(event) => onErrorEnter?.(event, segment.index)}
+          onPointerLeave={onErrorLeave}
+          onClick={(event) => onErrorClick?.(event, segment.index)}
+        >
           {segment.children.map((child, childIndex) => child.cls
             ? <span key={childIndex} className={child.cls}>{child.text}</span>
             : <React.Fragment key={childIndex}>{child.text}</React.Fragment>)}
@@ -877,7 +1097,149 @@ const SCORE_LABELS = {
   register: "Stil",
 };
 
-function ApplicationReview({ review, stale, activeError, onSelectError }) {
+function ApplicationCorrectionDrawer({
+  moduleId,
+  review,
+  history,
+  stale,
+  activeError,
+  width,
+  fullscreen,
+  view,
+  onResizeStart,
+  onToggleFullscreen,
+  onClose,
+  onView,
+  onSelectError,
+}) {
+  const currentEntry = history.find((entry) => entry.moduleId === moduleId && entry.kind === "current") || null;
+  const [selectedEntryId, setSelectedEntryId] = React.useState(currentEntry?.id || history[0]?.id || null);
+  const selectedEntry = history.find((entry) => entry.id === selectedEntryId) || currentEntry || history[0] || null;
+  const showingCurrent = Boolean(selectedEntry && currentEntry && selectedEntry.id === currentEntry.id);
+
+  React.useEffect(() => {
+    if (currentEntry && view === "review") setSelectedEntryId(currentEntry.id);
+  }, [currentEntry?.id, view]);
+
+  function showHistoryEntry(entry) {
+    setSelectedEntryId(entry.id);
+    onView("review");
+  }
+
+  return (
+    <aside
+      className={`path-correction-drawer${fullscreen ? " is-fullscreen" : ""}`}
+      style={fullscreen ? undefined : { "--path-review-width": `${width}px` }}
+      aria-label="Korrektur deiner Schreibanwendung"
+    >
+      <div
+        className="path-correction-resizer"
+        role="separator"
+        aria-label="Breite der Korrektur-Seitenleiste ändern"
+        aria-orientation="vertical"
+        aria-valuenow={width}
+        onPointerDown={onResizeStart}
+      />
+      <header className="path-correction-drawer-head">
+        <div>
+          <span className="eyebrow">Lernpfad · Schreibkorrektur</span>
+          <strong>Deine Auswertung</strong>
+        </div>
+        <div className="path-correction-drawer-tools">
+          <button
+            className="ide-icon"
+            type="button"
+            title={fullscreen ? "Vollbild verlassen" : "Im Vollbild öffnen"}
+            aria-label={fullscreen ? "Vollbild verlassen" : "Korrektur im Vollbild öffnen"}
+            onClick={onToggleFullscreen}
+          >
+            {fullscreen ? <IconFullscreenExit /> : <IconFullscreen />}
+          </button>
+          <button className="ide-icon" type="button" title="Korrektur schließen" aria-label="Korrektur schließen" onClick={onClose}>
+            <IconClose />
+          </button>
+        </div>
+      </header>
+      <nav className="path-correction-tabs" aria-label="Korrekturbereiche">
+        <button
+          type="button"
+          className={view === "review" ? "is-active" : ""}
+          disabled={!selectedEntry}
+          onClick={() => {
+            if (currentEntry) setSelectedEntryId(currentEntry.id);
+            onView("review");
+          }}
+        >
+          {showingCurrent ? "Aktuelle Korrektur" : "Korrektur"}
+        </button>
+        <button type="button" className={view === "history" ? "is-active" : ""} onClick={() => onView("history")}>
+          Verlauf <span>{history.length}</span>
+        </button>
+      </nav>
+      <div className="path-correction-drawer-body">
+        {view === "history" ? (
+          <CorrectionHistory entries={history} currentEntryId={currentEntry?.id} onSelect={showHistoryEntry} />
+        ) : selectedEntry ? (
+          <>
+            {!showingCurrent && <CorrectionArchiveContext entry={selectedEntry} />}
+            <ApplicationReview
+              review={showingCurrent ? review : selectedEntry.review}
+              stale={showingCurrent ? stale : false}
+              activeError={showingCurrent ? activeError : null}
+              readOnly={!showingCurrent}
+              onSelectError={showingCurrent ? (index) => {
+                onSelectError(index);
+                if (index != null && fullscreen) onToggleFullscreen();
+              } : undefined}
+            />
+          </>
+        ) : (
+          <p className="path-correction-history-empty">Noch keine Korrekturen gespeichert.</p>
+        )}
+      </div>
+    </aside>
+  );
+}
+
+function CorrectionHistory({ entries, currentEntryId, onSelect }) {
+  return (
+    <section className="path-correction-history" aria-label="Gespeicherte Korrekturen">
+      <header>
+        <span className="eyebrow">Gespeichert im Lernpfad</span>
+        <h3>Deine Korrekturen</h3>
+        <p>Aktuelle Korrekturen und frühere Versuche bleiben hier erhalten.</p>
+      </header>
+      <div className="path-correction-history-list">
+        {entries.map((entry) => (
+          <button key={entry.id} type="button" onClick={() => onSelect(entry)}>
+            <span>
+              <LevelTag level={entry.level} />
+              <strong>{entry.taskTitle}</strong>
+              {entry.id === currentEntryId && <small>Aktuell</small>}
+            </span>
+            <span>{entry.moduleTitle}</span>
+            <span className="mono">
+              {entry.at ? new Date(entry.at).toLocaleDateString("de-DE") : "Gespeichert"}
+              {` · ${entry.review.corrections?.length || 0} Fehler · ${entry.review.cefr_estimate || "—"}`}
+            </span>
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function CorrectionArchiveContext({ entry }) {
+  return (
+    <div className="path-correction-archive-context">
+      <span className="eyebrow">Gespeicherte Korrektur</span>
+      <strong>{entry.taskTitle}</strong>
+      <span>{entry.moduleTitle} · {entry.level}{entry.at ? ` · ${new Date(entry.at).toLocaleDateString("de-DE")}` : ""}</span>
+    </div>
+  );
+}
+
+function ApplicationReview({ review, stale, activeError, readOnly = false, onSelectError }) {
   const corrections = Array.isArray(review.corrections) ? review.corrections : [];
   const effectiveApproval = review.approved && !stale;
   return (
@@ -918,9 +1280,10 @@ function ApplicationReview({ review, stale, activeError, onSelectError }) {
                 <button
                   key={`${correction.original}-${index}`}
                   type="button"
-                  className={activeError === index ? "is-active" : ""}
-                  onClick={() => onSelectError(activeError === index ? null : index)}
-                  title="Fehler im Text markieren"
+                  className={(activeError === index ? "is-active" : "") + (readOnly ? " is-archived" : "")}
+                  onClick={() => onSelectError?.(activeError === index ? null : index)}
+                  disabled={readOnly}
+                  title={readOnly ? "Gespeicherte Korrektur" : "Fehler im Text markieren"}
                 >
                   <span><b>{correction.type}</b><small>{correction.severity}</small></span>
                   <del>{correction.original}</del>
