@@ -10,6 +10,7 @@ import { WRITING_TASKS } from "../data/writing.js";
 
 export const CHECKPOINT_WINDOW = 4;
 export const CHECKPOINT_CORRECT = 3;
+export const LEVEL_EXAM_PASS_RATE = 0.8;
 
 // A few reference chapters do not have their own generator yet. These related
 // rules keep every chapter verifiable without pretending that merely opening a
@@ -35,6 +36,7 @@ export function emptyLearningPath() {
     steps: {},
     applications: {},
     aiSupport: {},
+    levelExams: {},
   };
 }
 
@@ -52,6 +54,7 @@ export function normalizeLearningPath(value) {
     steps: path.steps && typeof path.steps === "object" ? path.steps : {},
     applications: path.applications && typeof path.applications === "object" ? path.applications : {},
     aiSupport: path.aiSupport && typeof path.aiSupport === "object" ? path.aiSupport : {},
+    levelExams: path.levelExams && typeof path.levelExams === "object" ? path.levelExams : {},
   };
 }
 
@@ -80,6 +83,59 @@ export function moduleRequiresApplication(moduleOrId) {
   return learningBlockForModule(moduleOrId).isEnd;
 }
 
+export function moduleRequiresLevelExam(moduleOrId) {
+  const moduleId = typeof moduleOrId === "string" ? moduleOrId : moduleOrId?.id;
+  const index = MODULES.findIndex((module) => module.id === moduleId);
+  if (index < 0 || index === MODULES.length - 1) return false;
+  return MODULES[index + 1].level !== MODULES[index].level;
+}
+
+export function levelExamModules(level) {
+  return MODULES.filter((module) => module.level === level);
+}
+
+export function levelExamRequiredCorrect(level) {
+  return Math.ceil(levelExamModules(level).length * LEVEL_EXAM_PASS_RATE);
+}
+
+export function levelExamPassed(pathValue, level) {
+  return Boolean(normalizeLearningPath(pathValue).levelExams[level]?.passed);
+}
+
+export function recordLevelExam(pathValue, level, results) {
+  const path = normalizeLearningPath(pathValue);
+  const expectedIds = new Set(levelExamModules(level).map((module) => module.id));
+  const validResults = Array.isArray(results)
+    ? results.filter((result) => expectedIds.has(result?.moduleId)).slice(0, expectedIds.size)
+    : [];
+  const uniqueResults = [...new Map(validResults.map((result) => [result.moduleId, {
+    moduleId: result.moduleId,
+    correct: Boolean(result.correct),
+  }])).values()];
+  if (uniqueResults.length !== expectedIds.size) return path;
+  const correct = uniqueResults.filter((result) => result.correct).length;
+  const passed = correct >= levelExamRequiredCorrect(level);
+  const previous = path.levelExams[level] || { attempts: [], passed: false };
+  const attempt = {
+    at: Date.now(),
+    correct,
+    total: uniqueResults.length,
+    passed,
+    results: uniqueResults,
+  };
+  return {
+    ...path,
+    levelExams: {
+      ...path.levelExams,
+      [level]: {
+        passed: previous.passed || passed,
+        passedAt: previous.passedAt || (passed ? attempt.at : undefined),
+        attempts: [...(previous.attempts || []), attempt].slice(-20),
+      },
+    },
+  };
+}
+
 function modulesInLearningBlock(moduleOrId) {
   return learningBlockForModule(moduleOrId).moduleIds
     .map((moduleId) => MODULES.find((module) => module.id === moduleId))
@@ -104,7 +160,7 @@ export function recordCheckpoint(pathValue, moduleId, correct) {
 
 export function setLearningStep(pathValue, moduleId, step) {
   const path = normalizeLearningPath(pathValue);
-  const allowed = ["intro", "learn", "practice", "apply"];
+  const allowed = ["intro", "learn", "practice", "apply", "exam"];
   return allowed.includes(step)
     ? { ...path, steps: { ...path.steps, [moduleId]: step } }
     : path;
@@ -187,6 +243,8 @@ export function completeLearningModule(pathValue, moduleId) {
   const application = path.applications[moduleId] || {};
   if (moduleRequiresApplication(moduleId)
       && (application.review?.approved !== true || application.reviewedText !== application.text)) return path;
+  const module = MODULES.find((item) => item.id === moduleId);
+  if (moduleRequiresLevelExam(moduleId) && !levelExamPassed(path, module?.level)) return path;
   return {
     ...path,
     completed: { ...path.completed, [moduleId]: path.completed[moduleId] || Date.now() },
@@ -276,6 +334,13 @@ export function learningStep(pathValue, moduleId) {
   if (path.completed[moduleId]) return "complete";
   const stored = path.steps[moduleId];
   if (!moduleRequiresApplication(moduleId) && stored === "apply") return "practice";
+  const module = MODULES.find((item) => item.id === moduleId);
+  const application = path.applications[moduleId] || {};
+  if (moduleRequiresLevelExam(moduleId)
+      && application.review?.approved === true
+      && application.reviewedText === application.text
+      && !levelExamPassed(path, module?.level)
+      && !stored) return "exam";
   if (checkpointPassed(path.checkpoints[moduleId]) && !stored) {
     return moduleRequiresApplication(moduleId) ? "apply" : "practice";
   }
@@ -448,6 +513,8 @@ export function learningPathStats(pathValue) {
     blockCompleted,
     blockTotal: block.moduleIds.length,
     isBlockEnd: block.isEnd,
+    isLevelEnd: moduleRequiresLevelExam(current),
+    levelExam: path.levelExams[current.level] || null,
     isLast: currentIndex === MODULES.length - 1,
     levels: LEVELS,
   };

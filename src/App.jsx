@@ -58,6 +58,7 @@ import {
   learningStep,
   learningPathStats,
   recordCheckpoint,
+  recordLevelExam,
   saveLearningApplication,
   saveLearningApplicationReview,
   saveLearningApplicationTask,
@@ -87,6 +88,7 @@ const PATH_STEPS = {
   learn: { label: "Verstehen", next: "Üben · Den Checkpoint mit 3 von 4 richtigen Antworten bestehen" },
   practice: { label: "Üben", next: "Anwenden · Die Regeln des Lernblocks gemeinsam im Schreiben benutzen" },
   apply: { label: "Anwenden", next: "Lernblock abschließen und zur nächsten Lektion wechseln" },
+  exam: { label: "Niveauprüfung", next: "Prüfung bestehen und das nächste CEFR-Niveau freischalten" },
 };
 
 function readRoute(fallback = "home") {
@@ -205,6 +207,14 @@ export default function App() {
     window.scrollTo?.(0, 0);
   }, []);
 
+  const onFinishLevelExam = React.useCallback((moduleId, level, results) => {
+    setProgress((p) => {
+      const withExam = recordLevelExam(p.learningPath, level, results);
+      return { ...p, learningPath: completeLearningModule(withExam, moduleId) };
+    });
+    window.scrollTo?.(0, 0);
+  }, []);
+
   const onSaveLearningAISupport = React.useCallback((moduleId, support) => {
     setProgress((p) => ({ ...p, learningPath: saveLearningAISupport(p.learningPath, moduleId, support) }));
   }, []);
@@ -242,10 +252,14 @@ export default function App() {
     setRoute({ view: v, section });
   }, []);
 
-  const configureAI = React.useCallback(() => {
+  const chooseExperienceMode = React.useCallback((experienceMode) => {
+    setProgress((p) => ({
+      ...p,
+      settings: { ...p.settings, experienceMode },
+    }));
     markWelcomeTutorialSeen();
     setWelcomeOpen(false);
-    goto("settings", "api-settings");
+    goto(experienceMode === "learning" ? "path" : "home");
   }, [goto]);
 
   React.useEffect(() => {
@@ -425,6 +439,7 @@ export default function App() {
                 onSelectApplicationTask={onSelectLearningApplicationTask}
                 onSaveAISupport={onSaveLearningAISupport}
                 onComplete={onCompleteLearningModule}
+                onFinishLevelExam={onFinishLevelExam}
                 onAdvance={onAdvancePath}
                 onOpenSettings={() => goto("settings")}
               />
@@ -535,17 +550,29 @@ export default function App() {
             </a>
             <div className="coffee-copy">
               <span className="mono foot-local">Fortschritt bleibt lokal in diesem Browser.</span>
-              <a
-                className="coffee-btn"
-                href="https://paypal.me/mathiasbrunkowmoser"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Buy Mathias a coffee with PayPal"
-              >
-                <IconCoffee />
-                Buy me a coffee
-                <span className="coffee-provider">PayPal</span>
-              </a>
+              <div className="foot-support-buttons">
+                <a
+                  className="coffee-btn"
+                  href="https://paypal.me/mathiasbrunkowmoser"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Buy Mathias a coffee with PayPal"
+                >
+                  <IconCoffee />
+                  Buy me a coffee
+                  <span className="coffee-provider">PayPal</span>
+                </a>
+                <a
+                  className="coffee-btn github-star-btn"
+                  href="https://github.com/matbmoser/learn-german-programming"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Give this project a star on GitHub"
+                >
+                  <IconGitHub />
+                  Give us a star
+                </a>
+              </div>
             </div>
           </div>
           <span className="foot-legal">
@@ -641,7 +668,7 @@ export default function App() {
       />
 
       {welcomeOpen && (
-        <WelcomeTutorial onClose={closeWelcome} onConfigure={configureAI} />
+        <WelcomeTutorial onClose={closeWelcome} onChooseMode={chooseExperienceMode} />
       )}
     </div>
   );

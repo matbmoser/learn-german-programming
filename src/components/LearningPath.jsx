@@ -14,7 +14,10 @@ import {
   learningProfile,
   learningPathStats,
   learningStep,
+  levelExamModules,
+  levelExamRequiredCorrect,
   moduleRequiresApplication,
+  moduleRequiresLevelExam,
 } from "../lib/learningPath.js";
 import {
   correctWriting,
@@ -44,6 +47,7 @@ const MODULE_STEPS = [
   { id: "practice", label: "Üben" },
   { id: "apply", label: "Anwenden" },
 ];
+const LEVEL_EXAM_STEP = { id: "exam", label: "Niveauprüfung" };
 
 function buildLearningPathCorrectionHistory(path) {
   return Object.entries(path.applications || {}).flatMap(([moduleId, application]) => {
@@ -90,6 +94,7 @@ export default function LearningPath({
   onSelectApplicationTask,
   onSaveAISupport,
   onComplete,
+  onFinishLevelExam,
   onAdvance,
   onOpenSettings,
 }) {
@@ -98,7 +103,10 @@ export default function LearningPath({
   const mod = stats.current;
   const block = stats.block;
   const requiresApplication = moduleRequiresApplication(mod);
-  const steps = requiresApplication ? MODULE_STEPS : MODULE_STEPS.slice(0, 3);
+  const requiresLevelExam = moduleRequiresLevelExam(mod);
+  const steps = requiresApplication
+    ? (requiresLevelExam ? [...MODULE_STEPS, LEVEL_EXAM_STEP] : MODULE_STEPS)
+    : MODULE_STEPS.slice(0, 3);
   const savedStep = learningStep(path, mod.id);
   const [viewStep, setViewStep] = React.useState(null);
   const step = viewStep || savedStep;
@@ -207,6 +215,7 @@ export default function LearningPath({
             mode={mode}
             block={block}
             requiresApplication={requiresApplication}
+            requiresLevelExam={requiresLevelExam}
             onSaveSupport={(support) => onSaveAISupport(mod.id, support)}
             onOpenSettings={onOpenSettings}
             onContinue={() => continueTo("learn")}
@@ -253,11 +262,24 @@ export default function LearningPath({
               apiKey={apiKey}
               model={model}
               mode={mode}
+              requiresLevelExam={requiresLevelExam}
               onChange={(text) => onSaveApplication(mod.id, text)}
               onReview={(text, review) => onSaveApplicationReview(mod.id, text, review)}
               onSelectTask={(task, previousTask) => onSelectApplicationTask(mod.id, task, previousTask)}
-              onComplete={finishModule}
+              onComplete={() => requiresLevelExam ? continueTo("exam") : finishModule()}
               onOpenSettings={onOpenSettings}
+            />
+          </div>
+        )}
+
+        {savedIndex >= 4 && requiresLevelExam && (
+          <div hidden={step !== "exam"}>
+            <LevelExam
+              key={mod.level}
+              level={mod.level}
+              previous={path.levelExams?.[mod.level] || null}
+              onFinish={(results) => onFinishLevelExam(mod.id, mod.level, results)}
+              onComplete={finishModule}
             />
           </div>
         )}
@@ -271,7 +293,7 @@ export default function LearningPath({
 }
 
 function Introduction({
-  module, block, requiresApplication, profile, support, apiKey, model, mode, onSaveSupport, onOpenSettings, onContinue,
+  module, block, requiresApplication, requiresLevelExam, profile, support, apiKey, model, mode, onSaveSupport, onOpenSettings, onContinue,
 }) {
   return (
     <div className="path-stage path-introduction">
@@ -296,6 +318,7 @@ function Introduction({
           <li>{requiresApplication
             ? `Danach verbindest du alle Regeln aus ${block.id} in einem Schreibauftrag.`
             : `Nach dem Checkpoint geht es im Lernblock ${block.id} mit der nächsten passenden Regel weiter.`}</li>
+          {requiresLevelExam && <li>Zum Abschluss prüft eine Niveauprüfung alle Kapitel aus {module.level}, bevor das nächste Niveau beginnt.</li>}
         </ol>
       </div>
       <div className="actions"><button className="btn" type="button" onClick={onContinue}>Lektion beginnen</button></div>
@@ -596,9 +619,192 @@ function PathCheckpoint({ module, checkpoint, passed, support, requiresApplicati
   );
 }
 
+function buildLevelExamQuestions(level) {
+  return levelExamModules(level).map((module) => {
+    const rules = checkpointRules(module);
+    const ruleId = rules[Math.floor(Math.random() * rules.length)] || rules[0];
+    return { module, question: generate(ruleId) };
+  });
+}
+
+function LevelExam({ level, previous, onFinish, onComplete }) {
+  const modules = levelExamModules(level);
+  const required = levelExamRequiredCorrect(level);
+  const [phase, setPhase] = React.useState(previous?.passed ? "passed" : "intro");
+  const [questions, setQuestions] = React.useState(() => buildLevelExamQuestions(level));
+  const [index, setIndex] = React.useState(0);
+  const [results, setResults] = React.useState([]);
+  const [answered, setAnswered] = React.useState(false);
+  const [given, setGiven] = React.useState("");
+  const [correct, setCorrect] = React.useState(false);
+  const [typed, setTyped] = React.useState("");
+  const current = questions[index];
+  const latestAttempt = previous?.attempts?.[previous.attempts.length - 1] || null;
+  const latestFailedModules = (latestAttempt?.results || [])
+    .filter((result) => !result.correct)
+    .map((result) => modules.find((module) => module.id === result.moduleId))
+    .filter(Boolean);
+
+  function startExam() {
+    setQuestions(buildLevelExamQuestions(level));
+    setIndex(0);
+    setResults([]);
+    setAnswered(false);
+    setGiven("");
+    setCorrect(false);
+    setTyped("");
+    setPhase("exam");
+  }
+
+  function judge(value) {
+    if (answered || !current) return;
+    const question = current.question;
+    const ok = question.type === "choice"
+      ? value === question.answer
+      : answersMatch(value, question.accept || [question.answer]);
+    setAnswered(true);
+    setGiven(value);
+    setCorrect(ok);
+    setResults((items) => [...items, {
+      moduleId: current.module.id,
+      moduleTitle: current.module.title,
+      correct: ok,
+    }]);
+  }
+
+  function nextQuestion() {
+    if (!answered) return;
+    if (index === questions.length - 1) {
+      setPhase("result");
+      onFinish(results);
+      return;
+    }
+    setIndex((value) => value + 1);
+    setAnswered(false);
+    setGiven("");
+    setCorrect(false);
+    setTyped("");
+  }
+
+  if (phase === "passed" || previous?.passed) {
+    return (
+      <div className="path-stage path-stage-success">
+        <span className="path-success-mark"><IconCheckCircle /></span>
+        <span className="eyebrow">{level}-Niveauprüfung bestanden</span>
+        <h2>Das nächste Niveau ist freigeschaltet.</h2>
+        <p className="muted">Du hast die Abschlussprüfung für {level} erfolgreich bestanden.</p>
+        <div className="actions"><button className="btn" type="button" onClick={onComplete}>Niveau abschließen</button></div>
+      </div>
+    );
+  }
+
+  if (phase === "intro") {
+    return (
+      <div className="path-stage path-level-exam-intro">
+        <span className="eyebrow">Pflichtprüfung vor dem Niveauwechsel</span>
+        <h2>{level} abschließen</h2>
+        <p className="path-stage-lede">
+          Die Prüfung enthält eine Aufgabe aus jedem der {modules.length} Kapitel auf {level}.
+          Du brauchst mindestens {required} richtige Antworten, bevor das nächste Niveau freigeschaltet wird.
+        </p>
+        {latestAttempt && !latestAttempt.passed && (
+          <Callout kind="bad">
+            Letzter Versuch: {latestAttempt.correct} von {latestAttempt.total} richtig.
+          </Callout>
+        )}
+        {latestFailedModules.length > 0 && (
+          <div className="path-targets">
+            <span className="eyebrow">Aus dem letzten Versuch wiederholen</span>
+            <ul>{latestFailedModules.map((module) => <li key={module.id}>{module.title}</li>)}</ul>
+          </div>
+        )}
+        <div className="path-targets">
+          <span className="eyebrow">Diese Kapitel werden geprüft</span>
+          <ul>{modules.map((module) => <li key={module.id}>{module.title}</li>)}</ul>
+        </div>
+        <div className="actions"><button className="btn" type="button" onClick={startExam}>Niveauprüfung starten</button></div>
+      </div>
+    );
+  }
+
+  if (phase === "result") {
+    const score = results.filter((result) => result.correct).length;
+    const failed = results.filter((result) => !result.correct);
+    return (
+      <div className="path-stage path-stage-success">
+        <span className="path-success-mark"><IconWarning /></span>
+        <span className="eyebrow">Noch nicht bestanden</span>
+        <h2>{score} von {questions.length} richtig</h2>
+        <p className="muted">Für den Niveauwechsel brauchst du mindestens {required} richtige Antworten.</p>
+        {failed.length > 0 && (
+          <div className="path-targets">
+            <span className="eyebrow">Vor dem nächsten Versuch wiederholen</span>
+            <ul>{failed.map((result) => <li key={result.moduleId}>{result.moduleTitle}</li>)}</ul>
+          </div>
+        )}
+        <div className="actions"><button className="btn" type="button" onClick={startExam}>Neue Prüfung starten</button></div>
+      </div>
+    );
+  }
+
+  const question = current.question;
+  return (
+    <div className="path-stage path-stage-practice">
+      <div className="path-stage-heading">
+        <div>
+          <span className="eyebrow">{level}-Niveauprüfung · Kapitel {index + 1} von {questions.length}</span>
+          <h2>{current.module.title}</h2>
+        </div>
+        <span className="mono dim">{results.filter((result) => result.correct).length} richtig</span>
+      </div>
+      <Bar value={(index + (answered ? 1 : 0)) / questions.length} color={`var(--${level.toLowerCase()})`} />
+      <span className="q-kind">{question.kind}</span>
+      <div className="q-prompt"><LevelTag level={level} /> <Prompt text={question.prompt} /></div>
+      {question.hint && <p className="q-hint">{question.hint}</p>}
+
+      {question.type === "choice" ? (
+        <div className="opts">
+          {question.options.map((option) => (
+            <button
+              key={option}
+              type="button"
+              className={(answered && option === question.answer ? "opt is-ok" : "opt") + (answered && option === given && !correct ? " is-no" : "")}
+              disabled={answered}
+              onClick={() => judge(option)}
+            >
+              {option}
+            </button>
+          ))}
+        </div>
+      ) : (
+        <form className="type-row" autoComplete="off" onSubmit={(event) => { event.preventDefault(); judge(typed); }}>
+          <input className="type-in" value={typed} disabled={answered} spellCheck="false" onChange={(event) => setTyped(event.target.value)} placeholder="Antwort tippen …" aria-label="Antwort" />
+          <button className="btn" type="submit" disabled={answered || !typed.trim()}>Prüfen</button>
+        </form>
+      )}
+
+      {answered && (
+        <div className={"verdict " + (correct ? "v-ok" : "v-no")}>
+          <div className="verdict-line">
+            {correct
+              ? <><span className="mark"><IconCheckCircle /> richtig</span><span>{question.answer}</span></>
+              : <><span className="mark"><IconCancel /></span><span>Du: <b>{given || "—"}</b> · Richtig: <b>{question.answer}</b></span></>}
+          </div>
+          <Trace rows={question.trace} />
+        </div>
+      )}
+      <div className="actions">
+        {answered
+          ? <button className="btn" type="button" onClick={nextQuestion}>{index === questions.length - 1 ? "Prüfung auswerten" : "Nächste Aufgabe"}</button>
+          : <button className="btn btn-ghost" type="button" onClick={() => judge("")}>Aufgeben</button>}
+      </div>
+    </div>
+  );
+}
+
 function Application({
   module, support, value, review, reviewedText, selectedTask, apiKey, model, mode,
-  correctionHistory, onChange, onReview, onSelectTask, onComplete, onOpenSettings,
+  requiresLevelExam, correctionHistory, onChange, onReview, onSelectTask, onComplete, onOpenSettings,
 }) {
   const baseline = React.useMemo(() => applicationTask(module), [module]);
   const task = React.useMemo(() => {
@@ -844,7 +1050,7 @@ function Application({
           primaryDisabled={stale && mode === "api" && (!ready || !apiKey)}
           primaryLabel={stale
             ? busy ? "Frau Müller korrigiert …" : mode === "api" ? "Neue Fassung prüfen lassen" : manualOpen ? "Prompt schließen" : "KI-Korrektur starten"
-            : approved ? "Lernblock abschließen und weiter" : "Neue Challenge wählen"}
+            : approved ? requiresLevelExam ? "Zur Niveauprüfung" : "Lernblock abschließen und weiter" : "Neue Challenge wählen"}
           onPrimary={stale
             ? mode === "api" ? submitForReview : () => setManualOpen((open) => !open)
             : approved ? onComplete : () => retryRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
@@ -1390,12 +1596,15 @@ function ApplicationReview({ review, stale, activeError, readOnly = false, onSel
 
 function Completion({ module, block, isLast, onAdvance, onOpenSettings }) {
   const blockFinished = block.isEnd;
+  const levelFinished = moduleRequiresLevelExam(module);
   return (
     <div className="path-stage path-stage-success">
       <span className="path-success-mark"><IconCheckCircle /></span>
-      <span className="eyebrow">{blockFinished ? `Lernblock ${block.id} abgeschlossen` : "Kapitel abgeschlossen"}</span>
+      <span className="eyebrow">{levelFinished ? `${module.level} abgeschlossen` : blockFinished ? `Lernblock ${block.id} abgeschlossen` : "Kapitel abgeschlossen"}</span>
       <h2>{module.title} ist geschafft.</h2>
-      <p className="muted">{blockFinished
+      <p className="muted">{levelFinished
+        ? `Du hast alle Kapitel, die Block-Anwendung und die Niveauprüfung auf ${module.level} bestanden.`
+        : blockFinished
         ? `Du hast alle Kapitel aus ${block.id} „${block.title}“ gelernt und gemeinsam im Schreiben angewendet.`
         : `Der Checkpoint ist bestanden. Die Schreibanwendung folgt nach Kapitel ${block.moduleIds.length} dieses Lernblocks.`}</p>
       <div className="actions">

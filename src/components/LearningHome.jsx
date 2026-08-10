@@ -13,6 +13,7 @@ const STEP_COPY = {
   learn: { label: "Verstehen", action: "Weiterlernen" },
   practice: { label: "Üben", action: "Übung fortsetzen" },
   apply: { label: "Anwenden", action: "Schreibaufgabe fortsetzen" },
+  exam: { label: "Niveauprüfung", action: "Niveauprüfung fortsetzen" },
   complete: { label: "Abgeschlossen", action: "Nächstes Kapitel" },
 };
 

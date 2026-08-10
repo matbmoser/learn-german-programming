@@ -32,12 +32,27 @@ const STEPS = [
   {
     eyebrow: "04 · KI einrichten",
     title: "Noch ein Schritt für die KI-Hilfe",
-    copy: "Für Korrekturen und Frau Müller brauchst du einen eigenen Anthropic API-Key. Hinterlege ihn jetzt einmalig in den Einstellungen.",
+    copy: "Für Korrekturen und Frau Müller brauchst du einen eigenen Anthropic API-Key. Du kannst ihn jederzeit in den Einstellungen hinterlegen.",
     art: "api",
+  },
+  {
+    eyebrow: "05 · Loslegen",
+    title: "Wie möchtest du lernen?",
+    copy: "Folge dem geführten Lernpfad von A2 bis C1 oder erkunde alle Regeln, Drills und Schreibaufgaben frei. Du kannst später jederzeit wechseln.",
+    art: "mode",
   },
 ];
 
 function TutorialArt({ type }) {
+  if (type === "mode") {
+    return (
+      <div className="welcome-art welcome-art-mode" aria-hidden="true">
+        <span><b>Lernpfad</b><i>A2 → B1 → B2 → C1</i></span>
+        <span><b>Freier Modus</b><i>Alle Bereiche direkt öffnen</i></span>
+      </div>
+    );
+  }
+
   if (type === "api") {
     return (
       <div className="welcome-art welcome-art-api" aria-hidden="true">
@@ -77,7 +92,7 @@ function TutorialArt({ type }) {
   );
 }
 
-export default function WelcomeTutorial({ onClose, onConfigure }) {
+export default function WelcomeTutorial({ onClose, onChooseMode }) {
   const [step, setStep] = React.useState(0);
   const dialogRef = React.useRef(null);
   const closeRef = React.useRef(null);
@@ -152,7 +167,7 @@ export default function WelcomeTutorial({ onClose, onConfigure }) {
           <h1 id="welcome-title">{current.title}</h1>
           <p id="welcome-copy">{current.copy}</p>
 
-          <div className="welcome-footer">
+          <div className={`welcome-footer${isLast ? " is-choice" : ""}`}>
             <div className="welcome-dots" role="group" aria-label={`Schritt ${step + 1} von ${STEPS.length}`}>
               {STEPS.map((item, index) => (
                 <button
@@ -172,14 +187,22 @@ export default function WelcomeTutorial({ onClose, onConfigure }) {
                   Zurück
                 </button>
               )}
-              <button
-                className="btn btn-sm"
-                type="button"
-                onClick={() => (isLast ? onConfigure() : setStep((n) => n + 1))}
-              >
-                {isLast ? "API-Key einrichten" : "Weiter"}
-                <IconArrowRight />
-              </button>
+              {isLast ? (
+                <>
+                  <button className="btn btn-ghost btn-sm" type="button" onClick={() => onChooseMode("free")}>
+                    Freier Modus
+                  </button>
+                  <button className="btn btn-sm" type="button" onClick={() => onChooseMode("learning")}>
+                    Lernpfad starten
+                    <IconArrowRight />
+                  </button>
+                </>
+              ) : (
+                <button className="btn btn-sm" type="button" onClick={() => setStep((n) => n + 1)}>
+                  Weiter
+                  <IconArrowRight />
+                </button>
+              )}
             </div>
           </div>
         </div>

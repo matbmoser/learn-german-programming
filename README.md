@@ -174,8 +174,12 @@ rolling checkpoint requires 3 correct answers out of the latest 4. The learner
 then continues with the next connected rule. A short writing application appears
 only at the end of a block (usually after 2–3 chapters) and deliberately combines
 all rules in that block. This avoids gating progress on a text before its
-supporting grammar has been taught. The header reports the current block, CEFR
-level, and total path progress. In Settings, the learner can jump directly to
+supporting grammar has been taught. Before the guided path advances from A2 to
+B1, B1 to B2, or B2 to C1, a mandatory level exam asks one question from every
+chapter in the completed level and requires an 80% score. Failed attempts identify
+the chapters to review and remain retryable; passing attempts are saved with the
+learning progress. The header reports the current block, CEFR level, and total
+path progress. In Settings, the learner can jump directly to
 A1/A2, B1, B2, or C1 if browser progress was lost; jumping does not falsely mark
 earlier chapters complete.
 
