@@ -83,10 +83,19 @@ export default function TeacherExercise({ exercise, onSubmit, disabled = false, 
     return `${heading}\n\nMy answer: ${answer.trim()}`;
   }
 
+  function submittedAnswers() {
+    if (type === "multiple_choice") return choice;
+    if (type === "multiple_select") return selected;
+    if (type === "fill_blanks" || type === "form") return fields.map((field) => fieldValues[field.id]);
+    if (type === "matching") return matches.map((_, index) => matchValues[index]);
+    if (type === "reorder") return order.map((item) => item.label);
+    return answer.trim();
+  }
+
   function submit() {
     if (!complete || inactive) return;
     setLocallySubmitted(true);
-    onSubmit(submissionText());
+    onSubmit({ text: submissionText(), answers: submittedAnswers() });
   }
 
   return (

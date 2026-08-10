@@ -651,7 +651,7 @@ import { buildChatSystem } from "./teacherAgent.js";
 const TEACHER_EXERCISE_TOOL = {
   name: "present_exercise",
   description:
-    "Present an interactive German-learning exercise or structured answer form in the chat. Use it when practice would help, the learner asks for an exercise, or your question is best answered with choices or several fields. Call it more than once for a short exercise set.",
+    "Present an interactive German-learning exercise or structured answer form in the chat. Include its answer key with the question so the app can compare answers locally after submission. Use it when practice would help, the learner asks for an exercise, or your question is best answered with choices or several fields. Call it more than once for a short exercise set.",
   input_schema: {
     type: "object",
     properties: {
@@ -706,10 +706,10 @@ const TEACHER_EXERCISE_TOOL = {
       answer_key: {
         type: "array",
         items: { type: "string" },
-        description: "Hidden solutions used for later feedback. For choices list the correct option(s); for fields or matching use display order; for reorder use the correct item order; for short answer give one or more accepted examples. Omit for open forms and writing.",
+        description: "Hidden solutions used for local comparison after submission. For choices list the correct option(s); for fields or matching use display order; for reorder use the correct item order; for short answer give one or more accepted examples. Use an empty array only for open forms and writing.",
       },
     },
-    required: ["id", "type", "title", "instructions"],
+    required: ["id", "type", "title", "instructions", "answer_key"],
     additionalProperties: false,
   },
 };

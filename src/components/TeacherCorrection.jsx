@@ -6,12 +6,13 @@ import React from "react";
 export default function TeacherCorrection({ correction }) {
   const score = Math.min(100, Math.max(0, Number(correction.score_percent) || 0));
   const items = Array.isArray(correction.items) ? correction.items : [];
+  const fromAnswerKey = correction.kind === "answer_key";
 
   return (
     <section className="tc-correction" aria-label={correction.title || "Correction results"}>
       <header className="tc-correction-head">
         <div>
-          <span className="tc-correction-kicker">Correction results</span>
+          <span className="tc-correction-kicker">{fromAnswerKey ? "Saved answer key" : "Correction results"}</span>
           <h3>{correction.title || "Your results"}</h3>
         </div>
         <div className="tc-score-ring" style={{ "--tc-score": `${score * 3.6}deg` }} aria-label={`${score} percent`}>
@@ -20,8 +21,8 @@ export default function TeacherCorrection({ correction }) {
       </header>
 
       <div className="tc-correction-stats" aria-label="Correction statistics">
-        <div><strong>{correction.correct_items}</strong><span>Correct</span></div>
-        <div><strong>{Math.max(0, correction.total_items - correction.correct_items)}</strong><span>To review</span></div>
+        <div><strong>{correction.correct_items}</strong><span>{fromAnswerKey ? "Matches" : "Correct"}</span></div>
+        <div><strong>{Math.max(0, correction.total_items - correction.correct_items)}</strong><span>{fromAnswerKey ? "To compare" : "To review"}</span></div>
         <div><strong>{correction.total_items}</strong><span>Total</span></div>
       </div>
 
@@ -33,7 +34,7 @@ export default function TeacherCorrection({ correction }) {
             <div className="tc-correction-item-head">
               <span className="tc-correction-number">{index + 1}</span>
               <strong>{item.label}</strong>
-              <span className="tc-correction-status">{item.is_correct ? "Correct" : "Needs work"}</span>
+              <span className="tc-correction-status">{fromAnswerKey ? (item.is_correct ? "Matches" : "Compare") : (item.is_correct ? "Correct" : "Needs work")}</span>
             </div>
             <div className="tc-answer-compare">
               <div className="tc-answer-given">
@@ -41,7 +42,7 @@ export default function TeacherCorrection({ correction }) {
                 <p>{item.student_answer || "—"}</p>
               </div>
               <div className="tc-answer-right">
-                <span>{item.is_correct ? "Confirmed answer" : "Correct answer"}</span>
+                <span>{fromAnswerKey ? "Saved answer" : item.is_correct ? "Confirmed answer" : "Correct answer"}</span>
                 <p>{item.correct_answer || "—"}</p>
               </div>
             </div>

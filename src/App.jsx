@@ -30,6 +30,7 @@ import LearningPath from "./components/LearningPath.jsx";
 import LearningHome from "./components/LearningHome.jsx";
 import { IconBook, IconClose, IconGitHub, IconTeacher } from "./components/icons.jsx";
 import Rulebook from "./components/Rulebook.jsx";
+import CheatSheet from "./components/CheatSheet.jsx";
 import { MODULES } from "./data/curriculum.js";
 import {
   loadProgress, saveProgress, resetProgress, recordAnswer,
@@ -65,10 +66,14 @@ const VIEWS = [
   { id: "rulebook", num: "§2", label: "Regelwerk" },
   { id: "drill", num: "§3", label: "Drill" },
   { id: "exam", num: "§4", label: "Einstufung" },
-  { id: "write", num: "§5", label: "Schreiben" },
-  { id: "spec", num: "§6", label: "Spezifikation" },
-  { id: "settings", num: "§7", label: "Einstellungen" },
+  { id: "cheat", num: "§5", label: "Spickzettel" },
+  { id: "write", num: "§6", label: "Schreiben" },
+  { id: "spec", num: "§7", label: "Spezifikation" },
+  { id: "settings", num: "§8", label: "Einstellungen" },
 ];
+
+/** Views that stay reachable in guided learning mode. */
+const LEARNING_VIEWS = new Set(["home", "path", "cheat", "settings"]);
 
 const PATH_STEPS = {
   intro: { label: "Einführung", next: "Verstehen · Die Regel an Beispielen durcharbeiten" },
@@ -208,7 +213,7 @@ export default function App() {
   }, [learningMode]);
 
   React.useEffect(() => {
-    if (learningMode && !["home", "path", "settings"].includes(view)) goto("home");
+    if (learningMode && !LEARNING_VIEWS.has(view)) goto("home");
     if (!learningMode && view === "path") goto("home");
   }, [learningMode, view, goto]);
 
@@ -242,7 +247,7 @@ export default function App() {
   const pathStep = learningStep(progress.learningPath, pathStats.current.id);
   const nextModule = MODULES[pathStats.currentIndex + 1] || null;
   const visibleViews = learningMode
-    ? VIEWS.filter((item) => ["home", "path", "settings"].includes(item.id))
+    ? VIEWS.filter((item) => LEARNING_VIEWS.has(item.id))
     : VIEWS.filter((item) => item.id !== "path");
 
   return (
@@ -374,6 +379,14 @@ export default function App() {
               <Rulebook
                 section={routeSection}
                 onSectionChange={(id) => goto("rulebook", id)}
+              />
+            )}
+            {view === "cheat" && (
+              <CheatSheet
+                section={routeSection}
+                onSectionChange={(id) => goto("cheat", id)}
+                onGo={goto}
+                learningMode={learningMode}
               />
             )}
             {view === "drill" && (

@@ -71,6 +71,7 @@ git push -u origin main
 | **§1 Regeln** | 32 modules A2→C1. Each one: the rule as code, the table it collapses to, real examples, and the mistakes that cost marks in an exam. |
 | **§2 Drill** | 21 generators produce questions on demand. Every answer — right or wrong — prints the derivation that produced it. Weighted toward your weakest rules. |
 | **§3 Einstufung** | 30 adaptive questions. Climbs after three correct at a level, drops after two wrong. Returns a CEFR estimate, the gap to C1, and your weakest topics. |
+| **§5 Spickzettel** | 24 exam task types taken from the Goethe, telc, TestDaF and DSH model papers — each with the mechanical trick that solves it, the traps built into it, a wrong-next-to-right example, and what changes about it at A2, B1, B2 and C1. Plus part-by-part blueprints of eight real exams and a per-level page of what an examiner expects. Available in both modes. |
 | **§4 Schreiben** | 12 exam-style writing tasks A2→C1. Claude returns a CEFR estimate, marks per criterion, every error with its rule, correct-but-below-level phrasings with their target-level version, and your text rewritten at level. |
 | **§5 Einstellungen** | API key, mode, export/import, reset. |
 

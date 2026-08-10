@@ -19,6 +19,7 @@
 import React from "react";
 import { chatWithTeacher } from "../lib/claude.js";
 import { AGENT } from "../lib/teacherAgent.js";
+import { buildTeacherExerciseResult } from "../lib/teacherExerciseResults.js";
 import { Spinner } from "./ui.jsx";
 import TeacherExercise from "./TeacherExercise.jsx";
 import TeacherCorrection from "./TeacherCorrection.jsx";
@@ -102,6 +103,30 @@ export default function TeacherChat({ apiKey, model, mode, currentText, task, ta
     }
   }
 
+  function submitExercise(submission, exercise, messageIndex, exerciseIndex) {
+    const withSubmitted = messages.map((message, index) => index === messageIndex
+      ? { ...message, submittedExercises: [...(message.submittedExercises || []), exerciseIndex] }
+      : message);
+    const result = buildTeacherExerciseResult(exercise, submission.answers);
+    const isOpenExercise = exercise.type === "form" || exercise.type === "writing";
+    const teacherText = result
+      ? result.correct_items === result.total_items
+        ? "Here are the saved answers. Everything matches — wunderbar!"
+        : "Here are the saved answers so you can compare them with yours. Ask me whenever you want help with one of them."
+      : isOpenExercise
+        ? "Your answer is saved. This is an open-ended exercise, so there is no single answer key. Ask me for feedback whenever you want it."
+        : "Your answer is saved, but this exercise has no saved answer key. Ask me to review it if you would like feedback.";
+
+    setMessages([
+      ...withSubmitted,
+      { role: "user", content: submission.text, exerciseSubmission: false },
+      { role: "assistant", content: teacherText, corrections: result ? [result] : [], exercises: [] },
+    ]);
+    setError("");
+    setPanel("chat");
+    window.requestAnimationFrame(() => inputRef.current?.focus());
+  }
+
   function onKey(e) {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(input); }
   }
@@ -125,12 +150,6 @@ export default function TeacherChat({ apiKey, model, mode, currentText, task, ta
   const hasText  = currentText.trim().length > 0;
   const noKey    = mode === "api" && !apiKey;
   const totalTok = tokens.in + tokens.out;
-  const lastMessage = messages.at(-1);
-  const previousMessage = messages.at(-2);
-  const canBuildVisualResults = lastMessage?.role === "assistant" && !lastMessage.corrections?.length &&
-    previousMessage?.role === "user" && (
-      previousMessage.exerciseSubmission === true || /^I completed the exercise\b/i.test(previousMessage.content || "")
-    );
   const startTime = React.useMemo(
     () => new Date(sessionStartedAt.current).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
     [] // eslint-disable-line react-hooks/exhaustive-deps
@@ -213,12 +232,7 @@ export default function TeacherChat({ apiKey, model, mode, currentText, task, ta
                     exercise={exercise}
                     disabled={busy}
                     wasSubmitted={m.submittedExercises?.includes(exerciseIndex)}
-                    onSubmit={(answer) => {
-                      const withSubmitted = messages.map((message, messageIndex) => messageIndex === i
-                        ? { ...message, submittedExercises: [...(message.submittedExercises || []), exerciseIndex] }
-                        : message);
-                      send(answer, withSubmitted, { exerciseSubmission: true });
-                    }}
+                    onSubmit={(submission) => submitExercise(submission, exercise, i, exerciseIndex)}
                   />
                 ))}
               </div>
@@ -242,12 +256,6 @@ export default function TeacherChat({ apiKey, model, mode, currentText, task, ta
 
       {panel === "chat" && !busy && !noKey && (
         <div className="tc-quick">
-          {canBuildVisualResults && (
-            <button className="tc-chip tc-chip-results" type="button"
-              onClick={() => send("Show my last exercise correction as visual results.", messages, { exerciseSubmission: true })}>
-              Show visual results
-            </button>
-          )}
           <button className="tc-chip tc-chip-practice" type="button" onClick={() => { setInput("Give me a short interactive exercise about "); inputRef.current?.focus(); }}>Interactive exercise</button>
           {hasText && <>
             <button className="tc-chip" type="button" onClick={() => { setInput("Quick feedback on my text?"); inputRef.current?.focus(); }}>Review text</button>

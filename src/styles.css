@@ -2123,3 +2123,206 @@ pre.code b { font-weight: 600; }
   .klammer-card, .spec-tool .tool-body, .spec-tool .out-phrase,
   .spec-tool .trace, .komp-eq { padding-inline: 16px; }
 }
+
+/* ── §5 Spickzettel — exam task types, tricks, level expectations ───────────
+   The whole view is built to be compared by clicking: level tabs swap the
+   expectation panel in place, and the wrong/right card puts both versions of
+   the same sentence side by side instead of describing the difference. */
+
+.cheat-tabs {
+  display: grid; grid-template-columns: 1fr; gap: 1px;
+  margin-top: var(--s4); border: 1px solid var(--rule); border-radius: 5px;
+  overflow: hidden; background: var(--rule);
+}
+@media (min-width: 760px) { .cheat-tabs { grid-template-columns: repeat(3, 1fr); } }
+.cheat-tabs button {
+  display: grid; gap: 2px; padding: var(--s3) var(--s4);
+  text-align: left; background: var(--surface); color: var(--ink-3);
+}
+.cheat-tabs button b { color: var(--ink-2); font: 500 .92rem var(--f-display); }
+.cheat-tabs button span { font-size: .74rem; line-height: 1.35; }
+.cheat-tabs button:hover { background: var(--raised); }
+.cheat-tabs button:hover b { color: var(--ink); }
+.cheat-tabs button.is-on { background: var(--raised); }
+.cheat-tabs button.is-on b { color: var(--nom); }
+.cheat-tabs button.is-on span { color: var(--ink-2); }
+
+.cheat-filters { display: flex; flex-wrap: wrap; gap: var(--s3); margin-bottom: var(--s4); }
+.cheat-filters .search-input { width: 100%; max-width: 24rem; }
+
+.cheat-levels { display: inline-flex; gap: 3px; align-items: center; }
+.mod .cheat-levels { margin-left: auto; }
+.cheat-level-btn { padding: 0; line-height: 1; }
+.cheat-level-btn:hover { opacity: .8; }
+
+/* ---------------------------------------------------------- type detail -- */
+
+.cheat-signal {
+  display: flex; gap: var(--s2); align-items: flex-start;
+  max-width: 68ch; margin-top: var(--s3); color: var(--ink-2);
+}
+.cheat-signal > .mi { color: var(--nom); flex: none; margin-top: .15em; }
+
+.cheat-meta {
+  display: grid; gap: 1px; margin-top: var(--s4);
+  border: 1px solid var(--rule); border-radius: 4px; overflow: hidden; background: var(--rule);
+}
+@media (min-width: 820px) { .cheat-meta { grid-template-columns: 2fr 1fr 1fr; } }
+.cheat-meta > div { display: grid; gap: var(--s1); align-content: start; padding: var(--s3); background: var(--surface); }
+.cheat-meta p { color: var(--ink-2); font-size: .82rem; line-height: 1.45; }
+
+.cheat-sample {
+  padding: var(--s4); border: 1px solid var(--rule); border-left: 3px solid var(--ink-3);
+  border-radius: 4px; background: var(--raised);
+}
+.cheat-sample b { display: block; color: var(--ink-3); font: .72rem/1.4 var(--f-mono); text-transform: uppercase; letter-spacing: .08em; }
+.cheat-sample p { margin-top: var(--s2); font-family: var(--f-display); font-size: 1.05rem; line-height: 1.5; }
+.cheat-sample ul { display: grid; gap: var(--s1); margin: var(--s3) 0 0; padding: 0; list-style: none; }
+.cheat-sample li { color: var(--ink-2); font: .82rem var(--f-mono); }
+
+.cheat-trick > .eyebrow { display: flex; align-items: center; gap: var(--s1); color: var(--warn); }
+.cheat-trick h3 { margin-top: var(--s1); font-size: 1.22rem; color: var(--ink); }
+.cheat-trick ol { display: grid; gap: var(--s2); margin: var(--s3) 0 0; padding: 0; list-style: none; counter-reset: trick; }
+.cheat-trick li {
+  display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: var(--s3); align-items: start;
+  padding: var(--s3); border: 1px solid var(--rule); border-radius: 4px; background: var(--surface);
+}
+.cheat-trick li > span {
+  display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%;
+  background: color-mix(in srgb, var(--warn) 16%, transparent);
+  color: var(--warn); font: 600 .74rem var(--f-mono);
+}
+.cheat-trick li > p { color: var(--ink-2); font-size: .92rem; line-height: 1.5; }
+
+.cheat-two { display: grid; gap: var(--s4); }
+@media (min-width: 860px) { .cheat-two { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s5); } }
+.cheat-two > section { margin-top: var(--s5); }
+.cheat-two > section > .eyebrow { display: flex; align-items: center; gap: var(--s1); margin-bottom: var(--s2); }
+.cheat-two > section > .eyebrow > .mi { color: var(--warn); }
+
+.cheat-focus { display: grid; gap: var(--s2); margin: 0; padding: 0; list-style: none; }
+.cheat-focus li {
+  display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--s2); align-items: start;
+  color: var(--ink-2); font-size: .9rem; line-height: 1.5;
+}
+.cheat-focus li > .mi { color: var(--ok); margin-top: .1em; }
+
+/* the compare card — the point of the whole view */
+.cheat-compare {
+  border: 1px solid var(--rule); border-radius: 5px; overflow: hidden; background: var(--surface);
+}
+.cheat-compare-task {
+  padding: var(--s3) var(--s4); border-bottom: 1px solid var(--rule);
+  color: var(--ink-3); font: .8rem var(--f-mono);
+}
+.cheat-compare > div { display: grid; gap: 1px; background: var(--rule); }
+@media (min-width: 760px) { .cheat-compare > div { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.cheat-compare > div > div { display: grid; gap: var(--s2); align-content: start; padding: var(--s4); }
+.cheat-compare > div > div > span {
+  display: inline-flex; align-items: center; gap: var(--s1);
+  font: .68rem var(--f-mono); text-transform: uppercase; letter-spacing: .1em;
+}
+.cheat-compare > div > div > b { font: 500 1.02rem/1.5 var(--f-display); }
+.cheat-compare .is-wrong { background: var(--no-bg); }
+.cheat-compare .is-wrong > span { color: var(--no); }
+.cheat-compare .is-wrong > b { color: var(--ink-2); text-decoration: line-through; text-decoration-color: color-mix(in srgb, var(--no) 60%, transparent); }
+.cheat-compare .is-right { background: var(--ok-bg); }
+.cheat-compare .is-right > span { color: var(--ok); }
+.cheat-compare .is-right > b { color: var(--ink); }
+.cheat-compare-why {
+  padding: var(--s3) var(--s4); border-top: 1px solid var(--rule);
+  color: var(--ink-2); font-size: .88rem; line-height: 1.55;
+}
+
+.cheat-bylevel {
+  display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--s3); align-items: start;
+  padding: var(--s4); border: 1px solid var(--rule); border-left: 3px solid var(--nom);
+  border-radius: 4px; background: var(--raised);
+}
+.cheat-bylevel p { color: var(--ink-2); font-size: .95rem; line-height: 1.55; }
+
+.cheat-inline-link {
+  display: inline-flex; align-items: center; gap: var(--s1); padding: 0;
+  margin-top: var(--s3); color: var(--nom); font: .78rem var(--f-display);
+  text-decoration: underline; text-underline-offset: 3px; text-align: left;
+}
+.cheat-inline-link:hover { color: var(--ink); }
+.cheat-inline-link .mi { transition: transform .15s ease; }
+.cheat-inline-link:hover .mi { transform: translateX(2px); }
+
+.cheat-links { display: flex; flex-wrap: wrap; gap: var(--s2); margin-top: var(--s2); }
+.cheat-links .tag-btn { gap: var(--s1); }
+
+.cheat-strategy { margin-top: var(--s6); padding-top: var(--s4); border-top: 1px solid var(--rule); }
+.cheat-strategy > .eyebrow { display: block; margin-bottom: var(--s3); }
+.cheat-strategy-grid { display: grid; gap: 1px; border: 1px solid var(--rule); border-radius: 5px; overflow: hidden; background: var(--rule); }
+@media (min-width: 760px) { .cheat-strategy-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 1100px) { .cheat-strategy-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.cheat-strategy-grid > div { display: grid; gap: var(--s2); align-content: start; padding: var(--s4); background: var(--surface); }
+.cheat-strategy-grid b { font: 500 .95rem var(--f-display); }
+.cheat-strategy-grid p { color: var(--ink-2); font-size: .86rem; line-height: 1.5; }
+
+/* ----------------------------------------------------------- level view -- */
+
+.cheat-level-view { display: grid; gap: var(--s5); }
+.cheat-level-view > section > .eyebrow { display: block; margin-bottom: var(--s2); }
+
+.cheat-level-hero {
+  display: grid; gap: var(--s4); padding: clamp(20px, 4vw, 40px);
+  border: 1px solid var(--rule); border-radius: 5px;
+  background:
+    radial-gradient(circle at 8% 0%, color-mix(in srgb, var(--nom) 11%, transparent), transparent 40%),
+    var(--surface);
+}
+@media (min-width: 900px) { .cheat-level-hero { grid-template-columns: minmax(0, 1.6fr) minmax(260px, 1fr); gap: var(--s5); } }
+.cheat-level-hero > div > .eyebrow { display: inline-flex; align-items: center; gap: var(--s2); }
+.cheat-level-hero h2 { margin-top: var(--s2); font-size: clamp(1.5rem, 3.4vw, 2.1rem); }
+.cheat-level-hero p { max-width: 58ch; margin-top: var(--s3); color: var(--ink-2); }
+.cheat-level-hero dl { display: grid; gap: var(--s3); align-content: center; margin: 0; }
+.cheat-level-hero dt { color: var(--ink-3); font: .64rem var(--f-mono); text-transform: uppercase; letter-spacing: .12em; }
+.cheat-level-hero dd { margin: var(--s1) 0 0; color: var(--ink-2); font-size: .86rem; line-height: 1.45; }
+
+.cheat-new-here > .eyebrow { display: block; margin-bottom: var(--s1); color: var(--nom); }
+.cheat-new-here p { color: var(--ink-2); }
+
+.cheat-skills { display: grid; gap: 1px; border: 1px solid var(--rule); border-radius: 5px; overflow: hidden; background: var(--rule); }
+@media (min-width: 700px) { .cheat-skills { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 1080px) { .cheat-skills { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.cheat-skills > div { display: grid; gap: var(--s1); align-content: start; padding: var(--s4); background: var(--surface); }
+.cheat-skills b { font: 500 1rem var(--f-display); }
+.cheat-skills > div > .mono { color: var(--nom); font-size: .7rem; }
+.cheat-skills p { margin-top: var(--s1); color: var(--ink-2); font-size: .85rem; line-height: 1.5; }
+
+/* ---------------------------------------------------------- format view -- */
+
+.cheat-format-view { display: grid; gap: var(--s4); }
+.cheat-format-view .chip { gap: var(--s1); }
+
+.cheat-format-head {
+  display: grid; gap: var(--s4); padding: clamp(18px, 4vw, 34px);
+  border: 1px solid var(--rule); border-radius: 5px; background: var(--surface);
+}
+@media (min-width: 900px) { .cheat-format-head { grid-template-columns: minmax(0, 1.5fr) minmax(240px, 1fr); } }
+.cheat-format-head h2 { margin-top: var(--s2); font-size: clamp(1.4rem, 3.2vw, 1.9rem); }
+.cheat-format-head p { margin-top: var(--s2); color: var(--ink-2); max-width: 56ch; }
+.cheat-format-head dl { display: grid; gap: var(--s3); align-content: center; margin: 0; }
+.cheat-format-head dt { color: var(--ink-3); font: .64rem var(--f-mono); text-transform: uppercase; letter-spacing: .12em; }
+.cheat-format-head dd { margin: var(--s1) 0 0; color: var(--ink-2); font-size: .85rem; line-height: 1.45; }
+
+.cheat-parts { display: grid; gap: var(--s4); }
+.cheat-parts > section { border: 1px solid var(--rule); border-radius: 5px; overflow: hidden; background: var(--surface); }
+.cheat-parts > section > header {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s3);
+  padding: var(--s3) var(--s4); border-bottom: 1px solid var(--rule); background: var(--raised);
+}
+.cheat-parts > section > header b { font: 500 1rem var(--f-display); }
+.cheat-parts > section > header .mono { color: var(--nom); font-size: .74rem; }
+.cheat-parts > section > header .dim { font-size: .76rem; margin-left: auto; }
+.cheat-parts .tbl-wrap { border: 0; border-radius: 0; }
+
+.cheat-part-tbl { font-family: var(--f-display); font-size: .84rem; min-width: 620px; }
+.cheat-part-tbl tbody th { color: var(--ink-2); font-family: var(--f-mono); font-size: .74rem; white-space: nowrap; }
+.cheat-part-tbl td { color: var(--ink-2); }
+.cheat-part-tbl .cheat-inline-link { margin-top: 0; font-size: .76rem; }
+
+.cheat-source { color: var(--ink-3); font-size: .78rem; line-height: 1.5; }
