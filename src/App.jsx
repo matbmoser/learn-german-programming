@@ -226,6 +226,12 @@ export default function App() {
     setRoute({ view: v, section });
   }, []);
 
+  const configureAI = React.useCallback(() => {
+    markWelcomeTutorialSeen();
+    setWelcomeOpen(false);
+    goto("settings", "api-settings");
+  }, [goto]);
+
   React.useEffect(() => {
     const syncRoute = () => setRoute(readRoute("home"));
     window.addEventListener("hashchange", syncRoute);
@@ -567,7 +573,7 @@ export default function App() {
       />
 
       {welcomeOpen && (
-        <WelcomeTutorial onClose={closeWelcome} />
+        <WelcomeTutorial onClose={closeWelcome} onConfigure={configureAI} />
       )}
     </div>
   );

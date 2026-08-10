@@ -334,6 +334,22 @@ main { flex: 1; padding: var(--s5) 0 var(--s6); }
   border-top: 1px solid var(--rule); color: var(--ok); font: 600 .7rem var(--f-display);
   letter-spacing: .09em; text-transform: uppercase;
 }
+.welcome-art-api {
+  display: grid; gap: var(--s2); padding: var(--s4);
+  border: 1px solid var(--rule); border-radius: 5px;
+  background: var(--surface); box-shadow: 12px 12px 0 #0003;
+}
+.welcome-api-label { color: var(--ink-3); font: 600 .66rem var(--f-display); letter-spacing: .12em; text-transform: uppercase; }
+.welcome-api-key {
+  padding: .65em .75em; overflow: hidden; border: 1px solid var(--rule); border-radius: 3px;
+  background: var(--paper); color: var(--ink-2); font: .75rem var(--f-mono); white-space: nowrap;
+}
+.welcome-api-key i { color: var(--nom); font-style: normal; }
+.welcome-api-status {
+  display: flex; align-items: center; gap: 7px; color: var(--warn);
+  font: 600 .64rem var(--f-display); letter-spacing: .08em; text-transform: uppercase;
+}
+.welcome-api-status i { width: 7px; height: 7px; border-radius: 50%; background: currentColor; box-shadow: 0 0 0 4px #f0c05c14; }
 .welcome-art-support { display: flex; align-items: center; justify-content: center; gap: var(--s4); }
 .welcome-art-support > .mi { color: var(--ink-3); }
 .welcome-paper {

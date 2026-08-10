@@ -29,9 +29,25 @@ const STEPS = [
     copy: "Wende die Regel in einem eigenen Text an. Frau Müller hilft dir, wenn du nicht weiterkommst.",
     art: "support",
   },
+  {
+    eyebrow: "04 · KI einrichten",
+    title: "Noch ein Schritt für die KI-Hilfe",
+    copy: "Für Korrekturen und Frau Müller brauchst du einen eigenen Anthropic API-Key. Hinterlege ihn jetzt einmalig in den Einstellungen.",
+    art: "api",
+  },
 ];
 
 function TutorialArt({ type }) {
+  if (type === "api") {
+    return (
+      <div className="welcome-art welcome-art-api" aria-hidden="true">
+        <span className="welcome-api-label">Anthropic API</span>
+        <span className="welcome-api-key"><i>sk-ant-</i>••••••••••••</span>
+        <span className="welcome-api-status"><i /> Einrichtung erforderlich</span>
+      </div>
+    );
+  }
+
   if (type === "practice") {
     return (
       <div className="welcome-art welcome-art-practice" aria-hidden="true">
@@ -61,7 +77,7 @@ function TutorialArt({ type }) {
   );
 }
 
-export default function WelcomeTutorial({ onClose }) {
+export default function WelcomeTutorial({ onClose, onConfigure }) {
   const [step, setStep] = React.useState(0);
   const dialogRef = React.useRef(null);
   const closeRef = React.useRef(null);
@@ -159,10 +175,10 @@ export default function WelcomeTutorial({ onClose }) {
               <button
                 className="btn btn-sm"
                 type="button"
-                onClick={() => (isLast ? onClose() : setStep((n) => n + 1))}
+                onClick={() => (isLast ? onConfigure() : setStep((n) => n + 1))}
               >
-                {isLast ? "Loslegen" : "Weiter"}
-                {!isLast && <IconArrowRight />}
+                {isLast ? "API-Key einrichten" : "Weiter"}
+                <IconArrowRight />
               </button>
             </div>
           </div>

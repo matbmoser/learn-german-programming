@@ -158,7 +158,7 @@ export default function Settings({
         </div>
       )}
 
-      <div className="card" style={{ marginBottom: "var(--s4)" }}>
+      <div id="doc-api-settings" className="card" style={{ marginBottom: "var(--s4)" }}>
         <div className="card-head"><span className="eyebrow">Wie Claude erreicht wird</span></div>
         <div className="card-body">
           <div className="seg" role="group" aria-label="Modus">
