@@ -17,12 +17,14 @@
 // This file was generated with AI assistance (Claude Code, Anthropic).
 
 import React from "react";
-import { downloadProgress, importProgress } from "../lib/storage.js";
+import { downloadProgress, inspectProgressBackup } from "../lib/storage.js";
 import { testKey, MODEL } from "../lib/claude.js";
 import { Callout, Spinner } from "./ui.jsx";
 import { LEVELS, MODULES } from "../data/curriculum.js";
 import { learningPathStats } from "../lib/learningPath.js";
 import { totalInputTokens, totalTokens } from "../lib/apiUsage.js";
+
+const MAX_BACKUP_BYTES = 25 * 1024 * 1024;
 
 function formatTokens(value) {
   const tokens = Math.max(0, Number(value) || 0);
@@ -41,7 +43,8 @@ export default function Settings({
   const [testResult, setTestResult] = React.useState(null);
   const [confirmReset, setConfirmReset] = React.useState(false);
   const [confirmPathReset, setConfirmPathReset] = React.useState(false);
-  const [importMsg, setImportMsg] = React.useState("");
+  const [importMsg, setImportMsg] = React.useState(null);
+  const [pendingImport, setPendingImport] = React.useState(null);
   const fileRef = React.useRef(null);
 
   const mode = progress.settings.mode || "api";
@@ -63,17 +66,34 @@ export default function Settings({
   function onFile(e) {
     const f = e.target.files?.[0];
     if (!f) return;
+    setPendingImport(null);
+    setImportMsg(null);
+    if (f.size > MAX_BACKUP_BYTES) {
+      setImportMsg({ kind: "bad", text: "Import fehlgeschlagen: Die Backup-Datei ist größer als 25 MB." });
+      e.target.value = "";
+      return;
+    }
     const r = new FileReader();
     r.onload = () => {
       try {
-        onImport(importProgress(String(r.result)));
-        setImportMsg("Fortschritt importiert.");
+        const backup = inspectProgressBackup(String(r.result));
+        setPendingImport({ ...backup, fileName: f.name });
       } catch (err) {
-        setImportMsg("Import fehlgeschlagen: " + err.message);
+        setImportMsg({ kind: "bad", text: "Import fehlgeschlagen: " + err.message });
       }
     };
+    r.onerror = () => setImportMsg({ kind: "bad", text: "Import fehlgeschlagen: Die Datei konnte nicht gelesen werden." });
     r.readAsText(f);
     e.target.value = "";
+  }
+
+  function confirmImport() {
+    if (!pendingImport) return;
+    const saved = onImport(pendingImport.progress);
+    setPendingImport(null);
+    setImportMsg(saved === false
+      ? { kind: "bad", text: "Der Lernstand wurde für diese Sitzung geladen, konnte aber nicht im Browser gespeichert werden. Bewahre die Backup-Datei auf." }
+      : { kind: "info", text: "Backup wiederhergestellt. Der bisherige Lernstand wurde vollständig ersetzt." });
   }
 
   return (
@@ -300,25 +320,50 @@ export default function Settings({
       </div>
 
       <div className="card" style={{ marginBottom: "var(--s4)" }}>
-        <div className="card-head"><span className="eyebrow">Fortschritt</span></div>
+        <div className="card-head"><span className="eyebrow">Backup &amp; Wiederherstellung</span></div>
         <div className="card-body">
           <p className="muted">
-            Alles liegt in <span className="mono">localStorage</span> dieses Browsers: {progress.totals.answered} beantwortete
-            Aufgaben, {progress.exams.length} Einstufung{progress.exams.length === 1 ? "" : "en"}, {progress.writings.length} Text
-            {progress.writings.length === 1 ? "" : "e"}. Nichts geht an einen Server. Wenn du den Browser-Speicher
-            löschst, ist der Fortschritt weg — deshalb der Export.
+            Lade deinen vollständigen Lernstand als Datei herunter: Einstellungen, Lernpfad, Antworten, Serien,
+            Prüfungen, Texte mit Korrekturen, Fehlertraining und Chatverlauf. Alles liegt nur in <span className="mono">localStorage</span> dieses
+            Browsers. Der API-Key wird aus Sicherheitsgründen nicht exportiert.
+          </p>
+          <p className="help">Die Datei enthält deine Texte und Chats. Bewahre sie deshalb wie persönliche Daten auf.</p>
+          <p className="help">
+            Aktuell: {progress.totals.answered} beantwortete Aufgaben · {progress.exams.length} Einstufung{progress.exams.length === 1 ? "" : "en"} · {progress.writings.length} Text
+            {progress.writings.length === 1 ? "" : "e"} · {(progress.mistakeAttempts || []).length} Fehlerübungen · {(progress.chatSessions || []).length} Chats
           </p>
 
           <div className="actions">
-            <button className="btn btn-ghost" type="button" onClick={() => downloadProgress(progress)}>
-              Als JSON exportieren
+            <button className="btn" type="button" onClick={() => downloadProgress(progress)}>
+              Backup exportieren
             </button>
             <button className="btn btn-ghost" type="button" onClick={() => fileRef.current?.click()}>
-              JSON importieren
+              Backup importieren
             </button>
             <input ref={fileRef} type="file" accept="application/json,.json" onChange={onFile} style={{ display: "none" }} />
           </div>
-          {importMsg && <Callout kind={importMsg.startsWith("Import fehl") ? "bad" : "info"}>{importMsg}</Callout>}
+
+          {pendingImport && (
+            <Callout kind="info">
+              <b>Backup bereit zum Wiederherstellen</b>
+              <p>
+                <span className="mono">{pendingImport.fileName}</span>
+                {pendingImport.exportedAt && !Number.isNaN(Date.parse(pendingImport.exportedAt))
+                  ? ` · erstellt am ${new Date(pendingImport.exportedAt).toLocaleString("de-DE")}`
+                  : ""}
+              </p>
+              <p>
+                {pendingImport.progress.totals.answered} Antworten · {pendingImport.progress.exams.length} Einstufungen · {pendingImport.progress.writings.length} Texte/Korrekturen · {(pendingImport.progress.mistakeAttempts || []).length} Fehlerübungen · {(pendingImport.progress.chatSessions || []).length} Chats
+              </p>
+              {pendingImport.legacy && <p className="help">Älteres Exportformat erkannt; es wird beim Wiederherstellen automatisch aktualisiert.</p>}
+              <p><b>Achtung:</b> Dadurch wird der gesamte momentan im Browser gespeicherte Lernstand überschrieben.</p>
+              <div className="actions">
+                <button className="btn btn-danger" type="button" onClick={confirmImport}>Lernstand überschreiben</button>
+                <button className="btn btn-ghost" type="button" onClick={() => setPendingImport(null)}>Abbrechen</button>
+              </div>
+            </Callout>
+          )}
+          {importMsg && <Callout kind={importMsg.kind}>{importMsg.text}</Callout>}
         </div>
       </div>
 

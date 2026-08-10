@@ -508,7 +508,13 @@ export default function App() {
                 onResetApiUsage={() => resetApiUsage(apiKey)}
                 onSettings={onSettings}
                 onReset={() => setProgress(resetProgress())}
-                onImport={(p) => setProgress(p)}
+                onImport={(p) => {
+                  // Persist before rendering the restored state so a refresh or
+                  // closed tab immediately after confirmation cannot lose it.
+                  const saved = saveProgress(p);
+                  setProgress(p);
+                  return saved;
+                }}
                 learningPathEnabled={LEARNING_PATH_ENABLED}
                 onPathLevel={(level) => {
                   setProgress((p) => ({ ...p, learningPath: jumpToLevel(p.learningPath, level) }));

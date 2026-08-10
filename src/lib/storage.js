@@ -18,7 +18,7 @@
 
 // ============================================================================
 //  STORAGE — progress lives in localStorage. The API key is stored under its
-//  own key and is NEVER part of an export, so a shared progress file is safe.
+//  own key and is NEVER part of an export, so backups cannot expose it.
 // ============================================================================
 
 import { RULE_IDS } from "../engine/drills.js";
@@ -28,6 +28,8 @@ const PROGRESS_KEY = "dc1:progress";
 const API_KEY = "dc1:apikey";
 const WELCOME_TUTORIAL_KEY = "dc1:welcome-tutorial:v1";
 const SCHEMA_VERSION = 3;
+const BACKUP_FORMAT = "deutsch-c1-progress-backup";
+const BACKUP_VERSION = 1;
 
 export function hasSeenWelcomeTutorial() {
   try { return localStorage.getItem(WELCOME_TUTORIAL_KEY) === "seen"; }
@@ -66,20 +68,24 @@ export function emptyProgress() {
 function migrate(p) {
   const base = emptyProgress();
   const merged = { ...base, ...p };
-  merged.mastery = { ...base.mastery, ...(p.mastery || {}) };
-  merged.totals = { ...base.totals, ...(p.totals || {}) };
-  merged.settings = { ...base.settings, ...(p.settings || {}) };
+  merged.mastery = { ...base.mastery, ...(isObject(p.mastery) ? p.mastery : {}) };
+  merged.totals = { ...base.totals, ...(isObject(p.totals) ? p.totals : {}) };
+  merged.settings = { ...base.settings, ...(isObject(p.settings) ? p.settings : {}) };
   if (merged.settings.model === "claude-opus-5") merged.settings.model = base.settings.model;
-  merged.days = p.days || {};
-  merged.exams = p.exams || [];
-  merged.writings = p.writings || [];
-  merged.mistakeAttempts = p.mistakeAttempts || [];
-  merged.challenges = p.challenges || [];
-  merged.chatSessions = p.chatSessions || [];
-  merged.read = p.read || {};
+  merged.days = isObject(p.days) ? p.days : {};
+  merged.exams = Array.isArray(p.exams) ? p.exams : [];
+  merged.writings = Array.isArray(p.writings) ? p.writings : [];
+  merged.mistakeAttempts = Array.isArray(p.mistakeAttempts) ? p.mistakeAttempts : [];
+  merged.challenges = Array.isArray(p.challenges) ? p.challenges : [];
+  merged.chatSessions = Array.isArray(p.chatSessions) ? p.chatSessions : [];
+  merged.read = isObject(p.read) ? p.read : {};
   merged.learningPath = normalizeLearningPath(p.learningPath);
   merged.v = SCHEMA_VERSION;
   return merged;
+}
+
+function isObject(value) {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
 export function loadProgress() {
@@ -119,15 +125,66 @@ export function clearApiKey() { saveApiKey(""); }
 // --- export / import --------------------------------------------------------
 
 export function exportProgress(p) {
-  const { ...clean } = p;
-  return JSON.stringify({ ...clean, exportedAt: new Date().toISOString() }, null, 2);
+  return JSON.stringify({
+    format: BACKUP_FORMAT,
+    backupVersion: BACKUP_VERSION,
+    exportedAt: new Date().toISOString(),
+    progressSchemaVersion: SCHEMA_VERSION,
+    // The complete learning state, including settings, corrections, mistake
+    // attempts, exams, chat history, and learning-path data. Secrets such as
+    // the API key deliberately live under another localStorage key.
+    progress: migrate(p),
+  }, null, 2);
+}
+
+/** Parse and validate a backup without changing the current browser state. */
+export function inspectProgressBackup(json) {
+  const parsed = JSON.parse(json);
+  if (!isObject(parsed)) throw new Error("Kein gültiges Fortschritts-Objekt.");
+
+  let source;
+  let exportedAt = null;
+  let legacy = false;
+
+  if (parsed.format === BACKUP_FORMAT) {
+    if (parsed.backupVersion !== BACKUP_VERSION) {
+      throw new Error("Diese Backup-Version wird von der App nicht unterstützt.");
+    }
+    if (!isObject(parsed.progress)) throw new Error("Das Backup enthält keinen Fortschritt.");
+    source = parsed.progress;
+    exportedAt = typeof parsed.exportedAt === "string" ? parsed.exportedAt : null;
+  } else {
+    // Backups made by earlier versions stored the progress at the top level.
+    if (!isObject(parsed.mastery) && !isObject(parsed.totals)) {
+      throw new Error("Die Datei ist kein Deutsch-Lernstand-Backup.");
+    }
+    source = parsed;
+    exportedAt = typeof parsed.exportedAt === "string" ? parsed.exportedAt : null;
+    legacy = true;
+  }
+
+  if (Number(source.v) > SCHEMA_VERSION) {
+    throw new Error("Dieses Backup stammt aus einer neueren App-Version. Bitte aktualisiere zuerst die App.");
+  }
+
+  const objectFields = ["mastery", "totals", "days", "read", "settings", "learningPath"];
+  const arrayFields = ["exams", "writings", "mistakeAttempts", "challenges", "chatSessions"];
+  for (const field of objectFields) {
+    if (source[field] != null && !isObject(source[field])) {
+      throw new Error(`Ungültiger Inhalt im Feld „${field}“.`);
+    }
+  }
+  for (const field of arrayFields) {
+    if (source[field] != null && !Array.isArray(source[field])) {
+      throw new Error(`Ungültiger Inhalt im Feld „${field}“.`);
+    }
+  }
+
+  return { progress: migrate(source), exportedAt, legacy };
 }
 
 export function importProgress(json) {
-  const parsed = JSON.parse(json);
-  if (typeof parsed !== "object" || parsed === null) throw new Error("Kein gültiges Fortschritts-Objekt.");
-  if (!parsed.mastery && !parsed.totals) throw new Error("Die Datei enthält keinen Fortschritt.");
-  return migrate(parsed);
+  return inspectProgressBackup(json).progress;
 }
 
 export function downloadProgress(p) {
@@ -135,7 +192,7 @@ export function downloadProgress(p) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `deutsch-fortschritt-${new Date().toISOString().slice(0, 10)}.json`;
+  a.download = `deutsch-lernstand-backup-${new Date().toISOString().slice(0, 10)}.json`;
   document.body.appendChild(a);
   a.click();
   a.remove();

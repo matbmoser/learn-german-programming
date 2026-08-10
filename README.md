@@ -213,9 +213,13 @@ Stored in `localStorage` under `dc1:progress`: learning-path chapter/checkpoint
 state, cached AI personalization packs, per-rule mastery, streaks, daily counts,
 exam history, and every submitted text with its correction.
 
-- **Export / Import** — JSON, in §5. Use it to move between browsers or to keep
-  a backup, since clearing site data wipes the store.
-- **Reset** — §5, behind a confirmation. Clears mastery, streaks, exams and
+- **Backup / Restore** — a versioned JSON file in §9 Settings. It contains the
+  complete learning state: settings, learning path, answers, mastery, streaks,
+  exams, submitted texts and corrections, mistake-practice attempts, cached AI
+  exercises, and teacher-chat history. Restoring shows a summary and requires
+  confirmation before replacing the browser's current state. Older exported
+  progress files remain importable. The API key is always excluded.
+- **Reset** — §9, behind a confirmation. Clears mastery, streaks, exams and
   texts. The API key is separate and is deleted with its own button.
 
 ---
