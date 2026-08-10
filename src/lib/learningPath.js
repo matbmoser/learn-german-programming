@@ -1,6 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-import { LEVELS, MODULES } from "../data/curriculum.js";
+import {
+  LEARNING_BLOCK_BY_MODULE,
+  LEARNING_BLOCKS,
+  LEVELS,
+  MODULES,
+} from "../data/curriculum.js";
 import { WRITING_TASKS } from "../data/writing.js";
 
 export const CHECKPOINT_WINDOW = 4;
@@ -58,6 +63,27 @@ export function checkpointPassed(checkpoint) {
   if (checkpoint?.passed) return true;
   const recent = Array.isArray(checkpoint?.recent) ? checkpoint.recent.slice(-CHECKPOINT_WINDOW) : [];
   return recent.length === CHECKPOINT_WINDOW && recent.filter(Boolean).length >= CHECKPOINT_CORRECT;
+}
+
+export function learningBlockForModule(moduleOrId) {
+  const moduleId = typeof moduleOrId === "string" ? moduleOrId : moduleOrId?.id;
+  return LEARNING_BLOCK_BY_MODULE[moduleId] || {
+    id: moduleOrId?.level || "Kurs",
+    title: moduleOrId?.title || "Lernblock",
+    moduleIds: moduleId ? [moduleId] : [],
+    moduleIndex: 0,
+    isEnd: true,
+  };
+}
+
+export function moduleRequiresApplication(moduleOrId) {
+  return learningBlockForModule(moduleOrId).isEnd;
+}
+
+function modulesInLearningBlock(moduleOrId) {
+  return learningBlockForModule(moduleOrId).moduleIds
+    .map((moduleId) => MODULES.find((module) => module.id === moduleId))
+    .filter(Boolean);
 }
 
 export function recordCheckpoint(pathValue, moduleId, correct) {
@@ -157,15 +183,17 @@ export function saveLearningApplicationTask(pathValue, moduleId, task, previousT
 
 export function completeLearningModule(pathValue, moduleId) {
   const path = normalizeLearningPath(pathValue);
+  if (!checkpointPassed(path.checkpoints[moduleId])) return path;
   const application = path.applications[moduleId] || {};
-  if (application.review?.approved !== true || application.reviewedText !== application.text) return path;
+  if (moduleRequiresApplication(moduleId)
+      && (application.review?.approved !== true || application.reviewedText !== application.text)) return path;
   return {
     ...path,
     completed: { ...path.completed, [moduleId]: path.completed[moduleId] || Date.now() },
-    applications: {
+    applications: moduleRequiresApplication(moduleId) ? {
       ...path.applications,
       [moduleId]: { ...application, completedAt: application.completedAt || Date.now() },
-    },
+    } : path.applications,
   };
 }
 
@@ -247,25 +275,32 @@ export function learningStep(pathValue, moduleId) {
   const path = normalizeLearningPath(pathValue);
   if (path.completed[moduleId]) return "complete";
   const stored = path.steps[moduleId];
-  if (checkpointPassed(path.checkpoints[moduleId]) && !stored) return "apply";
+  if (!moduleRequiresApplication(moduleId) && stored === "apply") return "practice";
+  if (checkpointPassed(path.checkpoints[moduleId]) && !stored) {
+    return moduleRequiresApplication(moduleId) ? "apply" : "practice";
+  }
   return stored || "intro";
 }
 
 export function applicationTask(module) {
+  const block = learningBlockForModule(module);
+  const blockModules = modulesInLearningBlock(module);
   const levelTasks = WRITING_TASKS.filter((task) => task.level === module.level);
-  const moduleIndex = MODULES.filter((item) => item.level === module.level).findIndex((item) => item.id === module.id);
-  const source = levelTasks[Math.max(0, moduleIndex) % levelTasks.length];
+  const blockIndex = LEARNING_BLOCKS.filter((item) => item.id.startsWith(module.level))
+    .findIndex((item) => item.id === block.id);
+  const source = levelTasks[Math.max(0, blockIndex) % levelTasks.length];
   const baseMinimum = { A2: 25, B1: 40, B2: 55, C1: 70 }[module.level] || 35;
   const isWritingCapstone = module.id.startsWith("schreiben-");
+  const learnedTargets = blockModules.map((item) => item.title);
   return {
     id: `${module.id}:${source?.id || "application"}`,
-    title: isWritingCapstone ? source?.title || module.title : `Mini-Anwendung: ${source?.title || module.title}`,
-    prompt: source?.prompt || `Schreibe einen kurzen Text und verwende dabei ${module.title}.`,
+    title: isWritingCapstone ? source?.title || block.title : `Block-Anwendung: ${source?.title || block.title}`,
+    prompt: source?.prompt || `Schreibe einen kurzen Text und verbinde dabei die Regeln aus ${block.id}.`,
     instruction: isWritingCapstone
-      ? `Verfasse eine konzentrierte Prüfungsfassung und setze die Regeln aus „${module.title}“ sichtbar ein.`
-      : `Antworte in einem kurzen Text. Konzentriere dich dabei bewusst auf „${module.title}“; es geht noch nicht um einen perfekten Prüfungstext.`,
+      ? `Verfasse eine konzentrierte Prüfungsfassung und setze die Regeln aus ${block.id} „${block.title}“ sichtbar ein.`
+      : `Wende jetzt die zusammengehörenden Regeln aus ${block.id} „${block.title}“ in einem kurzen Text an.`,
     minWords: isWritingCapstone ? Math.min(source?.minWords || 150, 180) : baseMinimum,
-    targets: [module.title, ...(source?.targets || []).slice(0, 2)],
+    targets: [...learnedTargets, ...(source?.targets || []).slice(0, 2)],
   };
 }
 
@@ -353,6 +388,8 @@ const APPLICATION_FALLBACKS = {
 };
 
 export function applicationFallbackTasks(module, currentTask = null, count = 2) {
+  const block = learningBlockForModule(module);
+  const learnedTargets = modulesInLearningBlock(module).map((item) => item.title);
   const minWords = { A2: 25, B1: 40, B2: 55, C1: 70 }[module?.level] || 35;
   return (APPLICATION_FALLBACKS[module?.level] || APPLICATION_FALLBACKS.B1)
     .filter((item) => item.id !== currentTask?.fallbackId && item.title !== currentTask?.title)
@@ -363,9 +400,9 @@ export function applicationFallbackTasks(module, currentTask = null, count = 2) 
       source: "fallback",
       title: item.title,
       prompt: item.prompt,
-      instruction: `Bearbeite ein neues Thema und zeige dabei „${module.title}“ sichtbar. Die Challenge-Punkte sind anders als in deinem letzten Versuch.`,
+      instruction: `Bearbeite ein neues Thema und verbinde dabei die Regeln aus ${block.id} „${block.title}“.`,
       minWords,
-      targets: [module.title, ...item.targets],
+      targets: [...learnedTargets, ...item.targets],
     }));
 }
 
@@ -396,6 +433,8 @@ export function learningPathStats(pathValue) {
   const completedCount = MODULES.filter((m) => Boolean(path.completed[m.id])).length;
   const levelModules = MODULES.filter((m) => m.level === current.level);
   const levelCompleted = levelModules.filter((m) => Boolean(path.completed[m.id])).length;
+  const block = learningBlockForModule(current);
+  const blockCompleted = block.moduleIds.filter((moduleId) => Boolean(path.completed[moduleId])).length;
   return {
     current,
     currentIndex,
@@ -405,6 +444,10 @@ export function learningPathStats(pathValue) {
     levelCompleted,
     levelTotal: levelModules.length,
     levelPercent: Math.round((levelCompleted / levelModules.length) * 100),
+    block,
+    blockCompleted,
+    blockTotal: block.moduleIds.length,
+    isBlockEnd: block.isEnd,
     isLast: currentIndex === MODULES.length - 1,
     levels: LEVELS,
   };

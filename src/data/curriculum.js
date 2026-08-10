@@ -1116,6 +1116,30 @@ etwa   → expects a "no"              Hast du etwa vergessen?`,
   },
 ];
 
+// Guided mode groups related chapters into learning blocks. Learners prove
+// each individual rule with its checkpoint, but only write after they have
+// enough connected grammar to produce a meaningful text.
+export const LEARNING_BLOCKS = [
+  { id: "A2.1", title: "Kasus und Nominalgruppen", moduleIds: ["kasus", "adjektiv", "praep"] },
+  { id: "A2.2", title: "Satz und Verb", moduleIds: ["wortstellung", "zeiten", "modalverben"] },
+  { id: "A2.3", title: "Personen und Vergleiche", moduleIds: ["reflexiv", "komparativ"] },
+  { id: "B1.1", title: "Nominal- und Nebensätze ausbauen", moduleIds: ["genitiv", "nebensatz", "relativsatz"] },
+  { id: "B1.2", title: "Möglichkeiten und Perspektiven", moduleIds: ["konjunktiv2", "passiv", "infinitiv-zu"] },
+  { id: "B1.3", title: "Zeit und Verbindungen", moduleIds: ["temporal", "futur", "verbpraep"] },
+  { id: "B2.1", title: "Distanzierte und kompakte Formen", moduleIds: ["konjunktiv1", "n-deklination", "partizipialattribut"] },
+  { id: "B2.2", title: "Formeller Ausdruck und Haltung", moduleIds: ["nominalisierung", "konnektoren-b2", "modal-subjektiv"] },
+  { id: "B2.3", title: "Komplexe Texte", moduleIds: ["passiv-b2", "textkohaesion"] },
+  { id: "C1.1", title: "Formelle Verdichtung", moduleIds: ["nominalstil", "passiversatz", "konjunktiv2-vergangenheit"] },
+  { id: "C1.2", title: "Präzise C1-Texte", moduleIds: ["erweitertes-attribut", "konnektoren-c1", "modalpartikeln", "schreiben-c1"] },
+];
+
+export const LEARNING_BLOCK_BY_MODULE = Object.fromEntries(
+  LEARNING_BLOCKS.flatMap((block) => block.moduleIds.map((moduleId, index) => [
+    moduleId,
+    { ...block, moduleIndex: index, isEnd: index === block.moduleIds.length - 1 },
+  ]))
+);
+
 export const MODULE_BY_ID = Object.fromEntries(MODULES.map((m) => [m.id, m]));
 export const MODULES_BY_LEVEL = LEVELS.map((lvl) => ({
   level: lvl,

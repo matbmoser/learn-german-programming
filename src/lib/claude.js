@@ -109,9 +109,28 @@ export function extractJson(text) {
 //  1 · Writing correction
 // ---------------------------------------------------------------------------
 
+const CORRECTION_RULES_BY_LEVEL = {
+  A1: ["wortschatz", "rechtschreibung", "register"],
+  A2: ["kasus", "adjektiv", "praep", "ordnung", "zeiten", "partizip", "modal", "konnektor", "wortschatz", "rechtschreibung", "register"],
+  B1: ["relativ", "konj2", "passiv", "verbprep"],
+  B2: ["konj1", "ndekl", "partizipattr", "nominal", "paired"],
+  C1: ["fvg", "passiversatz", "konj2past", "partikel"],
+  C2: [],
+};
+
+const CORRECTION_LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
+
+function assessedRules(targetLevel) {
+  const targetIndex = Math.max(0, CORRECTION_LEVELS.indexOf(targetLevel));
+  return [...new Set(CORRECTION_LEVELS
+    .slice(0, targetIndex + 1)
+    .flatMap((level) => CORRECTION_RULES_BY_LEVEL[level] || []))];
+}
+
 const CORRECTION_SCHEMA = {
   type: "object",
   properties: {
+    target_level: { type: "string", enum: CORRECTION_LEVELS },
     cefr_estimate: { type: "string", enum: ["A1", "A2", "B1", "B2", "C1", "C2"] },
     cefr_reasoning: { type: "string" },
     word_count: { type: "integer" },
@@ -155,8 +174,10 @@ const CORRECTION_SCHEMA = {
           original: { type: "string" },
           upgraded: { type: "string" },
           why: { type: "string" },
+          rule: { type: "string" },
+          level: { type: "string", enum: CORRECTION_LEVELS },
         },
-        required: ["original", "upgraded", "why"],
+        required: ["original", "upgraded", "why", "rule", "level"],
         additionalProperties: false,
       },
     },
@@ -198,7 +219,7 @@ const CORRECTION_SCHEMA = {
         type: "object",
         properties: {
           rule: { type: "string" },
-          level: { type: "string", enum: ["A2", "B1", "B2", "C1", "C2"] },
+          level: { type: "string", enum: CORRECTION_LEVELS },
           kind: { type: "string" },
           prompt: { type: "string" },
           options: { type: "array", items: { type: "string" } },
@@ -226,15 +247,93 @@ const CORRECTION_SCHEMA = {
     },
   },
   required: [
-    "cefr_estimate", "cefr_reasoning", "word_count", "task_met", "approved", "approval_reason",
+    "target_level", "cefr_estimate", "cefr_reasoning", "word_count", "task_met", "approved", "approval_reason",
     "scores", "corrections", "upgrades", "improved_version", "strengths", "next_steps",
     "error_patterns", "study_plan", "exercise_prompt", "exercises", "retry_tasks",
   ],
   additionalProperties: false,
 };
 
+function correctionSchema(targetLevel) {
+  const normalizedLevel = CORRECTION_LEVELS.includes(targetLevel) ? targetLevel : "C1";
+  const targetIndex = CORRECTION_LEVELS.indexOf(normalizedLevel);
+  const exerciseLevels = CORRECTION_LEVELS.slice(0, targetIndex + 1);
+  const rules = assessedRules(normalizedLevel);
+  return {
+    ...CORRECTION_SCHEMA,
+    properties: {
+      ...CORRECTION_SCHEMA.properties,
+      target_level: { type: "string", enum: [normalizedLevel] },
+      corrections: {
+        ...CORRECTION_SCHEMA.properties.corrections,
+        items: {
+          ...CORRECTION_SCHEMA.properties.corrections.items,
+          properties: {
+            ...CORRECTION_SCHEMA.properties.corrections.items.properties,
+            rule: { type: "string", enum: rules },
+          },
+        },
+      },
+      exercises: {
+        ...CORRECTION_SCHEMA.properties.exercises,
+        items: {
+          ...CORRECTION_SCHEMA.properties.exercises.items,
+          properties: {
+            ...CORRECTION_SCHEMA.properties.exercises.items.properties,
+            rule: { type: "string", enum: rules },
+            level: { type: "string", enum: exerciseLevels },
+          },
+        },
+      },
+      upgrades: {
+        ...CORRECTION_SCHEMA.properties.upgrades,
+        items: {
+          ...CORRECTION_SCHEMA.properties.upgrades.items,
+          properties: {
+            ...CORRECTION_SCHEMA.properties.upgrades.items.properties,
+            rule: { type: "string", enum: rules },
+            level: { type: "string", enum: [normalizedLevel] },
+          },
+        },
+      },
+      error_patterns: {
+        ...CORRECTION_SCHEMA.properties.error_patterns,
+        items: {
+          ...CORRECTION_SCHEMA.properties.error_patterns.items,
+          properties: {
+            ...CORRECTION_SCHEMA.properties.error_patterns.items.properties,
+            rule: { type: "string", enum: rules },
+          },
+        },
+      },
+      study_plan: {
+        ...CORRECTION_SCHEMA.properties.study_plan,
+        items: {
+          ...CORRECTION_SCHEMA.properties.study_plan.items,
+          properties: {
+            ...CORRECTION_SCHEMA.properties.study_plan.items.properties,
+            rule: { type: "string", enum: rules },
+          },
+        },
+      },
+    },
+  };
+}
+
 function correctionSystem(targetLevel) {
+  const rules = assessedRules(targetLevel);
+  const targetIndex = Math.max(0, CORRECTION_LEVELS.indexOf(targetLevel));
+  const higherLevels = CORRECTION_LEVELS.slice(targetIndex + 1);
   return `You are an examiner and writing coach for German as a foreign language, grading against CEFR criteria (Goethe/telc). The learner is working towards ${targetLevel}.
+
+ASSESSMENT SCOPE — mandatory:
+- Grade the submission strictly against ${targetLevel} expectations and the requested task structures${higherLevels.length ? `, never against ${higherLevels.join(", ")} expectations` : ""}.
+- Do not penalize the learner for not using grammar, vocabulary range, connectors, text organization or register conventions introduced above ${targetLevel}. Their absence is not an error, weakness or reason to withhold approval.
+- Corrections, scores, error patterns, study steps, exercises and the approval decision may use only ${targetLevel}-appropriate rules or foundational rules below it.
+- The only rule IDs permitted in assessed corrections at this level are: ${rules.join(", ")}.
+- If the learner attempts a higher-level structure, do not assess mastery of that higher-level feature. Correct only a foundational error when necessary for meaning or for a rule already in scope.
+- Suggestions in "upgrades" must remain at ${targetLevel}. Never recommend a higher-level construction as the expected answer. Higher-level enrichment is outside this correction.
+- Set "target_level" to exactly "${targetLevel}". The independent "cefr_estimate" may differ, but it must not change the ${targetLevel} pass standard.
 
 LANGUAGE POLICY — this is critical:
 - Write EVERY explanation, comment, reasoning, label and instruction in ENGLISH, so a student who does not yet read German can understand it, except for the German fields inside "retry_tasks".
@@ -252,7 +351,7 @@ Procedure:
    - "rule": the best-fitting ID from this list: kasus, adjektiv, praep, ordnung, zeiten, partizip, modal, konnektor, relativ, konj2, passiv, verbprep, konj1, ndekl, partizipattr, nominal, paired, fvg, passiversatz, konj2past, partikel, wortschatz, rechtschreibung, register
    - "why": WHY it is wrong, in ENGLISH — state the rule, not just the correction. Two sentences maximum. Quote the German forms you refer to.
    - "severity": "hoch" if it blocks understanding or is a level marker, otherwise "mittel" or "niedrig".
-5. "upgrades": 3–6 spots that are correct but below level — show the ${targetLevel} variant in German ("upgraded"), and explain in ENGLISH in "why" (nominal style, passive alternatives, Funktionsverbgefüge, sharper connectors, better register).
+5. "upgrades": 0–3 spots that are correct but can be expressed more naturally at ${targetLevel} — never above it. Show the ${targetLevel} variant in German ("upgraded"), explain it in ENGLISH, set "level" to exactly "${targetLevel}", and use an allowed in-scope "rule" ID. Return an empty array when the original wording already fits ${targetLevel}.
 6. "improved_version": the same text rewritten to ${targetLevel} level, in GERMAN — same content, same length, same person. Do not invent new content.
 7. "strengths": 2–3 things done concretely well, in ENGLISH.
 8. "next_steps": 2–4 concrete practice recommendations in ENGLISH, derived from the MOST FREQUENT mistakes — no generic advice.
@@ -280,6 +379,7 @@ Procedure:
 13. Decide whether the submission is approved for course progression:
    - Set "approved" to true when the task is fulfilled and the requested structures are used well enough for the stated level. Minor mistakes are allowed; do not demand a perfect text.
    - Set it to false when the task is not fulfilled, a requested structure is missing or fundamentally wrong, or a high-severity error prevents the text from demonstrating the chapter goal.
+   - Never set it to false because the text lacks a structure, style feature or vocabulary range from a CEFR level above ${targetLevel}.
    - In "approval_reason", give one short, concrete ENGLISH sentence explaining the decision.
 14. "retry_tasks": if "approved" is false, create EXACTLY TWO fresh writing challenges in GERMAN for the same CEFR level. If "approved" is true, return an empty array.
    - Both challenges must use a genuinely different topic from the submitted task and from each other. Do not ask the learner to rewrite the same scenario.
@@ -306,33 +406,57 @@ ${text}
 """`;
 }
 
+/** Keep API and manually pasted corrections inside the selected CEFR scope. */
+export function scopeCorrectionToLevel(data, targetLevel = "C1") {
+  const level = CORRECTION_LEVELS.includes(targetLevel) ? targetLevel : "C1";
+  const levelIndex = CORRECTION_LEVELS.indexOf(level);
+  const rules = new Set(assessedRules(level));
+  const inScopeRule = (item) => item && rules.has(item.rule);
+  const inScopeExercise = (item) => inScopeRule(item)
+    && CORRECTION_LEVELS.includes(item.level)
+    && CORRECTION_LEVELS.indexOf(item.level) <= levelIndex;
+  const inScopeUpgrade = (item) => inScopeRule(item) && item.level === level;
+  return {
+    ...data,
+    target_level: level,
+    corrections: Array.isArray(data?.corrections) ? data.corrections.filter(inScopeRule) : [],
+    upgrades: Array.isArray(data?.upgrades) ? data.upgrades.filter(inScopeUpgrade) : [],
+    error_patterns: Array.isArray(data?.error_patterns) ? data.error_patterns.filter(inScopeRule) : [],
+    study_plan: Array.isArray(data?.study_plan) ? data.study_plan.filter(inScopeRule) : [],
+    exercises: Array.isArray(data?.exercises) ? data.exercises.filter(inScopeExercise) : [],
+  };
+}
+
 export async function correctWriting({ apiKey, model = MODEL, task, text, targetLevel = "C1" }) {
   try {
+    const assessmentLevel = CORRECTION_LEVELS.includes(targetLevel) ? targetLevel : "C1";
+    const schema = correctionSchema(assessmentLevel);
     const response = await createMessage(apiKey, {
       model,
       max_tokens: MAX_TOKENS,
       output_config: {
-        format: { type: "json_schema", schema: CORRECTION_SCHEMA },
+        format: { type: "json_schema", schema },
       },
-      system: [{ type: "text", text: correctionSystem(targetLevel), cache_control: { type: "ephemeral" } }],
-      messages: [{ role: "user", content: correctionUser(task, text, targetLevel) }],
+      system: [{ type: "text", text: correctionSystem(assessmentLevel), cache_control: { type: "ephemeral" } }],
+      messages: [{ role: "user", content: correctionUser(task, text, assessmentLevel) }],
     });
-    return parseJsonResponse(response);
+    return scopeCorrectionToLevel(parseJsonResponse(response), assessmentLevel);
   } catch (err) {
     throw new Error(friendlyError(err));
   }
 }
 
 export function manualCorrectionPrompt({ task, text, targetLevel = "C1" }) {
-  return `${correctionSystem(targetLevel)}
+  const assessmentLevel = CORRECTION_LEVELS.includes(targetLevel) ? targetLevel : "C1";
+  return `${correctionSystem(assessmentLevel)}
 
 Antworte AUSSCHLIESSLICH mit einem JSON-Objekt nach genau diesem Schema (keine Erklärung davor oder danach):
 
-${JSON.stringify(CORRECTION_SCHEMA, null, 2)}
+${JSON.stringify(correctionSchema(assessmentLevel), null, 2)}
 
 ---
 
-${correctionUser(task, text, targetLevel)}`;
+${correctionUser(task, text, assessmentLevel)}`;
 }
 
 // ---------------------------------------------------------------------------

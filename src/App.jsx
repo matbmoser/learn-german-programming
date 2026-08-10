@@ -85,8 +85,8 @@ const LEARNING_VIEWS = new Set(["home", "path", "cheat", "settings"]);
 const PATH_STEPS = {
   intro: { label: "Einführung", next: "Verstehen · Die Regel an Beispielen durcharbeiten" },
   learn: { label: "Verstehen", next: "Üben · Den Checkpoint mit 3 von 4 richtigen Antworten bestehen" },
-  practice: { label: "Üben", next: "Anwenden · Die Regel in einem kurzen Text selbst benutzen" },
-  apply: { label: "Anwenden", next: "Kapitel abschließen und zur nächsten Lektion wechseln" },
+  practice: { label: "Üben", next: "Anwenden · Die Regeln des Lernblocks gemeinsam im Schreiben benutzen" },
+  apply: { label: "Anwenden", next: "Lernblock abschließen und zur nächsten Lektion wechseln" },
 };
 
 function readRoute(fallback = "home") {
@@ -814,7 +814,9 @@ function CourseProgress({ stats, step, nextModule, onClick }) {
   const currentStep = PATH_STEPS[step];
   const nextText = step === "complete"
     ? (nextModule ? `${nextModule.level} · ${nextModule.title}` : "Kurs abgeschlossen")
-    : currentStep.next;
+    : step === "practice" && !stats.isBlockEnd
+      ? "Checkpoint bestehen und mit der nächsten Regel im Lernblock weitermachen"
+      : currentStep.next;
 
   return (
     <div className="course-progress">
@@ -854,7 +856,7 @@ function CourseProgress({ stats, step, nextModule, onClick }) {
             <dt>Jetzt</dt>
             <dd>
               <b>{stats.current.level} · {stats.current.title}</b>
-              <span>Kapitel {stats.currentIndex + 1} von {stats.total} · {currentStep?.label || "Abgeschlossen"}</span>
+              <span>{stats.block.id} · Kapitel {stats.block.moduleIndex + 1}/{stats.blockTotal} · {currentStep?.label || "Abgeschlossen"}</span>
             </dd>
           </div>
           <div>

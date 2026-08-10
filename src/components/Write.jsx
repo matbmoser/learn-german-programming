@@ -20,7 +20,7 @@ import React from "react";
 import { WRITING_TASKS, WRITING_CRITERIA, TASK_BY_ID, WRITING_TOPICS, TOPICS_BY_CATEGORY, TOPIC_CATEGORIES } from "../data/writing.js";
 import { REDEMITTEL } from "../data/lexicon.js";
 import { LEVELS } from "../data/curriculum.js";
-import { correctWriting, manualCorrectionPrompt, patternExercisePrompt, extractJson } from "../lib/claude.js";
+import { correctWriting, manualCorrectionPrompt, patternExercisePrompt, extractJson, scopeCorrectionToLevel } from "../lib/claude.js";
 import { buildErrorRanges, buildSegments } from "../lib/highlight.js";
 import { exportWritingPdf } from "../lib/pdf.js";
 import { computeWritingStats, donutSvg, barsSvg, PALETTE } from "../lib/charts.js";
@@ -139,7 +139,8 @@ export default function Write({ progress, apiKey, model, mode, targetLevel, sett
 
   function accept(data) {
     if (!data || !Array.isArray(data.corrections)) throw new Error("Die Antwort enthält keine Korrekturen.");
-    setFeedback(data);
+    const leveledFeedback = scopeCorrectionToLevel(data, targetLevel || task.level || "C1");
+    setFeedback(leveledFeedback);
     setError("");
     setTab("overview");
     setActiveError(null);
@@ -154,7 +155,7 @@ export default function Write({ progress, apiKey, model, mode, targetLevel, sett
       text,
       words,
       at: Date.now(),
-      feedback: data,
+      feedback: leveledFeedback,
     });
   }
 
@@ -1271,9 +1272,14 @@ function ReportCharts({ fb }) {
 function TabOverview({ fb }) {
   return (
     <div className="ide-tabpane">
-      <div className="stats">        <div className="stat">
+      <div className="stats">
+        <div className="stat">
           <span className="eyebrow">Niveau des Textes</span>
           <div className="v">{fb.cefr_estimate}</div>
+        </div>
+        <div className="stat">
+          <span className="eyebrow">Bewertet auf</span>
+          <div className="v">{fb.target_level || "—"}</div>
         </div>
         <div className="stat">
           <span className="eyebrow">Wörter</span>

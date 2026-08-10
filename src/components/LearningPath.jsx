@@ -14,6 +14,7 @@ import {
   learningProfile,
   learningPathStats,
   learningStep,
+  moduleRequiresApplication,
 } from "../lib/learningPath.js";
 import {
   correctWriting,
@@ -22,6 +23,7 @@ import {
   manualCorrectionPrompt,
   manualLearningSupportPrompt,
   normalizeLearningSupport,
+  scopeCorrectionToLevel,
 } from "../lib/claude.js";
 import { buildErrorRanges, buildSegments } from "../lib/highlight.js";
 import { ModuleContent } from "./Learn.jsx";
@@ -36,7 +38,7 @@ import {
   IconWarning,
 } from "./icons.jsx";
 
-const STEPS = [
+const MODULE_STEPS = [
   { id: "intro", label: "Einführung" },
   { id: "learn", label: "Verstehen" },
   { id: "practice", label: "Üben" },
@@ -94,6 +96,9 @@ export default function LearningPath({
   const path = progress.learningPath;
   const stats = learningPathStats(path);
   const mod = stats.current;
+  const block = stats.block;
+  const requiresApplication = moduleRequiresApplication(mod);
+  const steps = requiresApplication ? MODULE_STEPS : MODULE_STEPS.slice(0, 3);
   const savedStep = learningStep(path, mod.id);
   const [viewStep, setViewStep] = React.useState(null);
   const step = viewStep || savedStep;
@@ -109,18 +114,18 @@ export default function LearningPath({
 
   React.useEffect(() => { setViewStep(null); }, [mod.id]);
 
-  const savedIndex = savedStep === "complete" ? STEPS.length : STEPS.findIndex((item) => item.id === savedStep);
-  const activeIndex = step === "complete" ? STEPS.length : STEPS.findIndex((item) => item.id === step);
+  const savedIndex = savedStep === "complete" ? steps.length : steps.findIndex((item) => item.id === savedStep);
+  const activeIndex = step === "complete" ? steps.length : steps.findIndex((item) => item.id === step);
 
   function openReachedStep(nextStep) {
-    const nextIndex = STEPS.findIndex((item) => item.id === nextStep);
+    const nextIndex = steps.findIndex((item) => item.id === nextStep);
     if (savedStep === "complete" || nextIndex <= savedIndex) {
       setViewStep(nextStep === savedStep ? null : nextStep);
     }
   }
 
   function continueTo(nextStep) {
-    const nextIndex = STEPS.findIndex((item) => item.id === nextStep);
+    const nextIndex = steps.findIndex((item) => item.id === nextStep);
     if (savedStep === "complete" || nextIndex < savedIndex) setViewStep(nextStep);
     else if (nextIndex === savedIndex) setViewStep(null);
     else {
@@ -129,7 +134,7 @@ export default function LearningPath({
     }
   }
 
-  function finishApplication() {
+  function finishModule() {
     if (savedStep === "complete") setViewStep(null);
     else onComplete(mod.id);
   }
@@ -138,7 +143,7 @@ export default function LearningPath({
     <section className="card path-window" aria-labelledby="path-window-title">
       <header className="path-window-head">
         <div className="path-window-title">
-          <span className="eyebrow">Lernmodus · Kapitel {stats.currentIndex + 1} von {stats.total}</span>
+          <span className="eyebrow">Lernblock {block.id} · {block.title} · Kapitel {block.moduleIndex + 1} von {block.moduleIds.length}</span>
           <h1 id="path-window-title"><LevelTag level={mod.level} /> {mod.title}</h1>
           <span className={aiSupport ? "path-ai-status is-active" : "path-ai-status"}>
             KI-Lernbegleiter {aiSupport ? "· personalisiert" : "· optional"}
@@ -146,14 +151,18 @@ export default function LearningPath({
           <p>{LEVEL_INFO[mod.level].blurb}</p>
         </div>
         <div className="path-window-progress">
-          <span className="mono">{stats.levelCompleted}/{stats.levelTotal} auf {mod.level}</span>
-          <Bar value={stats.levelPercent / 100} color={`var(--${mod.level.toLowerCase()})`} />
+          <span className="mono">{stats.blockCompleted}/{stats.blockTotal} Kapitel in {block.id}</span>
+          <Bar value={stats.blockCompleted / stats.blockTotal} color={`var(--${mod.level.toLowerCase()})`} />
           <button className="path-settings-link" type="button" onClick={onOpenSettings}>Niveau oder Modus ändern</button>
         </div>
       </header>
 
-      <ol className="path-window-steps" aria-label="Ablauf dieses Kapitels">
-        {STEPS.map((item, index) => {
+      <ol
+        className="path-window-steps"
+        aria-label="Ablauf dieses Kapitels"
+        style={{ gridTemplateColumns: `repeat(${steps.length}, 1fr)` }}
+      >
+        {steps.map((item, index) => {
           const unlocked = savedStep === "complete" || index <= savedIndex;
           const completed = savedStep === "complete" || index < savedIndex;
           const current = index === activeIndex;
@@ -182,9 +191,9 @@ export default function LearningPath({
           <button
             className="path-back-button"
             type="button"
-            onClick={() => openReachedStep(STEPS[activeIndex - 1].id)}
+            onClick={() => openReachedStep(steps[activeIndex - 1].id)}
           >
-            ← Zurück zu {STEPS[activeIndex - 1].label}
+            ← Zurück zu {steps[activeIndex - 1].label}
           </button>
         )}
 
@@ -196,6 +205,8 @@ export default function LearningPath({
             apiKey={apiKey}
             model={model}
             mode={mode}
+            block={block}
+            requiresApplication={requiresApplication}
             onSaveSupport={(support) => onSaveAISupport(mod.id, support)}
             onOpenSettings={onOpenSettings}
             onContinue={() => continueTo("learn")}
@@ -221,9 +232,10 @@ export default function LearningPath({
               checkpoint={checkpoint}
               passed={checkpointPassed(checkpoint)}
               support={aiSupport}
+              requiresApplication={requiresApplication}
               onAnswer={(ruleId, correct) => onCheckpointAnswer(mod.id, ruleId, correct)}
               onReview={() => openReachedStep("learn")}
-              onContinue={() => continueTo("apply")}
+              onContinue={() => requiresApplication ? continueTo("apply") : finishModule()}
             />
           </div>
         )}
@@ -244,14 +256,14 @@ export default function LearningPath({
               onChange={(text) => onSaveApplication(mod.id, text)}
               onReview={(text, review) => onSaveApplicationReview(mod.id, text, review)}
               onSelectTask={(task, previousTask) => onSelectApplicationTask(mod.id, task, previousTask)}
-              onComplete={finishApplication}
+              onComplete={finishModule}
               onOpenSettings={onOpenSettings}
             />
           </div>
         )}
 
         {step === "complete" && (
-          <Completion module={mod} isLast={stats.isLast} onAdvance={onAdvance} onOpenSettings={onOpenSettings} />
+          <Completion module={mod} block={block} isLast={stats.isLast} onAdvance={onAdvance} onOpenSettings={onOpenSettings} />
         )}
       </div>
     </section>
@@ -259,7 +271,7 @@ export default function LearningPath({
 }
 
 function Introduction({
-  module, profile, support, apiKey, model, mode, onSaveSupport, onOpenSettings, onContinue,
+  module, block, requiresApplication, profile, support, apiKey, model, mode, onSaveSupport, onOpenSettings, onContinue,
 }) {
   return (
     <div className="path-stage path-introduction">
@@ -281,7 +293,9 @@ function Introduction({
         <ol>
           <li>Du bekommst die Regel mit wenigen Beispielen erklärt.</li>
           <li>Die App gibt dir passende Aufgaben—du musst keinen Drill auswählen.</li>
-          <li>Du benutzt die Regel in einem kurzen, vorbereiteten Schreibauftrag.</li>
+          <li>{requiresApplication
+            ? `Danach verbindest du alle Regeln aus ${block.id} in einem Schreibauftrag.`
+            : `Nach dem Checkpoint geht es im Lernblock ${block.id} mit der nächsten passenden Regel weiter.`}</li>
         </ol>
       </div>
       <div className="actions"><button className="btn" type="button" onClick={onContinue}>Lektion beginnen</button></div>
@@ -438,7 +452,7 @@ function personalizedQuestion(item, module) {
   };
 }
 
-function PathCheckpoint({ module, checkpoint, passed, support, onAnswer, onReview, onContinue }) {
+function PathCheckpoint({ module, checkpoint, passed, support, requiresApplication, onAnswer, onReview, onContinue }) {
   const rules = checkpointRules(module);
   const personalized = React.useMemo(
     () => (support?.items || []).map((item) => personalizedQuestion(item, module)),
@@ -505,10 +519,12 @@ function PathCheckpoint({ module, checkpoint, passed, support, onAnswer, onRevie
       <div className="path-stage path-stage-success">
         <span className="path-success-mark"><IconCheckCircle /></span>
         <span className="eyebrow">Übung bestanden</span>
-        <h2>Die Regel sitzt. Jetzt setzt du sie selbst ein.</h2>
-        <p className="muted">Die nächste Aufgabe ist bereits vorbereitet und erscheint hier im selben Lernfenster.</p>
+        <h2>{requiresApplication ? "Der Lernblock ist bereit für die Anwendung." : "Die Regel sitzt. Du kannst weiterlernen."}</h2>
+        <p className="muted">{requiresApplication
+          ? "Jetzt verbindest du die Regeln aus diesem Lernblock in einer gemeinsamen Schreibaufgabe."
+          : "Die Schreibaufgabe kommt erst am Ende dieses Lernblocks, wenn die zusammengehörenden Regeln gelernt sind."}</p>
         <div className="actions">
-          <button className="btn" type="button" onClick={onContinue}>Zur Schreibaufgabe</button>
+          <button className="btn" type="button" onClick={onContinue}>{requiresApplication ? "Zur Block-Schreibaufgabe" : "Kapitel abschließen"}</button>
           <button className="btn btn-ghost" type="button" onClick={startRepeat}>Übung wiederholen</button>
           <button className="btn btn-ghost" type="button" onClick={onReview}>Regel noch einmal ansehen</button>
         </div>
@@ -592,7 +608,7 @@ function Application({
       ...support.application,
       source: "ai-support",
       minWords: Math.max(baseline.minWords, support.application.min_words),
-      targets: [...new Set([module.title, ...(support.application.targets || [])])],
+      targets: [...new Set([...(baseline.targets || []), ...(support.application.targets || [])])],
     } : baseline;
   }, [baseline, module.title, selectedTask, support]);
   const words = value.trim() ? value.trim().split(/\s+/).length : 0;
@@ -644,7 +660,8 @@ function Application({
     if (!data || !Array.isArray(data.corrections) || typeof data.approved !== "boolean") {
       throw new Error("Die KI-Antwort enthält keine vollständige Korrektur oder Freigabe.");
     }
-    onReview(value, data);
+    const leveledReview = scopeCorrectionToLevel(data, module.level);
+    onReview(value, leveledReview);
     setActiveError(null);
     setReviewOpen(true);
     setReviewFullscreen(false);
@@ -726,6 +743,9 @@ function Application({
       <h2>{task.title}</h2>
       <p className="path-stage-lede">{task.prompt}</p>
       <Callout kind="info">{task.instruction}</Callout>
+      <p className="muted path-checkpoint-intro">
+        Korrekturmaßstab: {module.level}. Höhere CEFR-Regeln werden weder als Fehler gewertet noch für die Freigabe verlangt.
+      </p>
       <div className="path-targets">
         <span className="eyebrow">Darauf konzentrierst du dich</span>
         <ul>{task.targets.map((target) => <li key={target}>{target}</li>)}</ul>
@@ -824,7 +844,7 @@ function Application({
           primaryDisabled={stale && mode === "api" && (!ready || !apiKey)}
           primaryLabel={stale
             ? busy ? "Frau Müller korrigiert …" : mode === "api" ? "Neue Fassung prüfen lassen" : manualOpen ? "Prompt schließen" : "KI-Korrektur starten"
-            : approved ? "Kapitel abschließen und weiter" : "Neue Challenge wählen"}
+            : approved ? "Lernblock abschließen und weiter" : "Neue Challenge wählen"}
           onPrimary={stale
             ? mode === "api" ? submitForReview : () => setManualOpen((open) => !open)
             : approved ? onComplete : () => retryRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
@@ -848,7 +868,7 @@ function normalizeAIRetryTask(item, index, module, currentTask) {
     prompt: String(item.prompt),
     instruction: String(item.instruction || "Bearbeite die neue Challenge und erfülle alle genannten Punkte."),
     minWords,
-    targets: [...new Set([module.title, ...item.targets.map(String)])].slice(0, 6),
+    targets: [...new Set([...(currentTask.targets || [module.title]), ...item.targets.map(String)])].slice(0, 8),
   };
 }
 
@@ -922,8 +942,8 @@ function ApplicationOutcome({
   const errors = review.corrections?.length || 0;
   const copy = kind === "passed" ? {
     kicker: "Aktueller Stand · bestanden",
-    title: "Bestanden! Bereit für das nächste Kapitel?",
-    description: "Die Korrektur hat deine Schreibanwendung freigegeben.",
+    title: "Bestanden! Bereit, den Lernblock abzuschließen?",
+    description: "Die Korrektur hat deine gemeinsame Block-Anwendung freigegeben.",
   } : kind === "stale" ? {
     kicker: "Aktueller Stand · Prüfung offen",
     title: "Deine neue Fassung muss noch geprüft werden",
@@ -946,7 +966,8 @@ function ApplicationOutcome({
         <p>{copy.description}</p>
         {reason && <p className="path-outcome-reason"><strong>Warum?</strong> {reason}</p>}
         <div className="path-outcome-meta mono">
-          <span>Niveau {review.cefr_estimate || "—"}</span>
+          <span>Bewertet auf {review.target_level || "—"}</span>
+          <span>Textniveau {review.cefr_estimate || "—"}</span>
           <span>{errors} {errors === 1 ? "Korrektur" : "Korrekturen"}</span>
         </div>
       </div>
@@ -1311,9 +1332,11 @@ function ApplicationReview({ review, stale, activeError, readOnly = false, onSel
       <header>
         <div>
           <span className="eyebrow">Korrektur von Frau Müller</span>
-          <h3>{effectiveApproval ? "Bestanden — Kapitel freigegeben" : stale ? "Erneute Prüfung erforderlich" : "Noch einmal überarbeiten"}</h3>
+          <h3>{effectiveApproval ? "Bestanden — Lernblock freigegeben" : stale ? "Erneute Prüfung erforderlich" : "Noch einmal überarbeiten"}</h3>
         </div>
-        <span className="path-review-level">{review.cefr_estimate || "—"}</span>
+        <span className="path-review-level" title={`Bewertet nach ${review.target_level || "dem aktuellen"} Niveau`}>
+          Ziel {review.target_level || "—"} · Text {review.cefr_estimate || "—"}
+        </span>
       </header>
       {stale && <p className="path-review-stale">Diese Korrektur gehört zur vorherigen Textfassung. Deine Ergebnisse bleiben sichtbar, aber die Freigabe ist pausiert.</p>}
       <p className="path-review-reason">{review.approval_reason || review.cefr_reasoning}</p>
@@ -1365,13 +1388,16 @@ function ApplicationReview({ review, stale, activeError, readOnly = false, onSel
   );
 }
 
-function Completion({ module, isLast, onAdvance, onOpenSettings }) {
+function Completion({ module, block, isLast, onAdvance, onOpenSettings }) {
+  const blockFinished = block.isEnd;
   return (
     <div className="path-stage path-stage-success">
       <span className="path-success-mark"><IconCheckCircle /></span>
-      <span className="eyebrow">Kapitel abgeschlossen</span>
+      <span className="eyebrow">{blockFinished ? `Lernblock ${block.id} abgeschlossen` : "Kapitel abgeschlossen"}</span>
       <h2>{module.title} ist geschafft.</h2>
-      <p className="muted">Übung und Anwendung wurden lokal in diesem Browser gespeichert.</p>
+      <p className="muted">{blockFinished
+        ? `Du hast alle Kapitel aus ${block.id} „${block.title}“ gelernt und gemeinsam im Schreiben angewendet.`
+        : `Der Checkpoint ist bestanden. Die Schreibanwendung folgt nach Kapitel ${block.moduleIds.length} dieses Lernblocks.`}</p>
       <div className="actions">
         {!isLast ? <button className="btn" type="button" onClick={onAdvance}>Nächste Lektion anzeigen</button> : <span><LevelTag level="C1" /> Du hast den gesamten Lernpfad erreicht.</span>}
         <button className="btn btn-ghost" type="button" onClick={onOpenSettings}>Niveau wechseln</button>

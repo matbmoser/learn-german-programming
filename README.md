@@ -153,9 +153,11 @@ Requests are billed to your own account.
 
 1. **Correct writing** — CEFR estimate with reasons, 0–5 per criterion
    (Aufgabe, Kohärenz, Wortschatz, Grammatik, Register), every error as
-   `original → corrected` with the rule behind it and a severity, 3–6
+   `original → corrected` with the rule behind it and a severity, up to three
    below-level phrasings with their target-level version, and the whole text
-   rewritten at level.
+   rewritten at level. The correction schema is scoped to the selected CEFR
+   level: higher-level grammar cannot be returned as an assessed error or used
+   to block course progression.
 2. **Generate challenges** — 8 fresh questions aimed at your weakest rules. The
    built-in generators have fixed patterns; Claude does not.
 3. **Explain a mistake** — on a wrong drill answer: the rule, why your answer
@@ -165,15 +167,17 @@ Requests are billed to your own account.
 
 ## Learning and Free modes
 
-**Learning Mode** deliberately shows one learning window plus Settings. Inside
-that window, the app reveals exactly one next action: introduction, explanation,
-preconfigured exercises, then a short level-appropriate writing application.
-There is no need to navigate between Regeln, Drill, and Schreiben. A rolling
-checkpoint requires 3 correct answers out of the latest 4, and the chapter is
-completed after the writing application. The header reports the current CEFR
-level and total path progress. In Settings, the learner can jump directly to
-A1/A2, B1, B2, or C1 if browser progress was lost; jumping does not falsely
-mark earlier chapters complete.
+**Learning Mode** deliberately shows one learning window plus Settings. Related
+chapters are grouped into 11 named learning blocks such as A2.1 and B1.2. Each
+chapter contains an introduction, explanation, and preconfigured exercises; a
+rolling checkpoint requires 3 correct answers out of the latest 4. The learner
+then continues with the next connected rule. A short writing application appears
+only at the end of a block (usually after 2–3 chapters) and deliberately combines
+all rules in that block. This avoids gating progress on a text before its
+supporting grammar has been taught. The header reports the current block, CEFR
+level, and total path progress. In Settings, the learner can jump directly to
+A1/A2, B1, B2, or C1 if browser progress was lost; jumping does not falsely mark
+earlier chapters complete.
 
 **Free Mode** is the original unrestricted interface. Every reference, drill,
 exam, and writing tool remains available. Users can switch modes in Settings
@@ -189,7 +193,8 @@ when creating this profile.
 
 The model returns a structured personalization pack for the current chapter:
 an individual focus with evidence, an adapted explanation and memory hook,
-targeted examples, four warm-up exercises, and a tailored writing application.
+targeted examples, four warm-up exercises, and a tailored block application
+that is shown when the learner reaches the end of that learning block.
 The pack is cached in browser progress, so it does not need to be regenerated
 on every visit. API-key and manual copy/paste modes are both supported.
 
