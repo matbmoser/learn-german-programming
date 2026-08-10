@@ -211,7 +211,6 @@ const CORRECTION_SCHEMA = {
     },
     retry_tasks: {
       type: "array",
-      maxItems: 2,
       items: {
         type: "object",
         properties: {
