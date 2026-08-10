@@ -116,6 +116,8 @@ const CORRECTION_SCHEMA = {
     cefr_reasoning: { type: "string" },
     word_count: { type: "integer" },
     task_met: { type: "boolean" },
+    approved: { type: "boolean" },
+    approval_reason: { type: "string" },
     scores: {
       type: "array",
       items: {
@@ -209,7 +211,7 @@ const CORRECTION_SCHEMA = {
     },
   },
   required: [
-    "cefr_estimate", "cefr_reasoning", "word_count", "task_met",
+    "cefr_estimate", "cefr_reasoning", "word_count", "task_met", "approved", "approval_reason",
     "scores", "corrections", "upgrades", "improved_version", "strengths", "next_steps",
     "error_patterns", "study_plan", "exercise_prompt", "exercises",
   ],
@@ -260,6 +262,10 @@ Procedure:
    - "options": exactly 4 options in German; "answer" is VERBATIM one of them; the three wrong options are exactly the mistakes THIS learner made or would make.
    - "why": in ENGLISH, the rule that forces the correct answer — not just "this is right". Two sentences maximum.
    Tie the items to the learner's real mistakes, not textbook examples. If there are no error patterns, return an empty list.
+13. Decide whether the submission is approved for course progression:
+   - Set "approved" to true when the task is fulfilled and the requested structures are used well enough for the stated level. Minor mistakes are allowed; do not demand a perfect text.
+   - Set it to false when the task is not fulfilled, a requested structure is missing or fundamentally wrong, or a high-severity error prevents the text from demonstrating the chapter goal.
+   - In "approval_reason", give one short, concrete ENGLISH sentence explaining the decision.
 
 Be precise and direct. Do not invent mistakes; if a passage is correct, leave it alone. Remember the language policy: all explanations in English, all German material kept in German.`;
 }
@@ -269,8 +275,8 @@ function correctionUser(task, text, targetLevel) {
 ${task.title}
 ${task.prompt}
 
-Geforderte Strukturen: ${task.targets.join(", ")}
-Checkliste: ${task.checklist.join(" · ")}
+Geforderte Strukturen: ${(task.targets || []).join(", ")}
+Checkliste: ${(task.checklist || []).join(" · ")}
 
 ZIELNIVEAU DES LERNENDEN: ${targetLevel}
 
@@ -353,6 +359,7 @@ Regeln:
 - "prompt", "options" und "answer" bleiben auf DEUTSCH (das ist das Übungsmaterial).
 - "rule" ist eine ID aus: kasus, adjektiv, praep, ordnung, zeiten, partizip, modal, konnektor, relativ, konj2, passiv, verbprep, konj1, ndekl, partizipattr, nominal, paired, fvg, passiversatz, konj2past, partikel.
 - Sätze aus dem echten Leben: Arbeit, Behörden, Studium, Alltag. Keine Lehrbuchsätze über Ottos Bruder.
+- Jeder Satz muss auch inhaltlich plausibel sein: Subjekt und Objekt müssen zum Verb passen, Adjektive zum Nomen und Konnektoren zur logischen Beziehung. Kombiniere Wörter nie nur deshalb, weil die Grammatik formal stimmt.
 - Variiere Kontext und Wortschatz — keine zwei Aufgaben mit demselben Nomen.`;
 }
 

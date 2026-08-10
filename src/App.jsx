@@ -55,6 +55,7 @@ import {
   learningPathStats,
   recordCheckpoint,
   saveLearningApplication,
+  saveLearningApplicationReview,
   saveLearningAISupport,
   setLearningStep,
 } from "./lib/learningPath.js";
@@ -162,6 +163,10 @@ export default function App() {
 
   const onSaveLearningApplication = React.useCallback((moduleId, text) => {
     setProgress((p) => ({ ...p, learningPath: saveLearningApplication(p.learningPath, moduleId, text) }));
+  }, []);
+
+  const onSaveLearningApplicationReview = React.useCallback((moduleId, text, review) => {
+    setProgress((p) => ({ ...p, learningPath: saveLearningApplicationReview(p.learningPath, moduleId, text, review) }));
   }, []);
 
   const onCompleteLearningModule = React.useCallback((moduleId) => {
@@ -346,6 +351,7 @@ export default function App() {
                 onCheckpointAnswer={onCheckpointAnswer}
                 onStep={onLearningStep}
                 onSaveApplication={onSaveLearningApplication}
+                onSaveApplicationReview={onSaveLearningApplicationReview}
                 onSaveAISupport={onSaveLearningAISupport}
                 onComplete={onCompleteLearningModule}
                 onAdvance={onAdvancePath}

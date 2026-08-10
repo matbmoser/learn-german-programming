@@ -24,13 +24,12 @@
 // ============================================================================
 
 import {
-  NOUNS, N_NOUNS, ADJECTIVES, VERBS, MODALS, DEF, EIN_END,
-  GENDER_LABEL, CASES, PREP_WECHSEL, VERB_PREP, CONNECTORS, PAIRED,
+  NOUNS, N_NOUNS, VERBS, MODALS, DEF, EIN_END,
+  GENDER_LABEL, CASES, VERB_PREP, CONNECTORS, PAIRED,
   FVG, MODALPARTIKELN, PREP_AKK, PREP_DAT, PREP_GEN,
 } from "../data/lexicon.js";
 import {
-  decline, conjugate, conjugateModal, konjunktiv1, TENSES, TENSE_LABEL,
-  PASSIVE_FORMS, PASSIVE_LABEL, verbByInf,
+  decline, conjugate, conjugateModal, TENSES, PASSIVE_FORMS,
 } from "./grammar.js";
 
 const PRON_SHORT = ["ich", "du", "er", "wir", "ihr", "sie"];
@@ -59,38 +58,103 @@ function options4(answer, pool) {
 }
 
 // ---------------------------------------------------------------------------
-//  Case-assigning frames
+//  Meaning-aware sentence material
 // ---------------------------------------------------------------------------
-const FRAMES = [
-  { k: "nom", pre: "Hier ist ", post: ".", why: "»sein« verlangt Nominativ" },
-  { k: "nom", pre: "Das ist ", post: ".", why: "Gleichsetzung mit »sein« → Nominativ" },
-  { k: "akk", pre: "Ich sehe ", post: ".", why: "»sehen« nimmt ein direktes Objekt" },
-  { k: "akk", pre: "Er kauft ", post: ".", why: "»kaufen« nimmt ein direktes Objekt" },
-  { k: "akk", pre: "Wir brauchen ", post: ".", why: "»brauchen« nimmt ein direktes Objekt" },
-  { k: "akk", pre: "Das ist für ", post: ".", why: "»für« ist feste Akkusativ-Präposition" },
-  { k: "akk", pre: "Sie geht ohne ", post: ".", why: "»ohne« ist feste Akkusativ-Präposition" },
-  { k: "akk", pre: "Wir kämpfen gegen ", post: ".", why: "»gegen« ist feste Akkusativ-Präposition" },
-  { k: "dat", pre: "Ich helfe ", post: ".", why: "»helfen« verlangt Dativ (Ausnahmeverb)" },
-  { k: "dat", pre: "Wir danken ", post: ".", why: "»danken« verlangt Dativ (Ausnahmeverb)" },
-  { k: "dat", pre: "Das gehört ", post: ".", why: "»gehören« verlangt Dativ" },
-  { k: "dat", pre: "Er fährt mit ", post: ".", why: "»mit« ist feste Dativ-Präposition" },
-  { k: "dat", pre: "Sie kommt aus ", post: ".", why: "»aus« ist feste Dativ-Präposition" },
-  { k: "dat", pre: "Ich spreche von ", post: ".", why: "»von« ist feste Dativ-Präposition" },
-  { k: "dat", pre: "Seit ", post: " ist alles anders.", why: "»seit« ist feste Dativ-Präposition" },
-  { k: "gen", pre: "die Farbe ", post: "", why: "Besitz / Zugehörigkeit → Genitiv" },
-  { k: "gen", pre: "wegen ", post: " bleibe ich hier.", why: "»wegen« ist Genitiv-Präposition" },
-  { k: "gen", pre: "trotz ", post: " ging es weiter.", why: "»trotz« ist Genitiv-Präposition" },
-  { k: "gen", pre: "während ", post: " war es ruhig.", why: "»während« ist Genitiv-Präposition" },
+// The old generator combined every frame with every noun. That produced
+// grammatically declined nonsense such as "Ich helfe dem Apfel". Scenes now
+// declare which nouns can actually fill their semantic role.
+const EXTRA_NOUNS = [
+  { w: "Wetter", g: "n", pl: "Wetterlagen", gs: "Wetters", en: "weather" },
+  { w: "Unfall", g: "m", pl: "Unfälle", gs: "Unfalls", en: "accident" },
+  { w: "Sitzung", g: "f", pl: "Sitzungen", gs: "Sitzung", en: "meeting" },
+  { w: "Park", g: "m", pl: "Parks", gs: "Parks", en: "park" },
+  { w: "Bild", g: "n", pl: "Bilder", gs: "Bildes", en: "picture" },
+  { w: "Wand", g: "f", pl: "Wände", gs: "Wand", en: "wall" },
 ];
+const EXERCISE_NOUNS = [...NOUNS, ...EXTRA_NOUNS];
+const NOUN_BY_WORD = Object.fromEntries(EXERCISE_NOUNS.map((noun) => [noun.w, noun]));
+const nouns = (...words) => words.map((word) => NOUN_BY_WORD[word]);
+
+const CASE_SCENES = [
+  { k: "nom", pre: "Hier ist ", post: ".", words: nouns("Mann", "Hund", "Tisch", "Schlüssel", "Freund", "Apfel", "Vertrag", "Antrag", "Bericht", "Kind", "Buch", "Haus", "Auto", "Fenster", "Ergebnis", "Frau", "Katze", "Tür", "Lampe", "Schwester"), why: "»sein« verlangt Nominativ" },
+  { k: "nom", pre: "Das ist ", post: ".", words: nouns("Mann", "Hund", "Tisch", "Schlüssel", "Freund", "Vertrag", "Antrag", "Bericht", "Kind", "Buch", "Haus", "Auto", "Ergebnis", "Verfahren", "Frau", "Katze", "Stadt", "Tür", "Lampe", "Entscheidung", "Voraussetzung"), why: "Gleichsetzung mit »sein« → Nominativ" },
+  { k: "akk", pre: "Ich sehe ", post: ".", words: nouns("Mann", "Hund", "Tisch", "Schlüssel", "Freund", "Apfel", "Bericht", "Kind", "Buch", "Haus", "Auto", "Frau", "Katze", "Stadt", "Tür", "Lampe", "Schwester"), why: "»sehen« nimmt ein direktes Objekt" },
+  { k: "akk", pre: "Er kauft ", post: ".", words: nouns("Tisch", "Apfel", "Buch", "Haus", "Auto", "Fenster", "Tür", "Lampe"), why: "»kaufen« nimmt ein direktes Objekt" },
+  { k: "akk", pre: "Wir brauchen ", post: ".", words: nouns("Tisch", "Schlüssel", "Vertrag", "Antrag", "Bericht", "Buch", "Haus", "Auto", "Ergebnis", "Verfahren", "Tür", "Lampe", "Entscheidung", "Voraussetzung"), why: "»brauchen« nimmt ein direktes Objekt" },
+  { k: "akk", pre: "Das Geschenk ist für ", post: ".", words: nouns("Mann", "Freund", "Kind", "Frau", "Schwester"), why: "»für« ist feste Akkusativ-Präposition" },
+  { k: "akk", pre: "Die Bürger protestieren gegen ", post: ".", words: nouns("Vertrag", "Antrag", "Verfahren", "Entscheidung"), why: "»gegen« ist feste Akkusativ-Präposition" },
+  { k: "dat", pre: "Ich helfe ", post: ".", words: nouns("Mann", "Freund", "Kind", "Frau", "Schwester"), why: "»helfen« verlangt Dativ" },
+  { k: "dat", pre: "Wir danken ", post: ".", words: nouns("Mann", "Freund", "Frau", "Schwester"), why: "»danken« verlangt Dativ" },
+  { k: "dat", pre: "Der Schlüssel gehört ", post: ".", words: nouns("Mann", "Freund", "Kind", "Frau", "Schwester"), why: "»gehören« verlangt Dativ" },
+  { k: "dat", pre: "Er fährt mit ", post: ".", words: nouns("Freund", "Auto", "Frau", "Schwester"), why: "»mit« ist feste Dativ-Präposition" },
+  { k: "dat", pre: "Ich spreche von ", post: ".", words: nouns("Mann", "Freund", "Vertrag", "Antrag", "Bericht", "Ergebnis", "Verfahren", "Frau", "Schwester", "Entscheidung", "Voraussetzung"), why: "»von« ist feste Dativ-Präposition" },
+  { k: "dat", pre: "Seit ", post: " fährt sie vorsichtiger.", words: nouns("Unfall"), singularOnly: true, articleTypes: ["def", "ein"], why: "»seit« ist feste Dativ-Präposition" },
+  { k: "gen", pre: "Die Farbe ", post: " gefällt mir.", words: nouns("Tisch", "Apfel", "Buch", "Haus", "Auto", "Fenster", "Katze", "Tür", "Lampe", "Bild", "Wand"), singularOnly: true, articleTypes: ["def", "ein"], why: "Besitz / Zugehörigkeit → Genitiv" },
+  { k: "gen", pre: "Wegen ", post: " bleiben wir zu Hause.", words: nouns("Wetter"), singularOnly: true, articleTypes: ["def", "none"], why: "»wegen« ist Genitiv-Präposition" },
+  { k: "gen", pre: "Wegen ", post: " kam es zu einem langen Stau.", words: nouns("Unfall"), singularOnly: true, articleTypes: ["def", "ein"], why: "»wegen« ist Genitiv-Präposition" },
+  { k: "gen", pre: "Trotz ", post: " wurde das Projekt fortgesetzt.", words: nouns("Unfall"), articleTypes: ["def", "ein", "none"], why: "»trotz« ist Genitiv-Präposition" },
+  { k: "gen", pre: "Während ", post: " blieb das Handy ausgeschaltet.", words: nouns("Sitzung", "Verfahren"), articleTypes: ["def", "ein", "none"], why: "»während« ist Genitiv-Präposition" },
+];
+
+const ADJECTIVES_BY_NOUN = {
+  Mann: ["alt", "jung", "groß"], Hund: ["alt", "jung", "klein", "groß"],
+  Tisch: ["alt", "neu", "klein", "groß", "rot", "schön"], Schlüssel: ["alt", "neu", "klein"],
+  Freund: ["alt", "neu", "jung"], Apfel: ["klein", "groß", "rot"],
+  Vertrag: ["neu", "wichtig", "günstig"], Antrag: ["neu", "wichtig"],
+  Bericht: ["neu", "wichtig", "deutlich"], Kind: ["jung", "klein"],
+  Buch: ["alt", "neu", "klein", "groß", "schön", "wichtig", "schwierig"],
+  Haus: ["alt", "neu", "klein", "groß", "schön", "günstig"],
+  Auto: ["alt", "neu", "klein", "groß", "rot", "schnell", "günstig"],
+  Fenster: ["alt", "neu", "klein", "groß"], Ergebnis: ["neu", "wichtig", "deutlich"],
+  Verfahren: ["neu", "wichtig", "schwierig"], Frau: ["alt", "jung", "groß"],
+  Katze: ["alt", "jung", "klein", "groß", "rot"], Stadt: ["alt", "neu", "klein", "groß", "schön"],
+  Tür: ["alt", "neu", "klein", "groß", "rot"], Lampe: ["alt", "neu", "klein", "groß", "rot", "schön"],
+  Schwester: ["jung"], Entscheidung: ["neu", "wichtig", "schwierig"],
+  Voraussetzung: ["wichtig", "schwierig"], Wetter: ["kalt", "warm"], Unfall: ["schwer"],
+  Sitzung: ["wichtig"], Bild: ["alt", "neu", "klein", "groß", "schön"], Wand: ["alt", "neu", "groß", "rot"],
+};
+
+const VERB_CONTEXT = {
+  machen: "die Hausaufgaben zu Hause", gehen: "nach der Arbeit nach Hause",
+  fahren: "mit dem Zug nach Berlin", sehen: "einen neuen Film",
+  essen: "zum Frühstück einen Apfel", sprechen: "im Kurs Deutsch", lesen: "abends ein Buch",
+  schreiben: "einen Bericht für das Team", nehmen: "morgens den Bus", geben: "dem Kind das Buch",
+  finden: "den verlorenen Schlüssel", haben: "genug Zeit für die Aufgabe", sein: "bei Freunden zu Besuch",
+  werden: "nach der langen Reise müde", arbeiten: "regelmäßig im Büro", bleiben: "am Wochenende zu Hause",
+  kommen: "pünktlich zur Sitzung", verstehen: "die Aufgabe nach der Erklärung besser",
+  studieren: "an der Universität Informatik", aufstehen: "jeden Morgen um sieben Uhr",
+  anrufen: "nach dem Termin die Arztpraxis", bringen: "das Paket zur Post",
+  denken: "oft an die Zukunft", wissen: "die richtige Antwort", lassen: "das Auto in der Werkstatt reparieren",
+};
+
+const MODAL_VERBS = {
+  können: ["machen", "gehen", "fahren", "sehen", "sprechen", "lesen", "schreiben", "arbeiten", "kommen", "verstehen", "studieren", "anrufen", "bringen"],
+  müssen: ["machen", "gehen", "fahren", "essen", "lesen", "schreiben", "nehmen", "geben", "finden", "arbeiten", "kommen", "aufstehen", "anrufen", "bringen", "lassen"],
+  dürfen: ["gehen", "fahren", "essen", "lesen", "arbeiten", "bleiben", "anrufen"],
+  sollen: ["machen", "gehen", "fahren", "lesen", "schreiben", "nehmen", "geben", "arbeiten", "kommen", "anrufen", "bringen", "lassen"],
+  wollen: ["machen", "gehen", "fahren", "sehen", "essen", "sprechen", "lesen", "schreiben", "nehmen", "geben", "arbeiten", "bleiben", "kommen", "studieren", "anrufen", "bringen", "lassen"],
+};
+
+function modalVerb(modal) {
+  const allowed = MODAL_VERBS[modal.inf];
+  return rnd(VERBS.filter((verb) => allowed.includes(verb.inf)));
+}
+
+function predicate(r, context) {
+  const [first, ...rest] = r.parts.map((part) => part.t);
+  return [first, context, ...rest].filter(Boolean).join(" ");
+}
 
 // ---------------------------------------------------------------------------
 //  A2 — Kasus & Artikel
 // ---------------------------------------------------------------------------
 function qKasus() {
-  const f = rnd(FRAMES);
-  const noun = rnd(NOUNS);
-  const plural = Math.random() < 0.18;
-  const artType = plural ? rnd(["def", "kein", "def"]) : rnd(["def", "def", "ein", "kein"]);
+  const f = rnd(CASE_SCENES);
+  const noun = rnd(f.words);
+  const plural = !f.singularOnly && Math.random() < 0.18;
+  const defaultTypes = plural ? ["def", "kein", "def"] : ["def", "def", "ein", "kein"];
+  const possibleTypes = (f.articleTypes || defaultTypes).filter((type) => type !== "none" && !(plural && type === "ein"));
+  const artType = rnd(possibleTypes.length ? possibleTypes : ["def"]);
   const r = decline(noun, f.k, artType, "", plural);
   if (!r.article) return qKasus();
   const g = plural ? "p" : noun.g;
@@ -125,11 +189,14 @@ function qKasus() {
 //  A2 — Adjektivendungen
 // ---------------------------------------------------------------------------
 function qAdjektiv() {
-  const f = rnd(FRAMES);
-  const noun = rnd(NOUNS);
-  const plural = Math.random() < 0.2;
-  const artType = plural ? rnd(["def", "kein", "none"]) : rnd(["def", "def", "ein", "kein", "none"]);
-  const adj = rnd(ADJECTIVES);
+  const eligibleScenes = CASE_SCENES.filter((scene) => scene.words.some((noun) => ADJECTIVES_BY_NOUN[noun.w]?.length));
+  const f = rnd(eligibleScenes);
+  const noun = rnd(f.words.filter((item) => ADJECTIVES_BY_NOUN[item.w]?.length));
+  const plural = !f.singularOnly && Math.random() < 0.2;
+  const defaultTypes = plural ? ["def", "kein", "none"] : ["def", "def", "ein", "kein", "none"];
+  const allowedTypes = (f.articleTypes || defaultTypes).filter((type) => !(plural && type === "ein"));
+  const artType = rnd(allowedTypes.length ? allowedTypes : ["def"]);
+  const adj = rnd(ADJECTIVES_BY_NOUN[noun.w]);
   const r = decline(noun, f.k, artType, adj, plural);
   const g = plural ? "p" : noun.g;
 
@@ -161,21 +228,30 @@ function qAdjektiv() {
 //  A2 — Wechselpräpositionen
 // ---------------------------------------------------------------------------
 function qPraep() {
-  const noun = rnd(NOUNS.filter((n) => n.g !== "p"));
-  const prep = rnd(PREP_WECHSEL);
+  const scene = rnd([
+    { prep: "an", noun: NOUN_BY_WORD.Wand, move: "Ich hänge das Bild ", stay: "Das Bild hängt " },
+    { prep: "auf", noun: NOUN_BY_WORD.Tisch, move: "Ich lege das Buch ", stay: "Das Buch liegt " },
+    { prep: "hinter", noun: NOUN_BY_WORD.Haus, move: "Ich stelle das Auto ", stay: "Das Auto steht " },
+    { prep: "in", noun: NOUN_BY_WORD.Stadt, move: "Wir fahren ", stay: "Wir wohnen " },
+    { prep: "neben", noun: NOUN_BY_WORD.Fenster, move: "Sie stellt die Lampe ", stay: "Die Lampe steht " },
+    { prep: "über", noun: NOUN_BY_WORD.Tisch, move: "Wir hängen die Lampe ", stay: "Die Lampe hängt " },
+    { prep: "unter", noun: NOUN_BY_WORD.Tisch, move: "Die Katze kriecht ", stay: "Die Katze liegt ", movePost: " und versteckt sich dort." },
+    { prep: "vor", noun: NOUN_BY_WORD.Haus, move: "Er stellt das Auto ", stay: "Das Auto steht " },
+    { prep: "zwischen", noun: NOUN_BY_WORD.Tisch, move: "Ich stelle den Stuhl ", stay: "Der Stuhl steht " },
+  ]);
+  const { noun, prep } = scene;
   const motion = Math.random() < 0.5;
   const kasus = motion ? "akk" : "dat";
-  const lead = rnd(
-    motion
-      ? ["Ich stelle es ", "Wir gehen ", "Er legt das Buch ", "Sie fährt ", "Häng das Bild "]
-      : ["Es steht ", "Wir sind ", "Das Buch liegt ", "Sie wartet ", "Das Bild hängt "]
-  );
+  const lead = motion ? scene.move : scene.stay;
+  const post = scene.prep === "zwischen"
+    ? ` und ${motion ? "das" : "dem"} Fenster.`
+    : motion && scene.movePost ? scene.movePost : ".";
   const art = DEF[noun.g][kasus];
   const pool = CASES.map((c) => DEF[noun.g][c.k]);
 
   return {
     rule: "praep", kind: "Wechselpräposition", level: "A2", type: "choice",
-    prompt: `${lead}${prep} ___ ${noun.w}.`,
+    prompt: `${lead}${prep} ___ ${noun.w}${post}`,
     hint: `${motion ? "Bewegung ins Ziel — wohin?" : "Position, kein Grenzübertritt — wo?"} · ${GENDER_LABEL[noun.g]}`,
     options: options4(art, pool), answer: art,
     trace: [
@@ -183,7 +259,7 @@ function qPraep() {
       ["Frage", motion ? "wohin?" : "wo?", motion ? "Grenzüberschreitung ins Ziel" : "Aufenthalt an einem Ort"],
       [`WECHSEL(${prep}, ${motion})`, "→ " + kasus.toUpperCase(), ""],
       [`der-Tabelle[${GENDER_LABEL[noun.g].slice(0, 4)}][${kasus.toUpperCase()}]`, "→ " + art, ""],
-      ["Ergebnis", `${lead}${prep} ${art} ${noun.w}.`, ""],
+      ["Ergebnis", `${lead}${prep} ${art} ${noun.w}${post}`, ""],
     ],
   };
 }
@@ -192,16 +268,28 @@ function qPraep() {
 //  A2 — feste Präpositionen (Kasus-Konstanten)
 // ---------------------------------------------------------------------------
 function qPrepFix() {
+  const examples = {
+    durch: "Wir gehen durch den Park.", für: "Das Geschenk ist für meinen Bruder.",
+    gegen: "Die Bürger protestieren gegen den Plan.", ohne: "Sie fährt nie ohne ihren Führerschein.",
+    um: "Die Familie sitzt um den Tisch.",
+    aus: "Sie kommt aus der Stadt.", außer: "Außer dem Haus wurde nichts beschädigt.",
+    bei: "Ich wohne bei meiner Schwester.", mit: "Er fährt mit dem Auto.", nach: "Nach der Arbeit gehe ich nach Hause.",
+    seit: "Seit dem Unfall fährt sie vorsichtiger.", von: "Der Brief ist von meinem Freund.",
+    zu: "Wir gehen zu der Ärztin.", gegenüber: "Die Apotheke liegt dem Bahnhof gegenüber.",
+    wegen: "Wegen des Wetters bleiben wir zu Hause.", während: "Während der Sitzung blieb das Handy aus.",
+    trotz: "Trotz des Regens gingen wir spazieren.", statt: "Statt eines Autos kaufte er ein Fahrrad.",
+    innerhalb: "Innerhalb einer Woche erhalten Sie eine Antwort.", außerhalb: "Außerhalb der Stadt ist es ruhiger.",
+  };
   const set = rnd([
-    { list: PREP_AKK, k: "akk", name: "Akkusativ-Präposition" },
+    { list: PREP_AKK.filter((prep) => prep !== "bis"), k: "akk", name: "Akkusativ-Präposition" },
     { list: PREP_DAT, k: "dat", name: "Dativ-Präposition" },
     { list: PREP_GEN.slice(0, 6), k: "gen", name: "Genitiv-Präposition" },
   ]);
   const prep = rnd(set.list);
   return {
     rule: "praep", kind: "Präposition + Kasus", level: "A2", type: "choice",
-    prompt: `»${prep}« + ___ ?`,
-    hint: "feste Präposition — der Kasus ist konstant",
+    prompt: `${examples[prep]} — »${prep}« verlangt ___?`,
+    hint: "Der Beispielsatz zeigt die feste Verbindung.",
     options: ["Akkusativ", "Dativ", "Genitiv"],
     answer: { akk: "Akkusativ", dat: "Dativ", gen: "Genitiv" }[set.k],
     trace: [
@@ -221,18 +309,19 @@ function qZeiten(levelFilter) {
   const v = rnd(VERBS);
   const i = rndInt(6);
   const r = conjugate(v, i, t.k);
+  const answer = predicate(r, VERB_CONTEXT[v.inf]);
   return {
     rule: t.k === "konj2" ? "konj2" : t.k === "konj2past" ? "konj2past" : t.k === "konj1" ? "konj1" : "zeiten",
     kind: "Zeitform bilden", level: t.level, type: "type",
-    prompt: `${PRON_SHORT[i]} ___`,
-    hint: `${v.inf} (${v.en}) · ${t.label} · nur den Verbteil tippen`,
-    answer: r.text, accept: [r.text, `${PRON_SHORT[i]} ${r.text}`],
+    prompt: `${cap(PRON_SHORT[i])} ___.`,
+    hint: `${v.inf} (${v.en}) · ${t.label} · den vollständigen fehlenden Satzteil tippen`,
+    answer, accept: [answer, `${PRON_SHORT[i]} ${answer}`],
     trace: [
       ["Verb", v.inf, r.note || (v.aux === "sein" ? "Hilfsverb sein" : "Hilfsverb haben")],
       ["Zeit", t.label, r.formula],
       ["Person", `${PRON_FULL[i]} (${i + 1})`, ""],
       ["Bausteine", r.parts.map((p) => p.t).join("  +  "), ""],
-      ["Ergebnis", `${PRON_SHORT[i]} ${r.text}`, ""],
+      ["Ergebnis", `${cap(PRON_SHORT[i])} ${answer}.`, ""],
     ],
   };
 }
@@ -242,11 +331,12 @@ function qZeiten(levelFilter) {
 // ---------------------------------------------------------------------------
 function qPartizip() {
   const v = rnd(VERBS);
+  const context = VERB_CONTEXT[v.inf];
   if (Math.random() < 0.45) {
     return {
       rule: "partizip", kind: "Hilfsverb wählen", level: "A2", type: "choice",
-      prompt: `${v.inf} → Perfekt mit ___ ?`,
-      hint: `${v.en} · haben oder sein?`,
+      prompt: `»Ich ${predicate(conjugate(v, 0, "praesens"), context)}.« — das Perfekt bildet man mit ___?`,
+      hint: `${v.inf} (${v.en}) · haben oder sein?`,
       options: ["haben", "sein"], answer: v.aux,
       trace: [
         ["Verb", v.inf, v.en],
@@ -255,14 +345,15 @@ function qPartizip() {
           : "hat ein direktes Objekt / keine Ortsveränderung",
           v.aux === "sein" ? "auch: sein, bleiben, werden" : "≈95% aller Verben"],
         ["Hilfsverb", v.aux, ""],
-        ["Perfekt", "ich " + conjugate(v, 0, "perfekt").text, ""],
+        ["Perfekt", `Ich ${predicate(conjugate(v, 0, "perfekt"), context)}.`, ""],
       ],
     };
   }
+  const auxiliary = v.aux === "sein" ? "bin" : "habe";
   return {
     rule: "partizip", kind: "Partizip II", level: "A2", type: "type",
-    prompt: `${v.inf} → ___`,
-    hint: `${v.en} · Partizip II tippen`,
+    prompt: `Ich ${auxiliary} ${context} ___.`,
+    hint: `${v.inf} (${v.en}) · das Partizip II tippen`,
     answer: v.pii, accept: [v.pii],
     trace: [
       ["Verb", v.inf, v.en],
@@ -270,7 +361,7 @@ function qPartizip() {
         : v.type === "mixed" ? "gemischt: ge- + veränderter Stamm + -t"
         : "schwach: ge- + Stamm + -t"), ""],
       ["Partizip II", v.pii, ""],
-      ["Perfekt", "ich " + conjugate(v, 0, "perfekt").text, ""],
+      ["Perfekt", `Ich ${predicate(conjugate(v, 0, "perfekt"), context)}.`, ""],
     ],
   };
 }
@@ -279,22 +370,23 @@ function qPartizip() {
 //  A2 — Modalverben
 // ---------------------------------------------------------------------------
 function qModal() {
-  const m = rnd(MODALS);
+  const m = rnd(MODALS.filter((modal) => modal.inf !== "mögen"));
   const i = rndInt(6);
-  const v = rnd(VERBS.filter((x) => !x.sep));
+  const v = modalVerb(m);
   const tense = rnd(["praesens", "praesens", "praeteritum", "perfekt", "konj2"]);
   const r = conjugateModal(m, i, tense, v.inf);
+  const answer = predicate(r, VERB_CONTEXT[v.inf]);
   const label = { praesens: "Präsens", praeteritum: "Präteritum", perfekt: "Perfekt", konj2: "Konjunktiv II" }[tense];
   return {
     rule: "modal", kind: "Modalverb", level: "A2", type: "type",
-    prompt: `${PRON_SHORT[i]} ___`,
-    hint: `${m.inf} + ${v.inf} · ${label} · den ganzen Verbteil tippen`,
-    answer: r.text, accept: [r.text, `${PRON_SHORT[i]} ${r.text}`],
+    prompt: `${cap(PRON_SHORT[i])} ___.`,
+    hint: `${m.inf} + ${v.inf} · ${label} · den vollständigen fehlenden Satzteil tippen`,
+    answer, accept: [answer, `${PRON_SHORT[i]} ${answer}`],
     trace: [
       ["Modalverb", `${m.inf} (${m.en})`, ""],
       ["Zeit", label, r.formula],
       ["Person", PRON_FULL[i], ""],
-      ["Ergebnis", `${PRON_SHORT[i]} ${r.text}`, ""],
+      ["Ergebnis", `${cap(PRON_SHORT[i])} ${answer}.`, ""],
     ],
   };
 }
@@ -353,15 +445,20 @@ function qOrdnung() {
 // ---------------------------------------------------------------------------
 //  B1 — Konnektoren-Klassen
 // ---------------------------------------------------------------------------
-const CLAUSE_PAIRS = [
-  { a: { s: "ich", v: "bleibe", r: "zu Hause" }, b: { s: "ich", v: "bin", r: "krank" } },
-  { a: { s: "wir", v: "nehmen", r: "den Zug" }, b: { s: "das Auto", v: "ist", r: "kaputt" } },
-  { a: { s: "sie", v: "lernt", r: "jeden Tag" }, b: { s: "die Prüfung", v: "ist", r: "schwierig" } },
-  { a: { s: "er", v: "kommt", r: "später" }, b: { s: "der Bus", v: "hat", r: "Verspätung" } },
+const CONNECTOR_SCENES = [
+  { w: "weil", a: { s: "ich", v: "bleibe", r: "zu Hause" }, b: { s: "ich", v: "bin", r: "krank" } },
+  { w: "denn", a: { s: "wir", v: "nehmen", r: "den Zug" }, b: { s: "das Auto", v: "ist", r: "kaputt" } },
+  { w: "zumal", a: { s: "wir", v: "verschieben", r: "die Reise" }, b: { s: "das Wetter", v: "ist", r: "sehr schlecht" } },
+  { w: "deshalb", a: { s: "er", v: "kommt", r: "später" }, b: { s: "der Bus", v: "hat", r: "Verspätung" } },
+  { w: "folglich", a: { s: "die Produktion", v: "steht", r: "still" }, b: { s: "eine wichtige Maschine", v: "ist", r: "ausgefallen" } },
+  { w: "obwohl", a: { s: "sie", v: "geht", r: "spazieren" }, b: { s: "es", v: "regnet", r: "stark" } },
+  { w: "trotzdem", a: { s: "sie", v: "geht", r: "spazieren" }, b: { s: "es", v: "regnet", r: "stark" } },
+  { w: "dennoch", a: { s: "das Team", v: "erreicht", r: "sein Ziel" }, b: { s: "die Zeit", v: "ist", r: "knapp" } },
+  { w: "sodass", a: { s: "es", v: "regnet", r: "die ganze Nacht" }, b: { s: "der Keller", v: "steht", r: "unter Wasser" } },
 ];
 function qKonnektor() {
-  const p = rnd(CLAUSE_PAIRS);
-  const c = rnd(CONNECTORS.filter((x) => ["weil", "denn", "deshalb", "obwohl", "trotzdem", "da", "dennoch", "folglich", "zumal", "sodass"].includes(x.w) || Math.random() < 0.25));
+  const p = rnd(CONNECTOR_SCENES);
+  const c = CONNECTORS.find((connector) => connector.w === p.w);
   const A = `${cap(p.a.s)} ${p.a.v} ${p.a.r}`;
   const B_main = `${cap(p.b.s)} ${p.b.v} ${p.b.r}`;
 
@@ -398,28 +495,30 @@ const REL = {
   f: { nom: "die", akk: "die", dat: "der", gen: "deren" },
   p: { nom: "die", akk: "die", dat: "denen", gen: "deren" },
 };
-const REL_FRAMES = [
-  { k: "nom", mid: "dort steht", why: "Das Bezugswort ist Subjekt im Relativsatz" },
-  { k: "nom", mid: "mir gefällt", why: "Subjekt im Relativsatz (»gefallen« hat hier das Bezugswort als Subjekt)" },
-  { k: "akk", mid: "ich kenne", why: "»kennen« nimmt ein Akkusativobjekt" },
-  { k: "akk", mid: "wir gesucht haben", why: "»suchen« nimmt ein Akkusativobjekt" },
-  { k: "dat", mid: "ich helfe", why: "»helfen« verlangt Dativ" },
-  { k: "dat", mid: "ich vertraue", why: "»vertrauen« verlangt Dativ" },
-  { k: "gen", mid: "Auto dort steht", why: "Besitzverhältnis → Genitiv, danach KEIN Artikel" },
+const REL_SCENES = [
+  { k: "nom", words: nouns("Haus", "Auto", "Lampe"), mid: (plural) => `dort ${plural ? "stehen" : "steht"}`, tail: (plural) => `${plural ? "gehören" : "gehört"} meinem Nachbarn.`, why: "Das Bezugswort ist Subjekt im Relativsatz" },
+  { k: "nom", words: nouns("Buch", "Haus", "Auto", "Stadt", "Lampe", "Bild"), mid: (plural) => `mir ${plural ? "gefallen" : "gefällt"}`, tail: (plural) => `${plural ? "sind" : "ist"} auf dem Foto zu sehen.`, why: "Das Bezugswort ist Subjekt von »gefallen«" },
+  { k: "akk", words: nouns("Mann", "Freund", "Frau", "Stadt", "Schwester"), mid: () => "ich gut kenne", tail: (plural) => `${plural ? "wurden" : "wurde"} im Gespräch erwähnt.`, why: "»kennen« nimmt ein Akkusativobjekt" },
+  { k: "akk", words: nouns("Schlüssel", "Bericht", "Buch", "Bild"), mid: () => "wir gesucht haben", tail: (plural) => `${plural ? "lagen" : "lag"} im Büro.`, why: "»suchen« nimmt ein Akkusativobjekt" },
+  { k: "dat", words: nouns("Mann", "Freund", "Kind", "Frau", "Schwester"), mid: () => "ich bei der Arbeit helfe", tail: (plural) => `${plural ? "bedanken" : "bedankt"} sich bei mir.`, why: "»helfen« verlangt Dativ" },
+  { k: "dat", words: nouns("Mann", "Freund", "Frau", "Schwester"), mid: () => "ich vollkommen vertraue", tail: (plural) => `${plural ? "arbeiten" : "arbeitet"} im selben Team.`, why: "»vertrauen« verlangt Dativ" },
+  { k: "gen", words: nouns("Mann", "Freund", "Frau", "Schwester"), mid: () => "Auto vor dem Haus steht", tail: (plural) => `${plural ? "warten" : "wartet"} vor der Tür.`, why: "Besitzverhältnis → Genitiv, danach KEIN Artikel" },
 ];
 function qRelativ() {
-  const noun = rnd(NOUNS);
+  const f = rnd(REL_SCENES);
+  const noun = rnd(f.words);
   const plural = Math.random() < 0.2;
   const g = plural ? "p" : noun.g;
-  const f = rnd(REL_FRAMES);
+  const mid = f.mid(plural);
   const head = plural ? `${DEF[g].nom} ${noun.pl}` : `${DEF[g].nom} ${noun.w}`;
   const answer = REL[g][f.k];
+  const tail = f.tail(plural);
   const pool = [];
   ["m", "n", "f", "p"].forEach((gg) => CASES.forEach((c) => pool.push(REL[gg][c.k])));
 
   return {
     rule: "relativ", kind: "Relativpronomen", level: "B1", type: "choice",
-    prompt: `${cap(head)}, ___ ${f.mid}, …`,
+    prompt: `${cap(head)}, ___ ${mid}, ${tail}`,
     hint: `Bezugswort: ${plural ? "Plural" : GENDER_LABEL[noun.g]} · ${noun.en}`,
     options: options4(answer, pool), answer,
     trace: [
@@ -427,7 +526,7 @@ function qRelativ() {
       ["Genus/Numerus", plural ? "Plural" : GENDER_LABEL[noun.g], "von AUSSEN"],
       ["Rolle im Nebensatz", f.k.toUpperCase(), f.why + " — von INNEN"],
       [`REL[${GENDER_LABEL[g].slice(0, 4)}][${f.k.toUpperCase()}]`, "→ " + answer, ""],
-      ["Ergebnis", `${cap(head)}, ${answer} ${f.mid}, …`, ""],
+      ["Ergebnis", `${cap(head)}, ${answer} ${mid}, ${tail}`, ""],
     ],
   };
 }
@@ -439,34 +538,36 @@ function qKonj2() {
   const useModal = Math.random() < 0.35;
   const i = rndInt(6);
   if (useModal) {
-    const m = rnd(MODALS);
-    const v = rnd(VERBS.filter((x) => !x.sep));
+    const m = rnd(MODALS.filter((modal) => modal.inf !== "mögen"));
+    const v = modalVerb(m);
     const r = conjugateModal(m, i, "konj2", v.inf);
+    const answer = predicate(r, VERB_CONTEXT[v.inf]);
     return {
       rule: "konj2", kind: "Konjunktiv II", level: "B1", type: "type",
-      prompt: `${PRON_SHORT[i]} ___`,
+      prompt: `${cap(PRON_SHORT[i])} ___.`,
       hint: `${m.inf} + ${v.inf} · Konjunktiv II (Gegenwart)`,
-      answer: r.text, accept: [r.text, `${PRON_SHORT[i]} ${r.text}`],
+      answer, accept: [answer, `${PRON_SHORT[i]} ${answer}`],
       trace: [
         ["Modalverb", m.inf, "hat eine echte Konjunktiv-II-Form"],
         ["Bildung", r.formula, ""],
-        ["Ergebnis", `${PRON_SHORT[i]} ${r.text}`, ""],
+        ["Ergebnis", `${cap(PRON_SHORT[i])} ${answer}.`, ""],
       ],
     };
   }
   const v = rnd(VERBS);
   const r = conjugate(v, i, "konj2");
+  const answer = predicate(r, VERB_CONTEXT[v.inf]);
   const real = !v.k2[i].includes(" ");
   return {
     rule: "konj2", kind: "Konjunktiv II", level: "B1", type: "type",
-    prompt: `${PRON_SHORT[i]} ___`,
+    prompt: `${cap(PRON_SHORT[i])} ___.`,
     hint: `${v.inf} (${v.en}) · Konjunktiv II (Gegenwart)`,
-    answer: r.text,
-    accept: real ? [r.text, `würde ${v.inf}`.replace("würde", ["würde","würdest","würde","würden","würdet","würden"][i])] : [r.text],
+    answer,
+    accept: [answer],
     trace: [
       ["Verb", `${v.inf} · ${v.type === "strong" ? "stark" : v.type === "mixed" ? "gemischt" : "schwach"}`, ""],
       ["Bildung", r.formula, real ? "echte Form vorhanden" : "schwaches Verb → Ersatzform würde"],
-      ["Ergebnis", `${PRON_SHORT[i]} ${r.text}`, real ? "würde-Form ist hier auch akzeptabel, aber die echte Form ist besser" : ""],
+      ["Ergebnis", `${cap(PRON_SHORT[i])} ${answer}.`, real ? "Die würde-Form ist oft ebenfalls möglich, die echte Form ist hier präziser." : ""],
     ],
   };
 }
@@ -477,32 +578,34 @@ function qKonj2() {
 function qKonj2Past() {
   const i = rndInt(6);
   if (Math.random() < 0.4) {
-    const m = rnd(MODALS);
-    const v = rnd(VERBS.filter((x) => !x.sep));
+    const m = rnd(MODALS.filter((modal) => modal.inf !== "mögen"));
+    const v = modalVerb(m);
     const r = conjugateModal(m, i, "konj2past", v.inf);
+    const answer = predicate(r, VERB_CONTEXT[v.inf]);
     return {
       rule: "konj2past", kind: "Konjunktiv II Vergangenheit", level: "C1", type: "type",
-      prompt: `${PRON_SHORT[i]} ___`,
+      prompt: `${cap(PRON_SHORT[i])} ___.`,
       hint: `${m.inf} + ${v.inf} · Vergangenheit — »ich hätte … können«`,
-      answer: r.text, accept: [r.text, `${PRON_SHORT[i]} ${r.text}`],
+      answer, accept: [answer, `${PRON_SHORT[i]} ${answer}`],
       trace: [
         ["Konstruktion", "hätte + Infinitiv + Modalinfinitiv", "doppelter Infinitiv, kein Partizip"],
         ["Wortstellung", "Im Nebensatz: »wenn ich hätte kommen können«", "hätte VOR den Infinitiven"],
-        ["Ergebnis", `${PRON_SHORT[i]} ${r.text}`, ""],
+        ["Ergebnis", `${cap(PRON_SHORT[i])} ${answer}.`, ""],
       ],
     };
   }
   const v = rnd(VERBS);
   const r = conjugate(v, i, "konj2past");
+  const answer = predicate(r, VERB_CONTEXT[v.inf]);
   return {
     rule: "konj2past", kind: "Konjunktiv II Vergangenheit", level: "C1", type: "type",
-    prompt: `${PRON_SHORT[i]} ___`,
+    prompt: `${cap(PRON_SHORT[i])} ___.`,
     hint: `${v.inf} (${v.en}) · Konjunktiv II der Vergangenheit`,
-    answer: r.text, accept: [r.text, `${PRON_SHORT[i]} ${r.text}`],
+    answer, accept: [answer, `${PRON_SHORT[i]} ${answer}`],
     trace: [
       ["Hilfsverb", v.aux === "sein" ? "wäre" : "hätte", `${v.inf} bildet das Perfekt mit ${v.aux}`],
       ["Bildung", r.formula, "eine Form für Perfekt, Präteritum und Plusquamperfekt"],
-      ["Ergebnis", `${PRON_SHORT[i]} ${r.text}`, ""],
+      ["Ergebnis", `${cap(PRON_SHORT[i])} ${answer}.`, ""],
     ],
   };
 }
@@ -513,17 +616,24 @@ function qKonj2Past() {
 function qKonj1() {
   const v = rnd(VERBS.concat(MODALS.map((m) => ({ ...m, en: m.en, aux: "haben", type: "modal" }))));
   const i = rnd([2, 2, 2, 1, 4, 5, 3]); // 3rd sg is the workhorse
-  const k = konjunktiv1(v, i);
+  const r = conjugate(v, i, "konj1");
+  const modalContext = {
+    können: "die Aufgabe allein lösen", müssen: "den Bericht heute abgeben",
+    dürfen: "morgen von zu Hause arbeiten", sollen: "die Kundin zurückrufen",
+    wollen: "im Herbst nach Wien ziehen", mögen: "am liebsten schwarzen Kaffee",
+  };
+  const answer = predicate(r, v.type === "modal" ? modalContext[v.inf] : VERB_CONTEXT[v.inf]);
+  const fellBack = r.note.startsWith("Ersatzform:");
   return {
     rule: "konj1", kind: "Konjunktiv I", level: "B2", type: "type",
-    prompt: `Er sagte, ${PRON_SHORT[i] === "er" ? "er" : PRON_SHORT[i]} ___ …`,
+    prompt: `Der Sprecher behauptet, ${PRON_SHORT[i]} ___.`,
     hint: `${v.inf} · Konjunktiv I, ${PRON_FULL[i]}`,
-    answer: k.form, accept: [k.form],
+    answer, accept: [answer],
     trace: [
       ["Verb", v.inf, ""],
       ["Konjunktiv I", `Stamm »${v.inf.replace(/e?n$/, "")}« + Endung`, "kein Vokalwechsel, anders als im Indikativ"],
-      ["Indikativ zum Vergleich", v.pres[i], k.fellBack ? "identisch → Ersatzform nötig" : "unterscheidet sich → Konjunktiv I ist eindeutig"],
-      ["Ergebnis", k.form, k.fellBack ? "Ersatzform Konjunktiv II" : "echter Konjunktiv I"],
+      ["Indikativ zum Vergleich", v.pres[i], fellBack ? "identisch → Ersatzform nötig" : "unterscheidet sich → Konjunktiv I ist eindeutig"],
+      ["Ergebnis", `Der Sprecher behauptet, ${PRON_SHORT[i]} ${answer}.`, fellBack ? "Ersatzform Konjunktiv II" : "echter Konjunktiv I"],
     ],
   };
 }
@@ -536,19 +646,35 @@ function qPassiv() {
   // but form no werden-Passiv (IDS grammis, Passivfähigkeit).
   const v = rnd(VERBS.filter((x) => x.trans && !x.sep && !x.noPassiv));
   const f = rnd(PASSIVE_FORMS);
-  const i = rnd([2, 2, 5, 0]);
+  const passiveSubjects = {
+    machen: ["Die Aufgabe", "Die Aufgaben"], sehen: ["Der Film", "Die Filme"],
+    essen: ["Der Apfel", "Die Äpfel"], sprechen: ["Die Fremdsprache", "Die Fremdsprachen"],
+    lesen: ["Der Bericht", "Die Berichte"], schreiben: ["Der Brief", "Die Briefe"],
+    nehmen: ["Das Medikament", "Die Medikamente"], geben: ["Das Buch", "Die Bücher"],
+    finden: ["Der Schlüssel", "Die Schlüssel"], verstehen: ["Der Text", "Die Texte"],
+    studieren: ["Das Fach", "Die Fächer"], bringen: ["Das Paket", "Die Pakete"],
+  };
+  const passiveContext = {
+    machen: "heute im Büro", sehen: "am Wochenende im Kino", essen: "zum Frühstück",
+    sprechen: "im Kurs", lesen: "heute in der Sitzung", schreiben: "heute im Büro",
+    nehmen: "jeden Morgen", geben: "morgen dem Kind", finden: "nach kurzer Suche",
+    verstehen: "nach der Erklärung", studieren: "an vielen Universitäten", bringen: "morgen zur Post",
+  };
+  const plural = Math.random() < 0.3;
+  const i = plural ? 5 : 2;
   const r = conjugate(v, i, f.k);
-  const subj = i === 5 ? "Die Berichte" : i === 2 ? "Der Bericht" : "Ich";
+  const subj = passiveSubjects[v.inf][plural ? 1 : 0];
+  const answer = predicate(r, passiveContext[v.inf]);
   return {
     rule: "passiv", kind: "Passiv bilden", level: f.k === "p_modal" || f.k === "p_perfekt" ? "B2" : "B1", type: "type",
-    prompt: `${subj} ___`,
-    hint: `${v.inf} (${v.en}) · ${f.label} · nur den Verbteil tippen`,
-    answer: r.text, accept: [r.text],
+    prompt: `${subj} ___.`,
+    hint: `${v.inf} (${v.en}) · ${f.label} · den vollständigen fehlenden Satzteil tippen`,
+    answer, accept: [answer],
     trace: [
       ["Verb", v.inf, "transitiv → persönliches Passiv möglich"],
       ["Form", f.label, r.formula],
       ["Bausteine", r.parts.map((p) => p.t).join("  +  "), ""],
-      ["Ergebnis", `${subj} ${r.text}`, f.k === "p_perfekt" ? "»worden«, nicht »geworden«" : ""],
+      ["Ergebnis", `${subj} ${answer}.`, f.k === "p_perfekt" ? "»worden«, nicht »geworden«" : ""],
     ],
   };
 }
@@ -560,9 +686,12 @@ function qVerbPrep() {
   const item = rnd(VERB_PREP);
   if (Math.random() < 0.5) {
     const pool = ["auf", "an", "über", "für", "um", "mit", "von", "zu", "aus", "unter", "nach", "in"];
+    const prompt = item.p === "von" && item.ex.includes("vom ")
+      ? item.ex.replace("vom ", "___ dem ")
+      : item.ex.replace(` ${item.p} `, " ___ ");
     return {
       rule: "verbprep", kind: "Verb + Präposition", level: "B1", type: "choice",
-      prompt: `${item.v} ___ …`,
+      prompt,
       hint: `${item.en} · welche Präposition?`,
       options: options4(item.p, pool), answer: item.p,
       trace: [
@@ -575,8 +704,8 @@ function qVerbPrep() {
   }
   return {
     rule: "verbprep", kind: "Verb + Präposition: Kasus", level: "B1", type: "choice",
-    prompt: `${item.v} ${item.p} + ___ ?`,
-    hint: item.en,
+    prompt: `${item.ex} — »${item.v} ${item.p}« verlangt ___?`,
+    hint: `${item.en} · der Beispielsatz zeigt die feste Verbindung`,
     options: ["Akkusativ", "Dativ"],
     answer: item.c === "akk" ? "Akkusativ" : "Dativ",
     trace: [
@@ -593,7 +722,23 @@ function qVerbPrep() {
 // ---------------------------------------------------------------------------
 function qNDekl() {
   const noun = rnd(N_NOUNS);
-  const f = rnd(FRAMES.filter((x) => x.k !== "nom"));
+  const personScenes = [
+    { k: "akk", pre: "Ich begrüße ", post: ".", why: "»begrüßen« nimmt ein Akkusativobjekt" },
+    { k: "dat", pre: "Ich spreche mit ", post: ".", why: "»mit« verlangt Dativ" },
+    { k: "gen", pre: "Die Aussage ", post: " wurde protokolliert.", why: "Besitz / Zugehörigkeit → Genitiv" },
+  ];
+  const abstractScenes = noun.w === "Name"
+    ? [
+      { k: "akk", pre: "Bitte schreiben Sie ", post: " deutlich.", why: "»schreiben« nimmt hier ein Akkusativobjekt" },
+      { k: "dat", pre: "Die Firma ist unter ", post: " bekannt.", why: "»unter« bezeichnet hier eine feste Bezeichnung und steht mit Dativ" },
+      { k: "gen", pre: "Die Herkunft ", post: " ist ungeklärt.", why: "Besitz / Zugehörigkeit → Genitiv" },
+    ]
+    : [
+      { k: "akk", pre: "Ich verstehe ", post: ".", why: "»verstehen« nimmt ein Akkusativobjekt" },
+      { k: "dat", pre: "Ich folge ", post: ".", why: "»folgen« verlangt Dativ" },
+      { k: "gen", pre: "Die Bedeutung ", post: " ist klar.", why: "Besitz / Zugehörigkeit → Genitiv" },
+    ];
+  const f = rnd(noun.w === "Name" || noun.w === "Gedanke" ? abstractScenes : personScenes);
   const r = decline(noun, f.k, "def", "", false);
   const answer = r.noun;
   const pool = [noun.w, noun.obl, noun.gs, noun.w + "s", noun.w + "en"];
@@ -761,8 +906,8 @@ function qPartikel() {
   const answer = item.w.split(" / ")[0];
   return {
     rule: "partikel", kind: "Modalpartikel", level: "C1", type: "choice",
-    prompt: `Welche Partikel drückt »${item.fn}« aus? ___`,
-    hint: `${item.en} — z.B.: ${item.ex.replace(new RegExp(answer, "i"), "…")}`,
+    prompt: item.ex.replace(answer, "___"),
+    hint: `Welche Partikel drückt hier »${item.fn}« aus? · ${item.en}`,
     options: options4(answer, pool), answer,
     trace: [
       ["Partikel", item.w, item.en],

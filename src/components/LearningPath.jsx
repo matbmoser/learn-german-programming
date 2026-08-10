@@ -15,11 +15,14 @@ import {
   learningStep,
 } from "../lib/learningPath.js";
 import {
+  correctWriting,
   extractJson,
   generateLearningSupport,
+  manualCorrectionPrompt,
   manualLearningSupportPrompt,
   normalizeLearningSupport,
 } from "../lib/claude.js";
+import { buildErrorRanges, buildSegments } from "../lib/highlight.js";
 import { ModuleContent } from "./Learn.jsx";
 import { Bar, Callout, CopyButton, LevelTag, Prompt, Spinner, Trace } from "./ui.jsx";
 import { IconCancel, IconCheckCircle } from "./icons.jsx";
@@ -40,6 +43,7 @@ export default function LearningPath({
   onCheckpointAnswer,
   onStep,
   onSaveApplication,
+  onSaveApplicationReview,
   onSaveAISupport,
   onComplete,
   onAdvance,
@@ -187,8 +191,15 @@ export default function LearningPath({
               module={mod}
               support={aiSupport}
               value={application.text || ""}
+              review={application.review || null}
+              reviewedText={application.reviewedText || ""}
+              apiKey={apiKey}
+              model={model}
+              mode={mode}
               onChange={(text) => onSaveApplication(mod.id, text)}
+              onReview={(text, review) => onSaveApplicationReview(mod.id, text, review)}
               onComplete={finishApplication}
+              onOpenSettings={onOpenSettings}
             />
           </div>
         )}
@@ -497,7 +508,10 @@ function PathCheckpoint({ module, checkpoint, passed, support, onAnswer, onRevie
   );
 }
 
-function Application({ module, support, value, onChange, onComplete }) {
+function Application({
+  module, support, value, review, reviewedText, apiKey, model, mode,
+  onChange, onReview, onComplete, onOpenSettings,
+}) {
   const baseline = applicationTask(module);
   const task = support?.application ? {
     ...baseline,
@@ -507,6 +521,58 @@ function Application({ module, support, value, onChange, onComplete }) {
   } : baseline;
   const words = value.trim() ? value.trim().split(/\s+/).length : 0;
   const ready = words >= task.minWords;
+  const [busy, setBusy] = React.useState(false);
+  const [error, setError] = React.useState("");
+  const [manualOpen, setManualOpen] = React.useState(false);
+  const [manualPaste, setManualPaste] = React.useState("");
+  const [activeError, setActiveError] = React.useState(null);
+  const stale = Boolean(review && reviewedText !== value);
+  const approved = Boolean(review?.approved && !stale);
+  const correctionTask = React.useMemo(() => ({
+    ...task,
+    type: "Geführte Schreibanwendung",
+    level: module.level,
+    checklist: task.targets,
+  }), [module.level, task]);
+  const manualPrompt = manualCorrectionPrompt({ task: correctionTask, text: value, targetLevel: module.level });
+
+  function acceptReview(data) {
+    if (!data || !Array.isArray(data.corrections) || typeof data.approved !== "boolean") {
+      throw new Error("Die KI-Antwort enthält keine vollständige Korrektur oder Freigabe.");
+    }
+    onReview(value, data);
+    setActiveError(null);
+    setError("");
+    setManualOpen(false);
+  }
+
+  async function submitForReview() {
+    if (!ready || busy) return;
+    setBusy(true);
+    setError("");
+    try {
+      acceptReview(await correctWriting({
+        apiKey,
+        model,
+        task: correctionTask,
+        text: value,
+        targetLevel: module.level,
+      }));
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function acceptManualReview() {
+    try {
+      acceptReview(extractJson(manualPaste));
+      setManualPaste("");
+    } catch (err) {
+      setError(err.message);
+    }
+  }
 
   return (
     <div className="path-stage path-stage-application">
@@ -518,25 +584,242 @@ function Application({ module, support, value, onChange, onComplete }) {
         <span className="eyebrow">Darauf konzentrierst du dich</span>
         <ul>{task.targets.map((target) => <li key={target}>{target}</li>)}</ul>
       </div>
-      <label className="path-writing-field">
+      <div className="path-writing-field">
         <span className="eyebrow">Deine Antwort</span>
-        <textarea
-          className="input"
+        <ApplicationEditor
           value={value}
-          onChange={(event) => onChange(event.target.value)}
-          placeholder="Schreibe hier auf Deutsch …"
-          spellCheck="true"
+          corrections={review?.corrections || []}
+          activeError={activeError}
+          onChange={(nextValue) => { onChange(nextValue); setActiveError(null); }}
         />
-      </label>
+      </div>
       <div className="path-writing-status">
         <span className={ready ? "is-ready" : ""}>{words} / {task.minWords} Wörter</span>
         <Bar value={words / task.minWords} color={ready ? "var(--ok)" : `var(--${module.level.toLowerCase()})`} />
       </div>
+      {review && (
+        <ApplicationReview
+          review={review}
+          stale={stale}
+          activeError={activeError}
+          onSelectError={setActiveError}
+        />
+      )}
+      {error && <Callout kind="bad">{error}</Callout>}
+      {mode === "api" && !apiKey && (
+        <Callout kind="bad">
+          Verbinde zuerst die KI in den Einstellungen, damit Frau Müller deinen Text prüfen kann.
+          <button className="btn btn-ghost btn-sm" type="button" onClick={onOpenSettings}>Einstellungen öffnen</button>
+        </Callout>
+      )}
+      {mode === "manual" && manualOpen && (
+        <div className="path-application-manual">
+          <div className="path-ai-manual-head"><span className="eyebrow">1 · Prompt kopieren</span><CopyButton text={manualPrompt} /></div>
+          <textarea className="copybox" readOnly value={manualPrompt} onFocus={(event) => event.target.select()} />
+          <span className="eyebrow">2 · JSON-Korrektur einfügen</span>
+          <textarea className="copybox" value={manualPaste} onChange={(event) => setManualPaste(event.target.value)} placeholder='{"approved":true,"corrections":[]}' />
+          <button className="btn btn-sm" type="button" disabled={!manualPaste.trim()} onClick={acceptManualReview}>Korrektur übernehmen</button>
+        </div>
+      )}
       <div className="actions">
-        <button className="btn" type="button" disabled={!ready} onClick={onComplete}>Kapitel abschließen</button>
+        {approved ? (
+          <button className="btn" type="button" onClick={onComplete}>Kapitel abschließen</button>
+        ) : mode === "api" ? (
+          <button className="btn" type="button" disabled={!ready || busy || !apiKey} onClick={submitForReview}>
+            {busy ? <><Spinner /> Frau Müller korrigiert …</> : review && !stale ? "Noch einmal prüfen lassen" : "Von Frau Müller prüfen lassen"}
+          </button>
+        ) : (
+          <button className="btn" type="button" disabled={!ready} onClick={() => setManualOpen((open) => !open)}>
+            {manualOpen ? "Prompt schließen" : "KI-Korrektur starten"}
+          </button>
+        )}
+        {approved && mode === "api" && (
+          <button className="btn btn-ghost" type="button" disabled={busy} onClick={submitForReview}>Erneut prüfen</button>
+        )}
         {!ready && <span className="dim">Noch {task.minWords - words} Wörter—bleib nur bei dieser Aufgabe.</span>}
+        {ready && !review && <span className="dim">Der Text muss vor dem Abschluss von der KI-Lehrerin freigegeben werden.</span>}
+        {stale && <span className="dim">Der Text wurde seit der Korrektur geändert und muss erneut geprüft werden.</span>}
       </div>
     </div>
+  );
+}
+
+function ApplicationEditor({ value, corrections, activeError, onChange }) {
+  const textareaRef = React.useRef(null);
+  const highlightRef = React.useRef(null);
+  const gutterRef = React.useRef(null);
+  const ranges = React.useMemo(() => buildErrorRanges(value, corrections), [value, corrections]);
+  const segments = React.useMemo(() => buildSegments(value, ranges, activeError), [value, ranges, activeError]);
+  const lines = React.useMemo(() => applicationSegmentsToLines(segments), [segments]);
+  const [lineHeights, setLineHeights] = React.useState([]);
+
+  React.useLayoutEffect(() => {
+    const highlight = highlightRef.current;
+    if (!highlight) return undefined;
+    const measure = () => {
+      const heights = Array.from(highlight.querySelectorAll(".hl-line")).map((line) => line.offsetHeight);
+      setLineHeights((previous) => previous.length === heights.length && previous.every((height, index) => height === heights[index])
+        ? previous
+        : heights);
+    };
+    measure();
+    if (typeof ResizeObserver === "undefined") return undefined;
+    const observer = new ResizeObserver(measure);
+    observer.observe(highlight);
+    return () => observer.disconnect();
+  }, [lines]);
+
+  function syncScroll() {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    if (highlightRef.current) {
+      highlightRef.current.scrollTop = textarea.scrollTop;
+      highlightRef.current.scrollLeft = textarea.scrollLeft;
+    }
+    if (gutterRef.current) gutterRef.current.scrollTop = textarea.scrollTop;
+  }
+
+  return (
+    <div className="path-application-editor">
+      <div className="path-application-editor-head mono">
+        <span><span className="ide-ext">§</span>anwendung.de</span>
+        <span>Deutsch · UTF-8</span>
+      </div>
+      <div className="path-application-code">
+        <div className="path-application-gutter mono" ref={gutterRef} aria-hidden="true">
+          {lines.map((_, index) => <span key={index} style={lineHeights[index] ? { height: lineHeights[index] } : undefined}>{index + 1}</span>)}
+        </div>
+        <div className="path-application-code-main">
+          <pre className="path-application-highlight" ref={highlightRef} aria-hidden="true">
+            {lines.map((line, index) => <div className="hl-line" key={index}>{line.length ? renderApplicationSegments(line) : "​"}</div>)}
+          </pre>
+          <textarea
+            ref={textareaRef}
+            className="path-application-input"
+            value={value}
+            onChange={(event) => onChange(event.target.value)}
+            onScroll={syncScroll}
+            placeholder="// Schreibe hier auf Deutsch …"
+            spellCheck="false"
+            aria-label="Deine Antwort"
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function applicationSegmentsToLines(segments) {
+  const lines = [[]];
+  const put = (segment) => lines[lines.length - 1].push(segment);
+  const breakLine = () => lines.push([]);
+  for (const segment of segments) {
+    if (!segment.error) {
+      segment.text.split("\n").forEach((part, index) => {
+        if (index > 0) breakLine();
+        if (part) put({ ...segment, text: part });
+      });
+      continue;
+    }
+    let children = [];
+    const flush = () => {
+      if (children.length) put({ ...segment, children });
+      children = [];
+    };
+    for (const child of segment.children) {
+      child.text.split("\n").forEach((part, index) => {
+        if (index > 0) { flush(); breakLine(); }
+        if (part) children.push({ ...child, text: part });
+      });
+    }
+    flush();
+  }
+  return lines;
+}
+
+function renderApplicationSegments(segments) {
+  return segments.map((segment, index) => {
+    if (segment.error) {
+      return (
+        <mark key={index} className={`hl-err sev-${segment.severity}${segment.active ? " is-active" : ""}`}>
+          {segment.children.map((child, childIndex) => child.cls
+            ? <span key={childIndex} className={child.cls}>{child.text}</span>
+            : <React.Fragment key={childIndex}>{child.text}</React.Fragment>)}
+        </mark>
+      );
+    }
+    return segment.cls
+      ? <span key={index} className={segment.cls}>{segment.text}</span>
+      : <React.Fragment key={index}>{segment.text}</React.Fragment>;
+  });
+}
+
+const SCORE_LABELS = {
+  aufgabe: "Aufgabe",
+  kohaerenz: "Aufbau",
+  wortschatz: "Wortschatz",
+  grammatik: "Grammatik",
+  register: "Stil",
+};
+
+function ApplicationReview({ review, stale, activeError, onSelectError }) {
+  const corrections = Array.isArray(review.corrections) ? review.corrections : [];
+  const effectiveApproval = review.approved && !stale;
+  return (
+    <section className={`path-application-review ${effectiveApproval ? "is-approved" : "is-revision"}`} aria-label="KI-Korrektur">
+      <header>
+        <div>
+          <span className="eyebrow">Korrektur von Frau Müller</span>
+          <h3>{effectiveApproval ? "Bestanden — Kapitel freigegeben" : stale ? "Erneute Prüfung erforderlich" : "Noch einmal überarbeiten"}</h3>
+        </div>
+        <span className="path-review-level">{review.cefr_estimate || "—"}</span>
+      </header>
+      {stale && <p className="path-review-stale">Diese Korrektur gehört zur vorherigen Textfassung. Deine Ergebnisse bleiben sichtbar, aber die Freigabe ist pausiert.</p>}
+      <p className="path-review-reason">{review.approval_reason || review.cefr_reasoning}</p>
+      {review.scores?.length > 0 && (
+        <div className="path-review-scores">
+          {review.scores.map((score) => (
+            <div key={score.criterion} title={score.comment}>
+              <span>{SCORE_LABELS[score.criterion] || score.criterion}</span>
+              <strong>{score.score}/5</strong>
+              <i><b style={{ width: `${Math.max(0, Math.min(5, score.score)) * 20}%` }} /></i>
+            </div>
+          ))}
+        </div>
+      )}
+      <div className="path-review-columns">
+        <div>
+          <span className="eyebrow">Das war richtig</span>
+          {review.strengths?.length > 0
+            ? <ul>{review.strengths.map((strength, index) => <li key={index}>{strength}</li>)}</ul>
+            : <p className="muted">Die erfüllten Kriterien siehst du in der Bewertung oben.</p>}
+        </div>
+        <div>
+          <span className="eyebrow">Das solltest du korrigieren · {corrections.length}</span>
+          {corrections.length === 0
+            ? <p className="path-review-no-errors"><IconCheckCircle /> Keine Einzelfehler markiert.</p>
+            : <div className="path-review-corrections">
+              {corrections.map((correction, index) => (
+                <button
+                  key={`${correction.original}-${index}`}
+                  type="button"
+                  className={activeError === index ? "is-active" : ""}
+                  onClick={() => onSelectError(activeError === index ? null : index)}
+                  title="Fehler im Text markieren"
+                >
+                  <span><b>{correction.type}</b><small>{correction.severity}</small></span>
+                  <del>{correction.original}</del>
+                  <ins>{correction.corrected}</ins>
+                  <em>{correction.why}</em>
+                </button>
+              ))}
+            </div>}
+        </div>
+      </div>
+      {review.next_steps?.length > 0 && (
+        <footer><span className="eyebrow">Nächster Schritt</span><p>{review.next_steps[0]}</p></footer>
+      )}
+    </section>
   );
 }
 

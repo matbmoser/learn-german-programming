@@ -96,9 +96,29 @@ export function saveLearningApplication(pathValue, moduleId, text) {
   };
 }
 
+export function saveLearningApplicationReview(pathValue, moduleId, text, review) {
+  const path = normalizeLearningPath(pathValue);
+  const previous = path.applications[moduleId] || {};
+  return {
+    ...path,
+    applications: {
+      ...path.applications,
+      [moduleId]: {
+        ...previous,
+        text,
+        review,
+        reviewedText: text,
+        reviewedAt: Date.now(),
+        updatedAt: Date.now(),
+      },
+    },
+  };
+}
+
 export function completeLearningModule(pathValue, moduleId) {
   const path = normalizeLearningPath(pathValue);
   const application = path.applications[moduleId] || {};
+  if (application.review?.approved !== true || application.reviewedText !== application.text) return path;
   return {
     ...path,
     completed: { ...path.completed, [moduleId]: path.completed[moduleId] || Date.now() },
