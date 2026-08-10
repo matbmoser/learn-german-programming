@@ -26,7 +26,18 @@ import { emptyLearningPath, normalizeLearningPath } from "./learningPath.js";
 
 const PROGRESS_KEY = "dc1:progress";
 const API_KEY = "dc1:apikey";
+const WELCOME_TUTORIAL_KEY = "dc1:welcome-tutorial:v1";
 const SCHEMA_VERSION = 2;
+
+export function hasSeenWelcomeTutorial() {
+  try { return localStorage.getItem(WELCOME_TUTORIAL_KEY) === "seen"; }
+  catch { return false; }
+}
+
+export function markWelcomeTutorialSeen() {
+  try { localStorage.setItem(WELCOME_TUTORIAL_KEY, "seen"); }
+  catch { /* private mode / blocked storage — keep the current session working */ }
+}
 
 export function emptyProgress() {
   return {

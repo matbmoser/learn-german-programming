@@ -440,6 +440,15 @@ select.chip{appearance:none; padding-right:1.6em; background-image:none; width:1
   border-top:1px solid var(--rule); margin-top:var(--s6); padding:var(--s4) 0 var(--s6);
   color:var(--ink-3); font-size:.85rem; display:flex; flex-wrap:wrap; gap:var(--s3); justify-content:space-between;
 }
+.foot-disclaimer-button{border:0; padding:0; background:none; color:inherit; font:inherit; text-decoration:underline; text-underline-offset:.2em; cursor:pointer}
+.foot-disclaimer-button:hover{color:var(--nom)}
+.disclaimer-overlay{position:fixed; inset:0; z-index:100; display:grid; place-items:center; padding:var(--s4); background:#050706c2; backdrop-filter:blur(7px)}
+.disclaimer-overlay[hidden]{display:none}
+.disclaimer-dialog{position:relative; width:min(520px,100%); padding:var(--s5); border:1px solid var(--rule); border-radius:7px; background:var(--surface); box-shadow:0 26px 80px #000b}
+.disclaimer-dialog h2{margin-top:var(--s1); font-family:var(--f-display); font-size:1.7rem}
+.disclaimer-dialog p{margin:var(--s3) 0 var(--s4); color:var(--ink-2); line-height:1.65}
+.disclaimer-close{position:absolute; top:var(--s3); right:var(--s3); display:grid; place-items:center; width:34px; height:34px; border:1px solid var(--rule); border-radius:4px; color:var(--ink-2); background:var(--raised); cursor:pointer}
+.disclaimer-close:hover{color:var(--ink); background:var(--raised-2)}
 </style>
 
 <div class="shell">
@@ -989,7 +998,18 @@ Ich gebe <b class="c-akk">es</b> <b class="c-dat">dem Kind</b>.      <span class
   <footer class="foot">
     <span>Deutsch — Sprachspezifikation · Deklination &amp; Tempora</span>
     <span class="mono">Fortschritt bleibt lokal in diesem Browser.</span>
+    <button class="foot-disclaimer-button mono" id="disclaimerOpen" type="button" aria-haspopup="dialog">Disclaimer</button>
   </footer>
+
+  <div class="disclaimer-overlay" id="disclaimerOverlay" role="presentation" hidden>
+    <section class="disclaimer-dialog" role="dialog" aria-modal="true" aria-labelledby="disclaimerTitle" aria-describedby="disclaimerCopy">
+      <button class="disclaimer-close" id="disclaimerClose" type="button" aria-label="Close disclaimer">×</button>
+      <span class="eyebrow">Transparency notice</span>
+      <h2 id="disclaimerTitle">Disclaimer</h2>
+      <p id="disclaimerCopy">Content generated with Artificial Intelligence. Models used: Claude Opus 5, Claude Sonnet 5, and GPT-5.6 Sol. Code reviewed by a human. AI can make mistakes.</p>
+      <button class="btn" id="disclaimerDone" type="button">Close</button>
+    </section>
+  </div>
 
   </main>
 </div>
@@ -1856,6 +1876,40 @@ document.addEventListener("keydown", e=>{
 
 updateStats();
 nextQuestion();
+
+const disclaimerOpen = $("#disclaimerOpen");
+const disclaimerOverlay = $("#disclaimerOverlay");
+const disclaimerClose = $("#disclaimerClose");
+const disclaimerDone = $("#disclaimerDone");
+let disclaimerOverflow = "";
+function openDisclaimer(){
+  disclaimerOverflow = document.body.style.overflow;
+  document.body.style.overflow = "hidden";
+  disclaimerOverlay.hidden = false;
+  disclaimerClose.focus();
+}
+function closeDisclaimer(){
+  disclaimerOverlay.hidden = true;
+  document.body.style.overflow = disclaimerOverflow;
+  disclaimerOpen.focus();
+}
+disclaimerOpen.addEventListener("click", openDisclaimer);
+disclaimerClose.addEventListener("click", closeDisclaimer);
+disclaimerDone.addEventListener("click", closeDisclaimer);
+disclaimerOverlay.addEventListener("mousedown", e=>{ if(e.target === disclaimerOverlay) closeDisclaimer(); });
+document.addEventListener("keydown", e=>{
+  if(disclaimerOverlay.hidden) return;
+  if(e.key === "Escape"){
+    e.preventDefault();
+    closeDisclaimer();
+    return;
+  }
+  if(e.key !== "Tab") return;
+  const focusable = [...disclaimerOverlay.querySelectorAll('button:not([disabled]), [href], input:not([disabled]), [tabindex]:not([tabindex="-1"])')];
+  const first = focusable[0], last = focusable[focusable.length - 1];
+  if(e.shiftKey && document.activeElement === first){ e.preventDefault(); last.focus(); }
+  else if(!e.shiftKey && document.activeElement === last){ e.preventDefault(); first.focus(); }
+});
 
 /* =========================================================
    RAIL — current section

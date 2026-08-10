@@ -17,6 +17,7 @@
 // This file was generated with AI assistance (Claude Code, Anthropic).
 
 import React from "react";
+import paypalQr from "../docs/screenshots/buymeacoffeepaypal.png";
 import Dashboard from "./components/Dashboard.jsx";
 import Learn from "./components/Learn.jsx";
 import Drill from "./components/Drill.jsx";
@@ -28,13 +29,15 @@ import TeacherChat from "./components/TeacherChat.jsx";
 import Dictionary from "./components/Dictionary.jsx";
 import LearningPath from "./components/LearningPath.jsx";
 import LearningHome from "./components/LearningHome.jsx";
-import { IconBook, IconClose, IconGitHub, IconTeacher } from "./components/icons.jsx";
+import WelcomeTutorial from "./components/WelcomeTutorial.jsx";
+import { IconBook, IconClose, IconCoffee, IconGitHub, IconTeacher } from "./components/icons.jsx";
 import Rulebook from "./components/Rulebook.jsx";
 import CheatSheet from "./components/CheatSheet.jsx";
 import { MODULES } from "./data/curriculum.js";
 import {
   loadProgress, saveProgress, resetProgress, recordAnswer,
   loadApiKey, saveApiKey, saveChatSession,
+  hasSeenWelcomeTutorial, markWelcomeTutorialSeen,
 } from "./lib/storage.js";
 import { MODEL } from "./lib/claude.js";
 import {
@@ -107,8 +110,24 @@ export default function App() {
   const [dictOpen, setDictOpen] = React.useState(false);
   const [dictQuery, setDictQuery] = React.useState("");
   const [dictTrigger, setDictTrigger] = React.useState(0);
+  const [welcomeOpen, setWelcomeOpen] = React.useState(() => !hasSeenWelcomeTutorial());
+  const [disclaimerOpen, setDisclaimerOpen] = React.useState(false);
+  const [aboutOpen, setAboutOpen] = React.useState(false);
   const navRef = React.useRef(null);
   const { view, section: routeSection } = route;
+
+  const closeWelcome = React.useCallback(() => {
+    markWelcomeTutorialSeen();
+    setWelcomeOpen(false);
+  }, []);
+
+  const closeDisclaimer = React.useCallback(() => {
+    setDisclaimerOpen(false);
+  }, []);
+
+  const closeAbout = React.useCallback(() => {
+    setAboutOpen(false);
+  }, []);
 
   const openDict = React.useCallback((word) => {
     if (word) {
@@ -439,11 +458,79 @@ export default function App() {
       </main>
 
       <footer className="foot">
-        <div className="shell" style={{ display: "flex", flexWrap: "wrap", gap: "var(--s3)", justifyContent: "space-between", width: "100%" }}>
-          <span>Deutsch A2 → C1 · Grammatik als Typsystem</span>
-          <span className="mono">Fortschritt bleibt lokal in diesem Browser.</span>
+        <div className="shell foot-in">
+          <div className="foot-copy">
+            <span>Deutsch A2 → C1 · Grammatik als Typsystem</span>
+            <span className="foot-made">
+              Made with <span className="foot-heart" aria-label="love">♥</span> by{" "}
+              <a href="https://github.com/matbmoser" target="_blank" rel="noopener noreferrer">
+                Mathias Brunkow Moser
+              </a>
+            </span>
+          </div>
+          <div className="foot-actions">
+            <a
+              className="coffee-qr"
+              href="https://paypal.me/mathiasbrunkowmoser"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Open Mathias’s PayPal page"
+            >
+              <img src={paypalQr} alt="PayPal QR code for Mathias Brunkow Moser" width="500" height="500" />
+            </a>
+            <div className="coffee-copy">
+              <span className="mono foot-local">Fortschritt bleibt lokal in diesem Browser.</span>
+              <a
+                className="coffee-btn"
+                href="https://paypal.me/mathiasbrunkowmoser"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Buy Mathias a coffee with PayPal"
+              >
+                <IconCoffee />
+                Buy me a coffee
+                <span className="coffee-provider">PayPal</span>
+              </a>
+            </div>
+          </div>
+          <span className="foot-legal">
+            © 2026 Mathias Brunkow Moser · All rights reserved ·{" "}
+            <a
+              href="https://github.com/matbmoser/learn-german-programming/blob/main/LICENSE"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              GPL-3.0-or-later
+            </a>
+          </span>
+          <div className="foot-info-links">
+            <button
+              className="foot-info-button"
+              type="button"
+              aria-haspopup="dialog"
+              onClick={() => setDisclaimerOpen(true)}
+            >
+              Disclaimer
+            </button>
+            <button
+              className="foot-info-button"
+              type="button"
+              aria-haspopup="dialog"
+              onClick={() => setAboutOpen(true)}
+            >
+              About
+            </button>
+          </div>
         </div>
       </footer>
+
+      {disclaimerOpen && (
+        <DisclaimerDialog onClose={closeDisclaimer} />
+      )}
+
+      {aboutOpen && (
+        <AboutDialog onClose={closeAbout} />
+      )}
 
       {/* ================================================= global teacher FAB === */}
       <button
@@ -478,7 +565,135 @@ export default function App() {
         setQuery={setDictQuery}
         trigger={dictTrigger}
       />
+
+      {welcomeOpen && (
+        <WelcomeTutorial onClose={closeWelcome} />
+      )}
     </div>
+  );
+}
+
+function FooterDialog({ id, eyebrow, title, closeLabel, onClose, children }) {
+  const dialogRef = React.useRef(null);
+  const closeRef = React.useRef(null);
+
+  React.useEffect(() => {
+    const previousFocus = document.activeElement;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    closeRef.current?.focus();
+    const onKeyDown = (event) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onClose();
+        return;
+      }
+      if (event.key !== "Tab") return;
+
+      const focusable = dialogRef.current?.querySelectorAll(
+        'button:not([disabled]), [href], input:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      );
+      if (!focusable?.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = previousOverflow;
+      previousFocus?.focus?.();
+    };
+  }, [onClose]);
+
+  return (
+    <div
+      className="disclaimer-overlay"
+      role="presentation"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
+      <section
+        ref={dialogRef}
+        className="disclaimer-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={`${id}-title`}
+        aria-describedby={`${id}-copy`}
+      >
+        <button
+          ref={closeRef}
+          className="disclaimer-close"
+          type="button"
+          onClick={onClose}
+          aria-label={closeLabel}
+        >
+          <IconClose />
+        </button>
+        <span className="eyebrow">{eyebrow}</span>
+        <h2 id={`${id}-title`}>{title}</h2>
+        {children}
+        <button className="btn" type="button" onClick={onClose}>Close</button>
+      </section>
+    </div>
+  );
+}
+
+function DisclaimerDialog({ onClose }) {
+  return (
+    <FooterDialog
+      id="disclaimer"
+      eyebrow="Transparency notice"
+      title="Disclaimer"
+      closeLabel="Close disclaimer"
+      onClose={onClose}
+    >
+      <p id="disclaimer-copy">
+        Content generated with Artificial Intelligence. Models used: Claude Opus 5,
+        Claude Sonnet 5, and GPT-5.6 Sol. Code reviewed by a human. AI can make mistakes.
+      </p>
+    </FooterDialog>
+  );
+}
+
+function AboutDialog({ onClose }) {
+  return (
+    <FooterDialog
+      id="about"
+      eyebrow="About this project"
+      title="Deutsch A2 → C1"
+      closeLabel="Close about"
+      onClose={onClose}
+    >
+      <div id="about-copy" className="about-copy">
+        <p>
+          An open-source German learning app that treats grammar like a type system,
+          making the rules easier to inspect, practise, and apply.
+        </p>
+        <ul>
+          <li>Guided lessons and generated drills from A2 to C1</li>
+          <li>Adaptive placement, writing practice, and AI teacher support</li>
+          <li>No backend—your learning progress stays in this browser</li>
+        </ul>
+        <p>
+          Created by Mathias Brunkow Moser and released under the{" "}
+          <a
+            href="https://github.com/matbmoser/learn-german-programming/blob/main/LICENSE"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            GPL-3.0-or-later license
+          </a>.
+        </p>
+      </div>
+    </FooterDialog>
   );
 }
 

@@ -49,6 +49,7 @@ import GridViewRounded from "@mui/icons-material/GridViewRounded";
 import HistoryRounded from "@mui/icons-material/HistoryRounded";
 import InfoRounded from "@mui/icons-material/InfoRounded";
 import LightbulbRounded from "@mui/icons-material/LightbulbRounded";
+import LocalCafeRounded from "@mui/icons-material/LocalCafeRounded";
 import MenuBookRounded from "@mui/icons-material/MenuBookRounded";
 import PlayArrowRounded from "@mui/icons-material/PlayArrowRounded";
 import SchoolRounded from "@mui/icons-material/SchoolRounded";
@@ -81,6 +82,7 @@ export const IconBook           = icon(MenuBookRounded, "IconBook");
 export const IconFullscreen     = icon(FullscreenRounded, "IconFullscreen");
 export const IconFullscreenExit = icon(FullscreenExitRounded, "IconFullscreenExit");
 export const IconGitHub         = icon(GitHubIcon, "IconGitHub");
+export const IconCoffee         = icon(LocalCafeRounded, "IconCoffee");
 
 // -- teacher chat -----------------------------------------------------------
 export const IconTeacher   = icon(SchoolRounded, "IconTeacher");

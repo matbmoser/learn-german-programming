@@ -231,6 +231,19 @@ src/
 
 ---
 
+## Support the project
+
+If this project helps you learn German, you can
+[buy me a coffee with PayPal](https://paypal.me/mathiasbrunkowmoser).
+
+<a href="https://paypal.me/mathiasbrunkowmoser">
+  <img src="docs/screenshots/buymeacoffeepaypal.png" width="180" alt="PayPal QR code for Mathias Brunkow Moser">
+</a>
+
+Made with ♥ by [Mathias Brunkow Moser](https://github.com/matbmoser).
+
+---
+
 ## License
 
 GPL-3.0-or-later — see [LICENSE](LICENSE).
