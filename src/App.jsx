@@ -17,7 +17,7 @@
 // This file was generated with AI assistance (Claude Code, Anthropic).
 
 import React from "react";
-import paypalQr from "../docs/screenshots/buymeacoffeepaypal.png";
+import paypalQr from "../docs/screenshots/buymeacoffee.jpeg";
 import Dashboard from "./components/Dashboard.jsx";
 import Learn from "./components/Learn.jsx";
 import Drill from "./components/Drill.jsx";
